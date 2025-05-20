@@ -27,15 +27,12 @@ export const usersTable = pgTable("users", {
   first_name: varchar("first_name", { length: 255 }),
   last_name: varchar("last_name", { length: 255 }),
   subscription_level: varchar("subscription_level", { length: 50 })
-    .default("'free'")
+    .default("free")
     .notNull(),
   subscription_expires_at: timestamp("subscription_expires_at"),
   last_active_at: timestamp("last_active_at").defaultNow(),
   created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at")
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const projectsTable = pgTable("projects", {

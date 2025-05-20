@@ -1,20 +1,24 @@
 import { z } from "zod";
 
 /**
- * Схема для пользователя
+ * Схема для пользователя.
+ * Соответствует usersTable из src/db/schema.ts
  */
 export const UserSchema = z.object({
-  id: z.union([z.number(), z.string()]).transform(val =>
-    typeof val === 'string' ? parseInt(val, 10) : val
-  ),
-  telegram_id: z.number(),
-  username: z.string().nullable(),
+  id: z.string().uuid(), // В schema.ts id это uuid
+  authId: z.string().nullable().optional(), // Для внешнего ID аутентификации
+  email: z.string().email().nullable().optional(),
+  name: z.string().nullable().optional(),
+  avatarUrl: z.string().url().nullable().optional(),
+  telegram_id: z.number().intPositive(),
+  username: z.string().nullable().optional(),
   first_name: z.string().nullable().optional(),
   last_name: z.string().nullable().optional(),
-  created_at: z.union([z.string(), z.date()]).transform(val =>
-    val instanceof Date ? val.toISOString() : val
-  ),
-  is_active: z.boolean().optional().default(true),
+  subscription_level: z.string().default("free"),
+  subscription_expires_at: z.date().nullable().optional(),
+  last_active_at: z.date().optional(),
+  created_at: z.date(),
+  updated_at: z.date(),
 });
 
 /**
@@ -26,15 +30,15 @@ export type User = z.infer<typeof UserSchema>;
  * Схема для проекта
  */
 export const ProjectSchema = z.object({
-  id: z.union([z.number(), z.string()]).transform(val =>
-    typeof val === 'string' ? parseInt(val, 10) : val
-  ),
+  id: z
+    .union([z.number(), z.string()])
+    .transform((val) => (typeof val === "string" ? parseInt(val, 10) : val)),
   user_id: z.union([z.number(), z.string()]),
   name: z.string(),
   description: z.string().nullable().optional(),
-  created_at: z.union([z.string(), z.date()]).transform(val =>
-    val instanceof Date ? val.toISOString() : val
-  ),
+  created_at: z
+    .union([z.string(), z.date()])
+    .transform((val) => (val instanceof Date ? val.toISOString() : val)),
   is_active: z.boolean().optional().default(true),
 });
 
@@ -53,33 +57,36 @@ export type Project = {
 /**
  * Схема для конкурента
  */
-export const CompetitorSchema = z.object({
-  id: z.number(),
-  project_id: z.number(),
-  username: z.string(),
-  instagram_url: z.string().optional(), // Может быть profile_url в БД
-  profile_url: z.string().optional(),   // Альтернативное название поля
-  created_at: z.union([z.string(), z.date()]).optional(),    // Может быть added_at или другое поле в БД
-  added_at: z.union([z.string(), z.date()]).optional(),      // Альтернативное название поля
-  is_active: z.boolean().optional().default(true),
-  full_name: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  last_scraped_at: z.union([z.string(), z.date(), z.null()]).optional(),
-  updated_at: z.union([z.string(), z.date()]).optional(),
-}).transform(data => {
-  // Нормализуем данные, чтобы они соответствовали ожидаемой схеме
-  const createdAt = data.created_at || data.added_at || new Date();
-  const createdAtStr = createdAt instanceof Date ? createdAt.toISOString() : createdAt;
+export const CompetitorSchema = z
+  .object({
+    id: z.number(),
+    project_id: z.number(),
+    username: z.string(),
+    instagram_url: z.string().optional(), // Может быть profile_url в БД
+    profile_url: z.string().optional(), // Альтернативное название поля
+    created_at: z.union([z.string(), z.date()]).optional(), // Может быть added_at или другое поле в БД
+    added_at: z.union([z.string(), z.date()]).optional(), // Альтернативное название поля
+    is_active: z.boolean().optional().default(true),
+    full_name: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
+    last_scraped_at: z.union([z.string(), z.date(), z.null()]).optional(),
+    updated_at: z.union([z.string(), z.date()]).optional(),
+  })
+  .transform((data) => {
+    // Нормализуем данные, чтобы они соответствовали ожидаемой схеме
+    const createdAt = data.created_at || data.added_at || new Date();
+    const createdAtStr =
+      createdAt instanceof Date ? createdAt.toISOString() : createdAt;
 
-  return {
-    id: data.id,
-    project_id: data.project_id,
-    username: data.username,
-    instagram_url: data.instagram_url || data.profile_url || '',
-    created_at: createdAtStr,
-    is_active: data.is_active === undefined ? true : data.is_active
-  };
-});
+    return {
+      id: data.id,
+      project_id: data.project_id,
+      username: data.username,
+      instagram_url: data.instagram_url || data.profile_url || "",
+      created_at: createdAtStr,
+      is_active: data.is_active === undefined ? true : data.is_active,
+    };
+  });
 
 /**
  * Тип конкурента, выведенный из схемы Zod
@@ -138,7 +145,10 @@ export const ReelContentSchema = z.object({
 
   // Данные расшифровки видео
   transcript: z.string().nullable().optional(), // Текстовая расшифровка видео
-  transcript_status: z.enum(["pending", "processing", "completed", "failed"]).nullable().optional(), // Статус расшифровки
+  transcript_status: z
+    .enum(["pending", "processing", "completed", "failed"])
+    .nullable()
+    .optional(), // Статус расшифровки
   transcript_updated_at: z.string().nullable().optional(), // Дата и время последнего обновления расшифровки
 });
 
@@ -201,35 +211,37 @@ export type ParsingRunLog = z.infer<typeof ParsingRunLogSchema>;
  */
 export const ScraperSceneSessionDataSchema = z.object({
   // Используем z.enum для шага сцены, чтобы соответствовать ScraperSceneStep
-  step: z.enum([
-    "PROJECT_LIST",
-    "CREATE_PROJECT",
-    "PROJECT_MENU",
-    "COMPETITOR_LIST",
-    "ADD_COMPETITOR",
-    "DELETE_COMPETITOR",
-    "HASHTAG_LIST",
-    "ADD_HASHTAG",
-    "SCRAPING_MENU",
-    "SCRAPING_COMPETITORS",
-    "SCRAPING_HASHTAGS",
-    "SCRAPING_PROGRESS",
-    "SCRAPING_RESULTS",
-    "REELS_LIST",
-    "REEL_DETAILS",
-    "REELS_FILTER",
-    "REELS_ANALYTICS",
-    "NOTIFICATION_SETTINGS",
-    "NOTIFICATION_SCHEDULE",
-    "REELS_COLLECTIONS",
-    "CREATE_COLLECTION",
-    "COLLECTION_DETAILS",
-    "EXPORT_COLLECTION",
-    "TRANSCRIBE_REEL",
-    "EDIT_TRANSCRIPT",
-    "CHATBOT",
-    "CHATBOT_REEL_LIST"
-  ]).optional(),
+  step: z
+    .enum([
+      "PROJECT_LIST",
+      "CREATE_PROJECT",
+      "PROJECT_MENU",
+      "COMPETITOR_LIST",
+      "ADD_COMPETITOR",
+      "DELETE_COMPETITOR",
+      "HASHTAG_LIST",
+      "ADD_HASHTAG",
+      "SCRAPING_MENU",
+      "SCRAPING_COMPETITORS",
+      "SCRAPING_HASHTAGS",
+      "SCRAPING_PROGRESS",
+      "SCRAPING_RESULTS",
+      "REELS_LIST",
+      "REEL_DETAILS",
+      "REELS_FILTER",
+      "REELS_ANALYTICS",
+      "NOTIFICATION_SETTINGS",
+      "NOTIFICATION_SCHEDULE",
+      "REELS_COLLECTIONS",
+      "CREATE_COLLECTION",
+      "COLLECTION_DETAILS",
+      "EXPORT_COLLECTION",
+      "TRANSCRIBE_REEL",
+      "EDIT_TRANSCRIPT",
+      "CHATBOT",
+      "CHATBOT_REEL_LIST",
+    ])
+    .optional(),
   currentProjectId: z.number().optional(),
   currentCompetitorId: z.number().optional(),
   messageIdToEdit: z.number().optional(),
@@ -261,22 +273,20 @@ export const ScraperSceneSessionDataSchema = z.object({
  * Примечание: Этот тип используется только для валидации данных.
  * Для типизации в Telegraf используется интерфейс ScraperSceneSessionData из types.ts
  */
-export type ScraperSceneSessionDataType = z.infer<typeof ScraperSceneSessionDataSchema>;
+export type ScraperSceneSessionDataType = z.infer<
+  typeof ScraperSceneSessionDataSchema
+>;
 
 /**
- * Схема для настроек уведомлений
+ * Схема для настроек уведомлений пользователя.
+ * Может использоваться для хранения в сессии или в профиле пользователя.
  */
 export const NotificationSettingsSchema = z.object({
-  id: z.number().optional(),
-  user_id: z.number(),
-  new_reels_enabled: z.boolean().default(true),
-  trends_enabled: z.boolean().default(true),
-  weekly_report_enabled: z.boolean().default(true),
-  min_views_threshold: z.number().default(1000),
-  notification_time: z.string().default("09:00"), // Время для отправки уведомлений в формате "HH:MM"
-  notification_days: z.array(z.number()).default([1, 2, 3, 4, 5, 6, 7]), // Дни недели для отправки уведомлений (1-7, где 1 - понедельник)
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
+  enabled: z.boolean().default(true),
+  daily_summary: z.boolean().default(false),
+  new_content_alerts: z.boolean().default(true),
+  specific_hours: z.array(z.number().min(0).max(23)).optional(), // Часы, когда можно отправлять уведомления
+  timezone: z.string().optional(), // Например, "Europe/Berlin"
 });
 
 /**
