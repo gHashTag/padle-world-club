@@ -36,15 +36,15 @@ alwaysApply: true
 1.  ✅ **Провести рефакторинг структуры (удалить всё специфичное, оставить только универсальное)**
     -   ✅ Удалить специфичные сцены: `analytics-scene.ts`, `competitor-scene.ts`, `hashtag-scene.ts`, `project-scene.ts`, `reels-collection-scene.ts`, `scraping-scene.ts` и их wizard-версии.
     -   ✅ Удалить специфичные сервисы: `chatbot-service.ts`, `embeddings-service.ts`, `marketing-analytics-service.ts`, `reels-collection-service.ts`, `transcript-service.ts`, `mock-apify-service.ts`, `mock-scraper-service.ts`.
-    -   ✏️ Удалить/очистить специфичные схемы: `src/db/schema.ts`, `src/schemas/index.ts`.
-    -   Удалить специфичные адаптеры или сильно их упростить.
-    -   Удалить большинство тестов, тестирующих специфичную логику.
-    -   Удалить специфичные скрипты.
-    -   Сохранить: `src/templates/wizard-scene-template.ts`, DI, `StorageAdapter` (интерфейс + MemoryAdapter), универсальные утилиты (`logger`, `validation`, `button-handler`, `keyboard`), инфраструктуру тестирования, универсальные скрипты (`tdd-cycle.sh`, `generate-wizard-scene.ts`), конфигурационные файлы, `src/bot.ts` (очищенный), документацию по паттернам (`WIZARD_SCENE_PATTERNS.md`).
+    -   ⚠️ Удалить/очистить специфичные схемы: `src/db/schema.ts`, `src/schemas/index.ts` (Требуется ручное редактирование).
+    -   ✅ Удалить специфичные адаптеры или сильно их упростить. (Заменены на StorageAdapter и MemoryAdapter)
+    -   ✅ Удалить большинство тестов, тестирующих специфичную логику.
+    -   ✅ Удалить специфичные скрипты.
+    -   ✏️ Сохранить: `src/templates/wizard-scene-template.ts`, DI, `StorageAdapter` (интерфейс + MemoryAdapter), универсальные утилиты (`logger`, `validation`, `button-handler`, `keyboard`), инфраструктуру тестирования, универсальные скрипты (`tdd-cycle.sh`, `generate-wizard-scene.ts`, `quality-check.sh` и т.п.), конфигурационные файлы, `src/bot.ts` (очищенный), документацию по паттернам (`WIZARD_SCENE_PATTERNS.md`).
 2.  Сделать git commit после каждого логического шага.
 3.  После каждого шага обновлять current_task.mdc с новым статусом и следующим активным шагом.
 
 ---
 
 ➡️ **Следующий активный шаг:**
-Продолжить рефакторинг: приступить к удалению/очистке специфичных схем из `src/db/schema.ts` и `src/schemas/index.ts`. Оставить и обобщить только универсальные примеры, шаблоны, утилиты и инфраструктуру согласно плану.
+Проверить и обновить содержимое сохраненных скриптов (`build-and-test.sh`, `README.md` в `scripts/`, `test-utils.sh` и т.д.), чтобы они соответствовали целям стартер-кита. Удалить или закомментировать специфичные для старого проекта части.
