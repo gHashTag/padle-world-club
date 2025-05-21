@@ -15,11 +15,16 @@ export type MockedTelegramContext = {
     reenter: Mock<(...args: any[]) => any>;
     session: any;
   };
-  from?: { id: number; username?: string; first_name?: string; last_name?: string };
-  callbackQuery?: { data: string; id: string; } & any;
+  from?: {
+    id: number;
+    username?: string;
+    first_name?: string;
+    last_name?: string;
+  };
+  callbackQuery?: { data: string; id: string } & any;
   answerCbQuery: Mock<(...args: any[]) => any>;
   match?: RegExpExecArray;
-  message?: { text?: string; } & any;
+  message?: { text?: string } & any;
   reply: Mock<(...args: any[]) => any>;
   storage?: any;
   [key: string]: any;
@@ -75,7 +80,7 @@ export interface SceneTestOptions<T = any> {
   /** Имя сцены */
   sceneName: string;
   /** Путь к файлу сцены */
-  sceneFilePath: string;
+  sceneFilePath?: string;
   /** Конструктор сцены или экземпляр сцены */
   sceneConstructor?: new (adapter: any, ...args: any[]) => T;
   /** Экземпляр сцены */
@@ -87,11 +92,11 @@ export interface SceneTestOptions<T = any> {
 /**
  * Тип для шага в последовательности тестирования
  */
-export interface SequenceStep<T> {
+export interface SequenceStep {
   /** Название шага */
   name: string;
   /** Действие, которое нужно выполнить */
-  action: (tester: any) => Promise<void>;
+  action: (ctx: MockedTelegramContext) => Promise<void> | void;
   /** Проверки, которые нужно выполнить после действия */
   assertions: (tester: any) => void;
 }

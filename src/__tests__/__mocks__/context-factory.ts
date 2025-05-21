@@ -1,9 +1,11 @@
 /**
  * Фабрика для создания тестовых контекстов Telegram бота
  */
-import type { ScraperBotContext } from "../../types";
-import { ScraperSceneStep } from "../../types";
+import type { BaseBotContext } from "../../types";
+import { BotSceneStep } from "../../types";
 import { jest } from "bun:test";
+// import { Scenes } from "telegraf"; // Removed
+// import { User } from "../../schemas"; // Removed
 
 interface MockStorageOptions {
   initialize?: jest.Mock;
@@ -19,6 +21,8 @@ interface MockStorageOptions {
   findUserByTelegramIdOrCreate?: jest.Mock;
   removeHashtag?: jest.Mock;
   deleteCompetitorAccount?: jest.Mock;
+  sceneStep?: BotSceneStep;
+  sceneSession?: any;
 }
 
 interface ContextOptions {
@@ -29,7 +33,7 @@ interface ContextOptions {
   storageOptions?: MockStorageOptions;
   message?: any;
   callbackQuery?: any;
-  sceneStep?: ScraperSceneStep;
+  sceneStep?: BotSceneStep;
   sceneSession?: any;
 }
 
@@ -38,7 +42,7 @@ interface ContextOptions {
  */
 export function createMockContext(
   options: ContextOptions = {}
-): Partial<ScraperBotContext> {
+): Partial<BaseBotContext> {
   // Значения по умолчанию
   const telegramId = options.telegramId || 123456789;
   const username = options.username || "test_user";
@@ -47,7 +51,8 @@ export function createMockContext(
 
   // Создаем моки функций хранилища
   const mockInitialize =
-    options.storageOptions?.initialize || jest.fn().mockResolvedValue(undefined);
+    options.storageOptions?.initialize ||
+    jest.fn().mockResolvedValue(undefined);
   const mockClose =
     options.storageOptions?.close || jest.fn().mockResolvedValue(undefined);
   const mockGetUserByTelegramId =
@@ -72,15 +77,16 @@ export function createMockContext(
   const mockRemoveHashtag =
     options.storageOptions?.removeHashtag || jest.fn().mockResolvedValue(null);
   const mockDeleteCompetitorAccount =
-    options.storageOptions?.deleteCompetitorAccount || jest.fn().mockResolvedValue(null);
+    options.storageOptions?.deleteCompetitorAccount ||
+    jest.fn().mockResolvedValue(null);
 
   // Создаем сессию сцены
   const sceneSession = options.sceneSession || {
-    step: options.sceneStep,
+    step: options.sceneStep || BotSceneStep.EXAMPLE_STEP_1,
   };
 
   // Создаем базовый контекст
-  const context: Partial<ScraperBotContext> = {
+  const context: Partial<BaseBotContext> = {
     reply: jest.fn().mockResolvedValue({}),
     answerCbQuery: jest.fn().mockResolvedValue(true),
     scene: {
@@ -128,7 +134,7 @@ export function createContextWithUser(
   userId: number,
   telegramId: number,
   options: Partial<ContextOptions> = {}
-): Partial<ScraperBotContext> {
+): Partial<BaseBotContext> {
   return createMockContext({
     ...options,
     telegramId,
@@ -151,7 +157,7 @@ export function createContextWithProjects(
   telegramId: number,
   projects: any[],
   options: Partial<ContextOptions> = {}
-): Partial<ScraperBotContext> {
+): Partial<BaseBotContext> {
   return createContextWithUser(userId, telegramId, {
     ...options,
     storageOptions: {

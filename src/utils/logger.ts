@@ -1,27 +1,27 @@
 /**
  * Утилита для логирования действий пользователя и ошибок
- * 
+ *
  * Предоставляет единый интерфейс для логирования с разными уровнями важности,
  * форматированием и возможностью сохранения логов в файл или базу данных.
  */
 
 // Уровни логирования
 export enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR',
-  FATAL = 'FATAL'
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  WARN = "WARN",
+  ERROR = "ERROR",
+  FATAL = "FATAL",
 }
 
 // Типы логов
 export enum LogType {
-  SYSTEM = 'SYSTEM',
-  USER_ACTION = 'USER_ACTION',
-  BOT_ACTION = 'BOT_ACTION',
-  DATABASE = 'DATABASE',
-  API = 'API',
-  ERROR = 'ERROR'
+  SYSTEM = "SYSTEM",
+  USER_ACTION = "USER_ACTION",
+  BOT_ACTION = "BOT_ACTION",
+  DATABASE = "DATABASE",
+  API = "API",
+  ERROR = "ERROR",
 }
 
 // Интерфейс для записи лога
@@ -43,10 +43,10 @@ export class Logger {
   private logToFile: boolean = false;
   private logToDatabase: boolean = false;
   private minLevel: LogLevel = LogLevel.DEBUG;
-  
+
   // Приватный конструктор для синглтона
   private constructor() {}
-  
+
   // Получение экземпляра логгера
   public static getInstance(): Logger {
     if (!Logger.instance) {
@@ -54,7 +54,7 @@ export class Logger {
     }
     return Logger.instance;
   }
-  
+
   // Настройка логгера
   public configure(options: {
     logToConsole?: boolean;
@@ -75,33 +75,33 @@ export class Logger {
       this.minLevel = options.minLevel;
     }
   }
-  
+
   // Логирование
-  public log(entry: Omit<LogEntry, 'timestamp'>) {
+  public log(entry: Omit<LogEntry, "timestamp">) {
     const fullEntry: LogEntry = {
       ...entry,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    
+
     // Проверяем уровень логирования
     if (this.shouldLog(fullEntry.level)) {
       // Логируем в консоль
       if (this.logToConsole) {
         this.logToConsoleImpl(fullEntry);
       }
-      
+
       // Логируем в файл
       if (this.logToFile) {
-        this.logToFileImpl(fullEntry);
+        this.logToFileImpl(/* fullEntry */); // Аргумент закомментирован
       }
-      
+
       // Логируем в базу данных
       if (this.logToDatabase) {
-        this.logToDatabaseImpl(fullEntry);
+        this.logToDatabaseImpl(/* fullEntry */); // Аргумент закомментирован
       }
     }
   }
-  
+
   // Проверка, нужно ли логировать
   private shouldLog(level: LogLevel): boolean {
     const levels = [
@@ -109,30 +109,30 @@ export class Logger {
       LogLevel.INFO,
       LogLevel.WARN,
       LogLevel.ERROR,
-      LogLevel.FATAL
+      LogLevel.FATAL,
     ];
-    
+
     const minLevelIndex = levels.indexOf(this.minLevel);
     const currentLevelIndex = levels.indexOf(level);
-    
+
     return currentLevelIndex >= minLevelIndex;
   }
-  
+
   // Логирование в консоль
   private logToConsoleImpl(entry: LogEntry) {
     const timestamp = entry.timestamp.toISOString();
     const prefix = `[${timestamp}] [${entry.level}] [${entry.type}]`;
-    
+
     let message = `${prefix} ${entry.message}`;
-    
+
     if (entry.userId) {
       message += ` | User: ${entry.userId}`;
     }
-    
+
     if (entry.username) {
       message += ` (${entry.username})`;
     }
-    
+
     switch (entry.level) {
       case LogLevel.DEBUG:
         console.debug(message);
@@ -151,88 +151,113 @@ export class Logger {
         }
         break;
     }
-    
-    if (entry.data && entry.level !== LogLevel.ERROR && entry.level !== LogLevel.FATAL) {
-      console.log('Additional data:', entry.data);
+
+    if (
+      entry.data &&
+      entry.level !== LogLevel.ERROR &&
+      entry.level !== LogLevel.FATAL
+    ) {
+      console.log("Additional data:", entry.data);
     }
   }
-  
+
   // Логирование в файл (заглушка)
-  private logToFileImpl(entry: LogEntry) {
+  private logToFileImpl(/* entry: LogEntry */) {
     // Реализация логирования в файл
     // Будет добавлена позже
   }
-  
+
   // Логирование в базу данных (заглушка)
-  private logToDatabaseImpl(entry: LogEntry) {
+  private logToDatabaseImpl(/* entry: LogEntry */) {
     // Реализация логирования в базу данных
     // Будет добавлена позже
   }
-  
+
   // Вспомогательные методы для разных уровней логирования
-  
-  public debug(message: string, options?: Omit<LogEntry, 'timestamp' | 'level' | 'message'>) {
+
+  public debug(
+    message: string,
+    options?: Omit<LogEntry, "timestamp" | "level" | "message">
+  ) {
     this.log({
       level: LogLevel.DEBUG,
       type: options?.type || LogType.SYSTEM,
       message,
-      ...options
+      ...options,
     });
   }
-  
-  public info(message: string, options?: Omit<LogEntry, 'timestamp' | 'level' | 'message'>) {
+
+  public info(
+    message: string,
+    options?: Omit<LogEntry, "timestamp" | "level" | "message">
+  ) {
     this.log({
       level: LogLevel.INFO,
       type: options?.type || LogType.SYSTEM,
       message,
-      ...options
+      ...options,
     });
   }
-  
-  public warn(message: string, options?: Omit<LogEntry, 'timestamp' | 'level' | 'message'>) {
+
+  public warn(
+    message: string,
+    options?: Omit<LogEntry, "timestamp" | "level" | "message">
+  ) {
     this.log({
       level: LogLevel.WARN,
       type: options?.type || LogType.SYSTEM,
       message,
-      ...options
+      ...options,
     });
   }
-  
-  public error(message: string, options?: Omit<LogEntry, 'timestamp' | 'level' | 'message'>) {
+
+  public error(
+    message: string,
+    options?: Omit<LogEntry, "timestamp" | "level" | "message">
+  ) {
     this.log({
       level: LogLevel.ERROR,
       type: options?.type || LogType.ERROR,
       message,
-      ...options
+      ...options,
     });
   }
-  
-  public fatal(message: string, options?: Omit<LogEntry, 'timestamp' | 'level' | 'message'>) {
+
+  public fatal(
+    message: string,
+    options?: Omit<LogEntry, "timestamp" | "level" | "message">
+  ) {
     this.log({
       level: LogLevel.FATAL,
       type: options?.type || LogType.ERROR,
       message,
-      ...options
+      ...options,
     });
   }
-  
+
   // Логирование действий пользователя
-  public userAction(message: string, options?: Omit<LogEntry, 'timestamp' | 'level' | 'type' | 'message'>) {
+  public userAction(
+    message: string,
+    options?: Omit<LogEntry, "timestamp" | "level" | "type" | "message">
+  ) {
     this.log({
       level: LogLevel.INFO,
       type: LogType.USER_ACTION,
       message,
-      ...options
+      ...options,
     });
   }
-  
+
   // Логирование действий бота
-  public botAction(message: string, options?: Omit<LogEntry, 'timestamp' | 'level' | 'type' | 'message'>) {
+  public botAction(
+    message: string,
+    options?: Omit<LogEntry, "timestamp" | "level" | "type" | "message">
+  ) {
     this.log({
       level: LogLevel.INFO,
       type: LogType.BOT_ACTION,
       message,
-      ...options
+      ...options,
     });
   }
 }

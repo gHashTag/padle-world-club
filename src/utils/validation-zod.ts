@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
   UserSchema,
   ProjectSchema,
-  CompetitorSchema,
   HashtagSchema,
   ReelContentSchema,
   ParsingRunLogSchema,
@@ -32,20 +31,6 @@ export function validateProject(data: unknown) {
     return ProjectSchema.parse(data);
   } catch (error) {
     console.error("Ошибка валидации проекта:", error);
-    return null;
-  }
-}
-
-/**
- * Валидирует данные конкурента с помощью Zod
- * @param data Данные конкурента для валидации
- * @returns Валидированные данные конкурента или null в случае ошибки
- */
-export function validateCompetitor(data: unknown) {
-  try {
-    return CompetitorSchema.parse(data);
-  } catch (error) {
-    console.error("Ошибка валидации конкурента:", error);
     return null;
   }
 }
@@ -99,7 +84,9 @@ export function validateParsingRunLog(data: unknown) {
  * @returns Валидированный массив данных или пустой массив в случае ошибки
  */
 export function validateArray<T>(schema: z.ZodType<T>, data: unknown): T[] {
-  console.log(`[DEBUG] validateArray: Начало валидации массива данных, тип схемы: ${schema.constructor.name}`);
+  console.log(
+    `[DEBUG] validateArray: Начало валидации массива данных, тип схемы: ${schema.constructor.name}`
+  );
 
   if (!Array.isArray(data)) {
     console.error(`[ERROR] validateArray: Данные не являются массивом:`, data);
@@ -110,14 +97,18 @@ export function validateArray<T>(schema: z.ZodType<T>, data: unknown): T[] {
 
   try {
     const result = z.array(schema).parse(data);
-    console.log(`[DEBUG] validateArray: Успешная валидация, результат содержит ${result.length} элементов`);
+    console.log(
+      `[DEBUG] validateArray: Успешная валидация, результат содержит ${result.length} элементов`
+    );
     return result;
   } catch (error) {
     console.error("Ошибка валидации массива:", error);
 
     // Попробуем валидировать каждый элемент отдельно, чтобы найти проблемный
     if (Array.isArray(data)) {
-      console.log(`[DEBUG] validateArray: Попытка валидации каждого элемента отдельно...`);
+      console.log(
+        `[DEBUG] validateArray: Попытка валидации каждого элемента отдельно...`
+      );
       const validItems: T[] = [];
 
       data.forEach((item, index) => {
@@ -125,12 +116,17 @@ export function validateArray<T>(schema: z.ZodType<T>, data: unknown): T[] {
           const validItem = schema.parse(item);
           validItems.push(validItem);
         } catch (itemError) {
-          console.error(`[ERROR] validateArray: Ошибка валидации элемента ${index}:`, itemError);
+          console.error(
+            `[ERROR] validateArray: Ошибка валидации элемента ${index}:`,
+            itemError
+          );
           console.log(`[DEBUG] validateArray: Проблемный элемент:`, item);
         }
       });
 
-      console.log(`[DEBUG] validateArray: Успешно валидировано ${validItems.length} из ${data.length} элементов`);
+      console.log(
+        `[DEBUG] validateArray: Успешно валидировано ${validItems.length} из ${data.length} элементов`
+      );
       return validItems;
     }
 
@@ -154,23 +150,6 @@ export function validateUsers(data: unknown) {
  */
 export function validateProjects(data: unknown) {
   return validateArray(ProjectSchema, data);
-}
-
-/**
- * Валидирует массив конкурентов с помощью Zod
- * @param data Массив данных конкурентов для валидации
- * @returns Валидированный массив конкурентов или пустой массив в случае ошибки
- */
-export function validateCompetitors(data: unknown) {
-  console.log(`[DEBUG] validateCompetitors: Начало валидации данных:`, data);
-  try {
-    const result = validateArray(CompetitorSchema, data);
-    console.log(`[DEBUG] validateCompetitors: Результат валидации:`, result);
-    return result;
-  } catch (error) {
-    console.error(`[ERROR] validateCompetitors: Ошибка валидации:`, error);
-    return [];
-  }
 }
 
 /**

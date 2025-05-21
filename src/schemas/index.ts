@@ -2,23 +2,36 @@ import { z } from "zod";
 
 /**
  * Схема для пользователя.
- * Соответствует usersTable из src/db/schema.ts
+ * Соответствует usersTable из src/db/schema.ts (в будущем, если будет DB)
  */
 export const UserSchema = z.object({
-  id: z.string().uuid(), // В schema.ts id это uuid
-  authId: z.string().nullable().optional(), // Для внешнего ID аутентификации
+  id: z.string().uuid(),
+  authId: z.string().nullable().optional(),
   email: z.string().email().nullable().optional(),
   name: z.string().nullable().optional(),
   avatarUrl: z.string().url().nullable().optional(),
-  telegram_id: z.number().intPositive(),
-  username: z.string().nullable().optional(),
-  first_name: z.string().nullable().optional(),
-  last_name: z.string().nullable().optional(),
+  telegram_id: z.number().int(),
+  username: z.string().optional().nullable(),
+  first_name: z.string().optional().nullable(),
+  last_name: z.string().optional().nullable(),
+  language_code: z.string().optional().nullable(),
+  is_bot: z.boolean().optional(),
   subscription_level: z.string().default("free"),
   subscription_expires_at: z.date().nullable().optional(),
-  last_active_at: z.date().optional(),
-  created_at: z.date(),
-  updated_at: z.date(),
+  last_active_at: z
+    .date()
+    .optional()
+    .default(() => new Date()),
+  created_at: z
+    .string()
+    .datetime()
+    .optional()
+    .default(() => new Date().toISOString()),
+  updated_at: z
+    .string()
+    .datetime()
+    .optional()
+    .default(() => new Date().toISOString()),
 });
 
 /**
@@ -30,68 +43,25 @@ export type User = z.infer<typeof UserSchema>;
  * Схема для проекта
  */
 export const ProjectSchema = z.object({
-  id: z
-    .union([z.number(), z.string()])
-    .transform((val) => (typeof val === "string" ? parseInt(val, 10) : val)),
-  user_id: z.union([z.number(), z.string()]),
-  name: z.string(),
+  id: z.string().uuid(),
+  user_id: z.string().uuid(), // Связь с User.id
+  name: z.string().min(1),
   description: z.string().nullable().optional(),
   created_at: z
-    .union([z.string(), z.date()])
-    .transform((val) => (val instanceof Date ? val.toISOString() : val)),
+    .string()
+    .datetime()
+    .default(() => new Date().toISOString()),
+  updated_at: z
+    .string()
+    .datetime()
+    .default(() => new Date().toISOString()),
   is_active: z.boolean().optional().default(true),
 });
 
 /**
  * Тип проекта, выведенный из схемы Zod
  */
-export type Project = {
-  id: number;
-  user_id: string | number;
-  name: string;
-  description?: string | null;
-  created_at: string;
-  is_active: boolean;
-};
-
-/**
- * Схема для конкурента
- */
-export const CompetitorSchema = z
-  .object({
-    id: z.number(),
-    project_id: z.number(),
-    username: z.string(),
-    instagram_url: z.string().optional(), // Может быть profile_url в БД
-    profile_url: z.string().optional(), // Альтернативное название поля
-    created_at: z.union([z.string(), z.date()]).optional(), // Может быть added_at или другое поле в БД
-    added_at: z.union([z.string(), z.date()]).optional(), // Альтернативное название поля
-    is_active: z.boolean().optional().default(true),
-    full_name: z.string().nullable().optional(),
-    notes: z.string().nullable().optional(),
-    last_scraped_at: z.union([z.string(), z.date(), z.null()]).optional(),
-    updated_at: z.union([z.string(), z.date()]).optional(),
-  })
-  .transform((data) => {
-    // Нормализуем данные, чтобы они соответствовали ожидаемой схеме
-    const createdAt = data.created_at || data.added_at || new Date();
-    const createdAtStr =
-      createdAt instanceof Date ? createdAt.toISOString() : createdAt;
-
-    return {
-      id: data.id,
-      project_id: data.project_id,
-      username: data.username,
-      instagram_url: data.instagram_url || data.profile_url || "",
-      created_at: createdAtStr,
-      is_active: data.is_active === undefined ? true : data.is_active,
-    };
-  });
-
-/**
- * Тип конкурента, выведенный из схемы Zod
- */
-export type Competitor = z.infer<typeof CompetitorSchema>;
+export type Project = z.infer<typeof ProjectSchema>;
 
 /**
  * Схема для хештега
@@ -101,7 +71,7 @@ export const HashtagSchema = z.object({
   project_id: z.number(),
   hashtag: z.string(),
   created_at: z.string(),
-  is_active: z.boolean().optional(),
+  is_active: z.boolean().default(true),
 });
 
 /**
@@ -206,87 +176,31 @@ export const ParsingRunLogSchema = z.object({
 export type ParsingRunLog = z.infer<typeof ParsingRunLogSchema>;
 
 /**
- * Схема для данных сессии сцены
- * Соответствует интерфейсу ScraperSceneSessionData из types.ts
+ * Схема для данных сессии сцены (базовая)
  */
-export const ScraperSceneSessionDataSchema = z.object({
-  // Используем z.enum для шага сцены, чтобы соответствовать ScraperSceneStep
-  step: z
-    .enum([
-      "PROJECT_LIST",
-      "CREATE_PROJECT",
-      "PROJECT_MENU",
-      "COMPETITOR_LIST",
-      "ADD_COMPETITOR",
-      "DELETE_COMPETITOR",
-      "HASHTAG_LIST",
-      "ADD_HASHTAG",
-      "SCRAPING_MENU",
-      "SCRAPING_COMPETITORS",
-      "SCRAPING_HASHTAGS",
-      "SCRAPING_PROGRESS",
-      "SCRAPING_RESULTS",
-      "REELS_LIST",
-      "REEL_DETAILS",
-      "REELS_FILTER",
-      "REELS_ANALYTICS",
-      "NOTIFICATION_SETTINGS",
-      "NOTIFICATION_SCHEDULE",
-      "REELS_COLLECTIONS",
-      "CREATE_COLLECTION",
-      "COLLECTION_DETAILS",
-      "EXPORT_COLLECTION",
-      "TRANSCRIBE_REEL",
-      "EDIT_TRANSCRIPT",
-      "CHATBOT",
-      "CHATBOT_REEL_LIST",
-    ])
-    .optional(),
-  currentProjectId: z.number().optional(),
-  currentCompetitorId: z.number().optional(),
+export const BotSceneSessionDataSchema = z.object({
+  step: z.string().optional(), // Общий строковый шаг, конкретные шаги будут определяться в каждой сцене
+  cursor: z.number().optional(), // Оставляем cursor как общий элемент
   messageIdToEdit: z.number().optional(),
-  projectId: z.number().optional(),
-  user: z.lazy(() => UserSchema.optional()),
-  // Поля для сцены просмотра Reels
-  currentReelId: z.string().optional(),
-  currentSourceType: z.enum(["competitor", "hashtag"]).optional(),
-  currentSourceId: z.union([z.string(), z.number()]).optional(),
-  reelsFilter: z.lazy(() => ReelsFilterSchema.optional()),
-  reelsPage: z.number().optional(),
-  reelsPerPage: z.number().optional(),
-  // Поля для сцены коллекций Reels
-  currentCollectionId: z.number().optional(),
-  collectionName: z.string().optional(),
-  collectionDescription: z.string().optional(),
-  selectedReelsIds: z.array(z.string()).optional(),
-  contentFormat: z.enum(["text", "csv", "json"]).optional(),
-  contentData: z.string().optional(),
-
-  // Поля для сцены расшифровки Reels
-  transcriptLanguage: z.string().optional(),
-  transcriptText: z.string().optional(),
-  transcriptEdited: z.boolean().optional(),
+  user: z.lazy(() => UserSchema.optional()), // Пользователь в сессии
+  // Сюда можно добавлять другие общие поля сессии, если они понадобятся для стартер-кита
 });
 
 /**
  * Тип данных сессии сцены, выведенный из схемы Zod
- * Примечание: Этот тип используется только для валидации данных.
- * Для типизации в Telegraf используется интерфейс ScraperSceneSessionData из types.ts
  */
-export type ScraperSceneSessionDataType = z.infer<
-  typeof ScraperSceneSessionDataSchema
->;
+export type BotSceneSessionData = z.infer<typeof BotSceneSessionDataSchema>;
 
 /**
  * Схема для настроек уведомлений пользователя.
- * Может использоваться для хранения в сессии или в профиле пользователя.
+ * Эта схема должна быть максимально простой для стартер-кита.
  */
 export const NotificationSettingsSchema = z.object({
+  userId: z.string().uuid(), // Связь с User.id
   enabled: z.boolean().default(true),
   daily_summary: z.boolean().default(false),
   new_content_alerts: z.boolean().default(true),
-  specific_hours: z.array(z.number().min(0).max(23)).optional(), // Часы, когда можно отправлять уведомления
-  timezone: z.string().optional(), // Например, "Europe/Berlin"
+  language: z.string().default("en"), // язык уведомлений
 });
 
 /**
@@ -317,3 +231,6 @@ export const ReelsCollectionSchema = z.object({
  * Тип коллекции Reels, выведенный из схемы Zod
  */
 export type ReelsCollection = z.infer<typeof ReelsCollectionSchema>;
+
+// Можно также экспортировать другие типы или схемы отсюда
+// export * from './other-schema';
