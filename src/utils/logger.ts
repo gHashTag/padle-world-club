@@ -7,25 +7,30 @@
 
 // Уровни логирования
 export enum LogLevel {
-  DEBUG = "DEBUG",
-  INFO = "INFO",
-  WARN = "WARN",
-  ERROR = "ERROR",
-  FATAL = "FATAL",
+  DEBUG = "debug",
+  INFO = "info",
+  WARN = "warn",
+  ERROR = "error",
+  FATAL = "fatal",
 }
 
 // Типы логов
 export enum LogType {
-  INFO = "info",
-  ERROR = "error",
-  WARNING = "warning",
-  DEBUG = "debug",
   SYSTEM = "system",
-  SCENE = "scene",
-  USER_ACTION = "user_action",
   DATABASE = "database",
+  TELEGRAM_API = "telegram_api",
+  GRAPHQL_API = "graphql_api",
+  EXTERNAL_SERVICE = "external_service",
+  BUSINESS_LOGIC = "business_logic",
+  USER_ACTION = "user_action",
+  SCENE = "scene",
   NETWORK = "network",
   PERFORMANCE = "performance",
+  TEST = "test",
+  ERROR = "error",
+  WARNING = "warning",
+  INFO = "info",
+  DEBUG = "debug",
 }
 
 // Интерфейс для записи лога

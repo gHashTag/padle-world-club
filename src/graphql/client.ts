@@ -12,6 +12,7 @@ import {
 import { onError } from "@apollo/client/link/error";
 import { config } from "../config";
 import { logger, LogType } from "../utils/logger";
+import { gql } from "@apollo/client";
 
 // Проверяем наличие URL для подключения к GraphQL API
 if (!config.GRAPHQL_ENDPOINT && process.env.NODE_ENV !== "test") {
@@ -87,6 +88,16 @@ export const apolloClient = httpLink
     })
   : null;
 
+// Пример GraphQL запроса (замените на ваш реальный запрос)
+const GET_TEST_DATA = gql`
+  query GetTestData {
+    testData {
+      id
+      message
+    }
+  }
+`;
+
 /**
  * Проверяет доступность GraphQL API
  * @returns Promise<boolean> - true, если API доступен, иначе false
@@ -95,16 +106,13 @@ export async function testGraphQLConnection(): Promise<boolean> {
   if (!apolloClient) return false;
 
   try {
-    // Простой запрос для проверки соединения
-    await apolloClient.query({
-      query: /* GraphQL */ `
-        query TestConnection {
-          __typename
-        }
-      `,
+    logger.info("Testing GraphQL connection...", {
+      type: LogType.EXTERNAL_SERVICE,
     });
-
-    logger.info("Соединение с GraphQL API успешно установлено", {
+    await apolloClient.query({
+      query: GET_TEST_DATA, // Убедимся, что здесь используется gql-тегированный запрос
+    });
+    logger.info("GraphQL connection test successful:", {
       type: LogType.SYSTEM,
     });
     return true;
