@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "description": "Универсальный стартовый набор для разработки Telegram ботов на TypeScript",
   "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "dev": "bun run --watch index.ts",
+    "dev:fast": "NODE_ENV=development bun run index.ts",
     "build": "bun build index.ts --outdir ./dist --target node",
-    "start": "node dist/index.js",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+    "build:full": "bun run build && bun run build:types",
+    "start": "NODE_ENV=production node dist/index.js",
     "typecheck": "bun exec tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "test": "vitest run",
@@ -14,7 +19,9 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "generate:scene": "bun run scripts/generate-wizard-scene.ts",
-    "tdd": "bash scripts/tdd-cycle.sh"
+    "tdd": "bash scripts/tdd-cycle.sh",
+    "prepare": "bun run build:full",
+    "postinstall": "node -e \"try { require('fs').symlinkSync('./example.env', './.env', 'file') } catch (e) {}\""
   },
   "keywords": [
     "telegram",
@@ -26,6 +33,21 @@
   ],
   "author": "",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "files": [
+    "dist",
+    "src",
+    "example.env",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourname/telegram-bot-starter-kit.git"
+  },
   "dependencies": {
     "dotenv": "^16.5.0",
     "telegraf": "^4.16.3",

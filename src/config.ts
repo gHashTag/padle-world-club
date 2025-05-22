@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-import { LogLevel } from "./utils/logger"; // Предполагается, что LogLevel экспортируется
+import { LogLevel } from "./utils/logger";
 
 // Загружаем переменные из .env файла
 dotenv.config();
@@ -8,46 +8,64 @@ export interface AppConfig {
   BOT_TOKEN: string;
   NODE_ENV: "development" | "production" | "test";
   LOG_LEVEL: LogLevel;
-  // Добавьте другие необходимые параметры конфигурации
-  // WEBHOOK_DOMAIN?: string;
-  // PORT?: number;
+  DATABASE_URL?: string;
+  REDIS_URL?: string;
+  // Опциональные параметры для использования веб-хуков вместо long polling
+  WEBHOOK_DOMAIN?: string;
+  PORT?: number;
 }
 
 /**
- * Проверяет, что BOT_TOKEN определен
- * @param token Значение токена для проверки
- * @returns Исходный токен, если он валиден
- * @throws Ошибку, если токен не определен
+ * Валидирует обязательные параметры конфигурации
+ * @param config Объект конфигурации для проверки
+ * @throws Ошибку с описанием отсутствующих параметров
  */
-const validateBotToken = (token: string | undefined): string => {
-  if (!token) {
+const validateRequiredConfig = (config: Partial<AppConfig>): void => {
+  const missingVars: string[] = [];
+
+  if (!config.BOT_TOKEN) {
+    missingVars.push("BOT_TOKEN");
+  }
+
+  if (missingVars.length > 0) {
     throw new Error(
-      "BOT_TOKEN is not defined in .env or environment variables."
+      `Missing required environment variables: ${missingVars.join(", ")}. ` +
+        "Please check your .env file or environment variables."
     );
   }
-  return token;
 };
 
 /**
  * Создает объект конфигурации на основе переменных окружения
  * @returns Объект AppConfig с параметрами приложения
  */
-const createConfig = (): AppConfig => ({
-  BOT_TOKEN: validateBotToken(process.env.BOT_TOKEN),
-  NODE_ENV: (process.env.NODE_ENV as AppConfig["NODE_ENV"]) || "development",
-  LOG_LEVEL: (process.env.LOG_LEVEL as LogLevel) || LogLevel.INFO,
-  // WEBHOOK_DOMAIN: process.env.WEBHOOK_DOMAIN,
-  // PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
-});
+const createConfig = (): AppConfig => {
+  const partialConfig: Partial<AppConfig> = {
+    BOT_TOKEN: process.env.BOT_TOKEN,
+    NODE_ENV: (process.env.NODE_ENV as AppConfig["NODE_ENV"]) || "development",
+    LOG_LEVEL: (process.env.LOG_LEVEL as LogLevel) || LogLevel.INFO,
+    DATABASE_URL: process.env.DATABASE_URL,
+    REDIS_URL: process.env.REDIS_URL,
+    WEBHOOK_DOMAIN: process.env.WEBHOOK_DOMAIN,
+    PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : undefined,
+  };
 
-// Создаем конфигурацию
-let config: AppConfig;
+  // Проверяем обязательные параметры
+  validateRequiredConfig(partialConfig);
 
-try {
-  config = createConfig();
-} catch (error) {
-  console.error(`FATAL: ${(error as Error).message}`);
-  process.exit(1);
-}
+  // Если мы дошли до этой точки, значит все обязательные параметры присутствуют
+  return partialConfig as AppConfig;
+};
 
-export { config };
+// Создаем и экспортируем конфигурацию
+export const config: AppConfig = (() => {
+  try {
+    return createConfig();
+  } catch (error) {
+    console.error(`FATAL CONFIG ERROR: ${(error as Error).message}`);
+    process.exit(1);
+  }
+})();
+
+// Экспортируем тип конфигурации для использования в context
+export type BotConfig = Readonly<AppConfig>;

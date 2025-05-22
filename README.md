@@ -12,6 +12,8 @@
 - 📝 **Логирование** - настраиваемая система логирования
 - 🌐 **Middleware** - готовые обработчики ошибок и аутентификации
 - 🔍 **Валидация** - встроенная поддержка валидации с помощью Zod
+- 🚀 **Быстрый старт** - минимум конфигурации для начала работы
+- 🛠️ **Bun & Node.js** - поддержка как Bun, так и Node.js
 
 ## Быстрый старт
 
@@ -25,14 +27,16 @@ bun install
 # или
 npm install
 
-# Копирование .env.example
-cp .env.example .env
-# Добавьте ваш BOT_TOKEN в .env
+# Файл .env создается автоматически при установке
+# Просто добавьте ваш BOT_TOKEN в .env
 
 # Запуск в режиме разработки
 bun run dev
 # или
 npm run dev
+
+# Быстрый запуск без автоматической перезагрузки
+bun run dev:fast
 ```
 
 ## Структура проекта
@@ -41,24 +45,20 @@ npm run dev
 telegram-bot-starter-kit/
 ├── src/
 │   ├── adapters/          # Адаптеры хранилища (Storage Adapters)
-│   ├── db/                # Настройки и схемы базы данных
 │   ├── middlewares/       # Middleware для Telegraf
-│   ├── schemas/           # Zod-схемы для валидации
 │   ├── scenes/            # Сцены для бота
-│   ├── services/          # Сервисные функции
 │   ├── templates/         # Шаблоны для генерации компонентов
 │   ├── utils/             # Утилиты и хелперы
 │   ├── __tests__/         # Тесты
-│   ├── bot.ts             # Основной класс бота
 │   ├── commands.ts        # Команды бота
 │   ├── config.ts          # Конфигурация
-│   ├── logger.ts          # Логгер
 │   └── types.ts           # Основные типы
 ├── scripts/               # Скрипты для разработки
 ├── docs/                  # Документация
-├── .env.example           # Пример файла переменных окружения
+├── example.env            # Пример файла переменных окружения
 ├── tsconfig.json          # Настройки TypeScript
 ├── vitest.config.ts       # Настройки тестирования
+├── index.ts               # Точка входа
 └── package.json           # Зависимости и скрипты
 ```
 
@@ -70,7 +70,7 @@ telegram-bot-starter-kit/
 // index.ts
 import { Telegraf } from "telegraf";
 import { config } from "./src/config";
-import { logger } from "./src/logger";
+import { logger, LogType } from "./src/utils/logger";
 
 // Создаем экземпляр бота
 const bot = new Telegraf(config.BOT_TOKEN);
@@ -87,10 +87,13 @@ bot.help((ctx) => ctx.reply("Справка о командах бота."));
 bot
   .launch()
   .then(() => {
-    logger.info("Бот успешно запущен");
+    logger.info("Бот успешно запущен", { type: LogType.SYSTEM });
   })
   .catch((err) => {
-    logger.error("Ошибка при запуске бота", { error: err });
+    logger.error("Ошибка при запуске бота", {
+      error: err instanceof Error ? err : new Error(String(err)),
+      type: LogType.ERROR,
+    });
   });
 
 // Обработка завершения работы
@@ -103,13 +106,19 @@ process.once("SIGTERM", () => bot.stop("SIGTERM"));
 ```typescript
 import { Telegraf, Scenes } from "telegraf";
 import { config } from "./src/config";
-import { logger } from "./src/logger";
+import { logger, LogType } from "./src/utils/logger";
 import { createExampleWizardScene } from "./src/templates/wizard-scene-template";
 import { session } from "telegraf";
 import { BaseBotContext } from "./src/types";
+import { errorHandler } from "./src/middlewares/error-handler";
 
 // Создаем экземпляр бота
 const bot = new Telegraf<BaseBotContext>(config.BOT_TOKEN);
+
+// Обработка ошибок
+bot.catch((err, ctx) => {
+  errorHandler(err, ctx);
+});
 
 // Создаем сцену
 const exampleScene = createExampleWizardScene();
@@ -128,10 +137,13 @@ bot.command("wizard", (ctx) => ctx.scene.enter("example_wizard"));
 bot
   .launch()
   .then(() => {
-    logger.info("Бот успешно запущен");
+    logger.info("Бот успешно запущен", { type: LogType.SYSTEM });
   })
   .catch((err) => {
-    logger.error("Ошибка при запуске бота", { error: err });
+    logger.error("Ошибка при запуске бота", {
+      error: err instanceof Error ? err : new Error(String(err)),
+      type: LogType.ERROR,
+    });
   });
 ```
 
@@ -200,140 +212,112 @@ const handleName = async (ctx: BaseBotContext) => {
   const state = ctx.wizard.state as any;
   state.data.name = ctx.message.text;
 
+  logger.info(`Step 2: Name received: ${state.data.name}`, {
+    type: LogType.SCENE,
+    userId: ctx.from?.id,
+  });
+
   await ctx.reply(
     `Приятно познакомиться, ${state.data.name}! Сколько вам лет?`
   );
   return ctx.wizard.next();
 };
 
-// Функция для создания сцены
-export const createMyWizardScene = (): Scenes.WizardScene<BaseBotContext> => {
-  // Создаем сцену с обработчиками шагов
-  const scene = new Scenes.WizardScene(
-    "my_wizard",
-    handleWelcome,
-    handleName
-    // Добавьте другие обработчики шагов
-  );
+// Шаг 3: Обработчик ввода возраста
+const handleAge = async (ctx: BaseBotContext) => {
+  if (!ctx.message || !("text" in ctx.message)) {
+    await ctx.reply("Пожалуйста, введите ваш возраст текстом");
+    return;
+  }
 
-  // Регистрируем обработчики действий
-  scene.action("cancel", async (ctx) => {
-    await ctx.reply("Операция отменена");
-    return ctx.scene.leave();
+  const age = parseInt(ctx.message.text, 10);
+  if (isNaN(age)) {
+    await ctx.reply("Пожалуйста, введите корректный возраст (число)");
+    return;
+  }
+
+  const state = ctx.wizard.state as any;
+  state.data.age = age;
+
+  logger.info(`Step 3: Age received: ${state.data.age}`, {
+    type: LogType.SCENE,
+    userId: ctx.from?.id,
   });
 
-  return scene;
+  // Создаем клавиатуру для выбора
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback("Да", "confirm_yes")],
+    [Markup.button.callback("Нет", "confirm_no")],
+  ]);
+
+  await ctx.reply(
+    `Итак, вас зовут ${state.data.name} и вам ${state.data.age} лет. Верно?`,
+    keyboard
+  );
+  return ctx.wizard.next();
+};
+
+// Шаг 4: Обработчик подтверждения
+const handleConfirmation = async (ctx: BaseBotContext) => {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    return;
+  }
+
+  const answer = ctx.callbackQuery.data;
+  const state = ctx.wizard.state as any;
+
+  await ctx.answerCbQuery();
+
+  if (answer === "confirm_yes") {
+    logger.info("Step 4: Information confirmed", {
+      type: LogType.SCENE,
+      userId: ctx.from?.id,
+      data: state.data,
+    });
+
+    await ctx.reply(
+      `Спасибо, ${state.data.name}! Ваши данные сохранены.`,
+      Markup.removeKeyboard()
+    );
+    return ctx.scene.leave();
+  } else {
+    logger.info("Step 4: Information rejected", { type: LogType.SCENE });
+    await ctx.reply("Давайте начнем заново.", Markup.removeKeyboard());
+    return ctx.scene.reenter();
+  }
+};
+
+// Создание сцены
+export const createExampleWizardScene = () => {
+  return new Scenes.WizardScene<BaseBotContext>(
+    "example_wizard",
+    handleWelcome,
+    handleName,
+    handleAge,
+    handleConfirmation
+  );
 };
 ```
 
-## Тестирование
+## Оптимизации в текущей версии
 
-Starter Kit поддерживает разные виды тестирования с помощью Vitest:
+В последней версии Telegram Bot Starter Kit были внесены следующие оптимизации:
 
-```bash
-# Запуск всех тестов
-bun test
-# или
-npm test
+1. **Улучшенное определение точки входа** - более надежное определение, когда код выполняется как основной модуль
+2. **Обработка ошибок** - централизованная функция форматирования ошибок и единообразный обработчик
+3. **Асинхронный запуск бота** - использование async/await вместо цепочек промисов
+4. **Улучшенная система конфигурации** - более гибкая работа с переменными окружения
+5. **Единый процесс завершения работы** - централизованная логика корректного закрытия соединений
+6. **Оптимизированные скрипты** - новые скрипты для разработки и быстрого старта
+7. **Автоматическое создание .env файла** - упрощенная настройка начальной конфигурации
 
-# Запуск тестов с покрытием
-bun test:coverage
-# или
-npm run test:coverage
+## Дополнительная документация
 
-# Запуск в режиме watch
-bun test:watch
-# или
-npm run test:watch
-```
+Подробная документация доступна в директории `/docs`:
 
-### Пример unit-теста
-
-```typescript
-import { describe, it, expect, vi } from "vitest";
-import { validateUser } from "../src/utils/validation-zod";
-
-describe("Validation Utils", () => {
-  it("should validate a correct user object", () => {
-    const validUser = {
-      id: "123e4567-e89b-12d3-a456-426614174000",
-      telegram_id: 123456789,
-      username: "test_user",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const result = validateUser(validUser);
-    expect(result).not.toBeNull();
-    expect(result?.telegram_id).toBe(123456789);
-  });
-
-  it("should return null for invalid user object", () => {
-    const invalidUser = {
-      // Missing required fields
-      username: "test_user",
-    };
-
-    const result = validateUser(invalidUser);
-    expect(result).toBeNull();
-  });
-});
-```
-
-## Команды разработки
-
-- `bun run dev` - запуск в режиме разработки с автоматической перезагрузкой
-- `bun run build` - сборка проекта
-- `bun run start` - запуск собранного проекта
-- `bun run typecheck` - проверка типов TypeScript
-- `bun run lint` - проверка стиля кода
-- `bun run test` - запуск тестов
-- `bun run generate:scene` - генерация новой сцены на основе шаблона
-
-## Расширение и настройка
-
-### Создание своего адаптера хранилища
-
-```typescript
-import { StorageAdapter } from "./src/adapters/storage-adapter";
-import { User, UserSettings } from "./src/schemas";
-
-// Реализация адаптера для вашей базы данных
-export class MyDatabaseAdapter implements StorageAdapter {
-  private client: any; // ваш клиент базы данных
-
-  constructor(connectionString: string) {
-    // Инициализация клиента базы данных
-  }
-
-  async initialize(): Promise<void> {
-    // Подключение к базе данных
-  }
-
-  async close(): Promise<void> {
-    // Закрытие соединения
-  }
-
-  async getUserByTelegramId(telegramId: number): Promise<User | null> {
-    // Реализация метода
-  }
-
-  async createUser(userData: Partial<User>): Promise<User | null> {
-    // Реализация метода
-  }
-
-  // Реализация других методов...
-}
-```
-
-## Документация
-
-Более подробная документация доступна в директории `docs/`:
-
-- [Начало работы](docs/GETTING_STARTED.md)
-- [Руководство по Wizard-сценам](docs/WIZARD_SCENE_PATTERNS.md)
-- [Тестирование](docs/TESTING.md)
-- [Шаблоны и паттерны](docs/PATTERNS.md)
+- [Тестирование](/docs/TESTING.md) - подробное руководство по тестированию бота
+- [Паттерны](/docs/PATTERNS.md) - описание используемых паттернов и практик
+- [Миграция](/docs/MIGRATION.md) - руководство по миграции с предыдущих версий
 
 ## Лицензия
 
