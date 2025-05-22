@@ -15,7 +15,7 @@ COPY . .
 RUN bun install --frozen-lockfile
 
 # Устанавливаем переменную окружения для запуска в режиме production
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 
 # Команда по умолчанию для запуска приложения
 # Запускает скомпилированный index.js с помощью Node.js,
