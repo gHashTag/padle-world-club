@@ -8,11 +8,13 @@ export interface AppConfig {
   BOT_TOKEN: string;
   NODE_ENV: "development" | "production" | "test";
   LOG_LEVEL: LogLevel;
+  // Настройки базы данных Neon
   DATABASE_URL?: string;
-  REDIS_URL?: string;
   // Опциональные параметры для использования веб-хуков вместо long polling
   WEBHOOK_DOMAIN?: string;
   PORT?: number;
+  // Apollo Client конфигурация
+  GRAPHQL_ENDPOINT?: string;
 }
 
 /**
@@ -45,9 +47,9 @@ const createConfig = (): AppConfig => {
     NODE_ENV: (process.env.NODE_ENV as AppConfig["NODE_ENV"]) || "development",
     LOG_LEVEL: (process.env.LOG_LEVEL as LogLevel) || LogLevel.INFO,
     DATABASE_URL: process.env.DATABASE_URL,
-    REDIS_URL: process.env.REDIS_URL,
     WEBHOOK_DOMAIN: process.env.WEBHOOK_DOMAIN,
     PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : undefined,
+    GRAPHQL_ENDPOINT: process.env.GRAPHQL_ENDPOINT,
   };
 
   // Проверяем обязательные параметры

@@ -14,6 +14,9 @@
 - 🔍 **Валидация** - встроенная поддержка валидации с помощью Zod
 - 🚀 **Быстрый старт** - минимум конфигурации для начала работы
 - 🛠️ **Bun & Node.js** - поддержка как Bun, так и Node.js
+- 🗄️ **Drizzle ORM** - современный ORM для работы с PostgreSQL
+- 🌩️ **Neon Database** - поддержка Neon PostgreSQL из коробки
+- 🚀 **Apollo Client** - интеграция с GraphQL API
 
 ## Быстрый старт
 
@@ -45,19 +48,23 @@ bun run dev:fast
 telegram-bot-starter-kit/
 ├── src/
 │   ├── adapters/          # Адаптеры хранилища (Storage Adapters)
+│   ├── db/                # Схемы и конфигурация Drizzle ORM
 │   ├── middlewares/       # Middleware для Telegraf
 │   ├── scenes/            # Сцены для бота
 │   ├── templates/         # Шаблоны для генерации компонентов
 │   ├── utils/             # Утилиты и хелперы
+│   ├── graphql/           # Apollo Client и GraphQL запросы
 │   ├── __tests__/         # Тесты
 │   ├── commands.ts        # Команды бота
 │   ├── config.ts          # Конфигурация
 │   └── types.ts           # Основные типы
 ├── scripts/               # Скрипты для разработки
 ├── docs/                  # Документация
+├── drizzle_migrations/    # Миграции Drizzle
 ├── example.env            # Пример файла переменных окружения
 ├── tsconfig.json          # Настройки TypeScript
 ├── vitest.config.ts       # Настройки тестирования
+├── drizzle.config.ts      # Конфигурация Drizzle ORM
 ├── index.ts               # Точка входа
 └── package.json           # Зависимости и скрипты
 ```
@@ -147,156 +154,109 @@ bot
   });
 ```
 
-## Работа с хранилищем данных
+## Работа с базой данных (Drizzle + Neon)
 
-Starter Kit предоставляет универсальный интерфейс `StorageAdapter` для работы с любыми базами данных. По умолчанию реализован адаптер `MemoryAdapter` для тестирования и разработки.
+Starter Kit предоставляет интеграцию с Drizzle ORM и Neon PostgreSQL:
 
 ```typescript
-import { MemoryAdapter } from "./src/adapters/memory-adapter";
-import { User } from "./src/schemas";
+// src/db/index.ts
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import { config } from "../config";
+import * as schema from "./schema";
 
-// Создаем адаптер для хранения в памяти
-const storage = new MemoryAdapter();
+// Проверяем, что URL базы данных задан
+if (!config.DATABASE_URL) {
+  throw new Error("DATABASE_URL не задан в переменных окружения");
+}
 
-// Инициализируем соединение
-await storage.initialize();
-
-// Создаем пользователя
-const user = await storage.createUser({
-  telegram_id: 123456789,
-  username: "john_doe",
-  first_name: "John",
-  last_name: "Doe",
+// Создаем пул соединений
+const pool = new Pool({
+  connectionString: config.DATABASE_URL,
 });
 
-// Получаем пользователя по ID Telegram
-const foundUser = await storage.getUserByTelegramId(123456789);
+// Инициализируем Drizzle
+export const db = drizzle(pool, { schema });
 
-// Обновляем пользователя
-const updatedUser = await storage.updateUser(123456789, {
-  username: "john_updated",
+// src/db/schema.ts
+import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  telegram_id: text("telegram_id").notNull().unique(),
+  username: text("username"),
+  first_name: text("first_name"),
+  last_name: text("last_name"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
-// Закрываем соединение
-await storage.close();
+// Пример использования
+import { db } from "./src/db";
+import { users } from "./src/db/schema";
+import { eq } from "drizzle-orm";
+
+// Создание пользователя
+const newUser = await db
+  .insert(users)
+  .values({
+    telegram_id: "123456789",
+    username: "example_user",
+    first_name: "John",
+    last_name: "Doe",
+  })
+  .returning();
+
+// Получение пользователя
+const user = await db.query.users.findFirst({
+  where: eq(users.telegram_id, "123456789"),
+});
 ```
 
-## Создание своих сцен
+## Работа с GraphQL (Apollo Client)
 
-### Функциональный подход к созданию Wizard-сцены
+Для взаимодействия с GraphQL API используется Apollo Client:
 
 ```typescript
-import { Scenes, Markup } from "telegraf";
-import { BaseBotContext } from "../types";
-import { logger, LogType } from "../utils/logger";
+// src/graphql/client.ts
+import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
+import { config } from "../config";
 
-// Шаг 1: Обработчик приветствия
-const handleWelcome = async (ctx: BaseBotContext) => {
-  logger.info("Step 1: Welcome", { type: LogType.SCENE });
+// Проверяем, что GraphQL эндпоинт задан
+if (!config.GRAPHQL_ENDPOINT) {
+  throw new Error("GRAPHQL_ENDPOINT не задан в переменных окружения");
+}
 
-  // Инициализация состояния
-  const state = ctx.wizard.state as any;
-  state.data = {};
+// Создаем HTTP линк
+const httpLink = new HttpLink({
+  uri: config.GRAPHQL_ENDPOINT,
+});
 
-  await ctx.reply("Добро пожаловать! Как вас зовут?");
-  return ctx.wizard.next();
-};
+// Инициализируем Apollo Client
+export const apolloClient = new ApolloClient({
+  link: httpLink,
+  cache: new InMemoryCache(),
+});
 
-// Шаг 2: Обработчик ввода имени
-const handleName = async (ctx: BaseBotContext) => {
-  if (!ctx.message || !("text" in ctx.message)) {
-    await ctx.reply("Пожалуйста, введите ваше имя текстом");
-    return;
+// Пример использования
+import { gql } from "@apollo/client";
+import { apolloClient } from "./src/graphql/client";
+
+const GET_USER = gql`
+  query GetUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+      email
+    }
   }
+`;
 
-  const state = ctx.wizard.state as any;
-  state.data.name = ctx.message.text;
-
-  logger.info(`Step 2: Name received: ${state.data.name}`, {
-    type: LogType.SCENE,
-    userId: ctx.from?.id,
-  });
-
-  await ctx.reply(
-    `Приятно познакомиться, ${state.data.name}! Сколько вам лет?`
-  );
-  return ctx.wizard.next();
-};
-
-// Шаг 3: Обработчик ввода возраста
-const handleAge = async (ctx: BaseBotContext) => {
-  if (!ctx.message || !("text" in ctx.message)) {
-    await ctx.reply("Пожалуйста, введите ваш возраст текстом");
-    return;
-  }
-
-  const age = parseInt(ctx.message.text, 10);
-  if (isNaN(age)) {
-    await ctx.reply("Пожалуйста, введите корректный возраст (число)");
-    return;
-  }
-
-  const state = ctx.wizard.state as any;
-  state.data.age = age;
-
-  logger.info(`Step 3: Age received: ${state.data.age}`, {
-    type: LogType.SCENE,
-    userId: ctx.from?.id,
-  });
-
-  // Создаем клавиатуру для выбора
-  const keyboard = Markup.inlineKeyboard([
-    [Markup.button.callback("Да", "confirm_yes")],
-    [Markup.button.callback("Нет", "confirm_no")],
-  ]);
-
-  await ctx.reply(
-    `Итак, вас зовут ${state.data.name} и вам ${state.data.age} лет. Верно?`,
-    keyboard
-  );
-  return ctx.wizard.next();
-};
-
-// Шаг 4: Обработчик подтверждения
-const handleConfirmation = async (ctx: BaseBotContext) => {
-  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
-    return;
-  }
-
-  const answer = ctx.callbackQuery.data;
-  const state = ctx.wizard.state as any;
-
-  await ctx.answerCbQuery();
-
-  if (answer === "confirm_yes") {
-    logger.info("Step 4: Information confirmed", {
-      type: LogType.SCENE,
-      userId: ctx.from?.id,
-      data: state.data,
-    });
-
-    await ctx.reply(
-      `Спасибо, ${state.data.name}! Ваши данные сохранены.`,
-      Markup.removeKeyboard()
-    );
-    return ctx.scene.leave();
-  } else {
-    logger.info("Step 4: Information rejected", { type: LogType.SCENE });
-    await ctx.reply("Давайте начнем заново.", Markup.removeKeyboard());
-    return ctx.scene.reenter();
-  }
-};
-
-// Создание сцены
-export const createExampleWizardScene = () => {
-  return new Scenes.WizardScene<BaseBotContext>(
-    "example_wizard",
-    handleWelcome,
-    handleName,
-    handleAge,
-    handleConfirmation
-  );
-};
+// Выполнение запроса
+const { data } = await apolloClient.query({
+  query: GET_USER,
+  variables: { id: "123" },
+});
 ```
 
 ## Оптимизации в текущей версии
@@ -310,6 +270,8 @@ export const createExampleWizardScene = () => {
 5. **Единый процесс завершения работы** - централизованная логика корректного закрытия соединений
 6. **Оптимизированные скрипты** - новые скрипты для разработки и быстрого старта
 7. **Автоматическое создание .env файла** - упрощенная настройка начальной конфигурации
+8. **Интеграция с Drizzle ORM и Neon** - готовая настройка для работы с PostgreSQL
+9. **Поддержка Apollo Client** - для взаимодействия с GraphQL API
 
 ## Дополнительная документация
 
