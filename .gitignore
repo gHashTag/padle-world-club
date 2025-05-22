@@ -5,7 +5,6 @@
 
 # Dependencies
 node_modules/
-bun.lockb
 
 # Build artifacts
 dist/

@@ -3,22 +3,25 @@
  * @description Содержит класс для тестирования Telegram-сцен
  */
 
-import { jest, describe, it, beforeEach, afterEach } from "bun:test";
-import { MockedTelegramContext, MockedStorageAdapter, SceneTestOptions } from "./types";
+import { describe, it, beforeEach, afterEach } from "bun:test";
+import {
+  MockedTelegramContext,
+  MockedStorageAdapter,
+  SceneTestOptions,
+} from "./types";
 import { createMockContext, createMockAdapter, resetAllMocks } from "./mocks";
+import { Scenes } from "telegraf";
 
 /**
  * Класс для тестирования Telegram-сцен
  */
-export class SceneTester<T = any> {
+export class SceneTester<C extends Scenes.WizardContext> {
   /** Имя сцены */
   private sceneName: string;
-  /** Путь к файлу сцены */
-  private sceneFilePath: string;
   /** Конструктор сцены */
-  private sceneConstructor?: new (adapter: any, ...args: any[]) => T;
+  private sceneConstructor?: new (adapter: any, ...args: any[]) => C;
   /** Экземпляр сцены */
-  private sceneInstance?: T;
+  private sceneInstance?: C;
   /** Дополнительные аргументы для конструктора сцены */
   private constructorArgs: any[];
   /** Мокированный контекст Telegraf */
@@ -30,9 +33,8 @@ export class SceneTester<T = any> {
    * Создает экземпляр тестера для Telegram-сцены
    * @param options Опции для тестирования сцены
    */
-  constructor(options: SceneTestOptions<T>) {
+  constructor(options: SceneTestOptions<C>) {
     this.sceneName = options.sceneName;
-    this.sceneFilePath = options.sceneFilePath;
     this.sceneConstructor = options.sceneConstructor;
     this.sceneInstance = options.sceneInstance;
     this.constructorArgs = options.constructorArgs || [];
@@ -44,7 +46,7 @@ export class SceneTester<T = any> {
    * Создает экземпляр сцены
    * @returns Экземпляр сцены
    */
-  createScene(): T {
+  createScene(): C {
     if (this.sceneInstance) {
       return this.sceneInstance;
     }
@@ -99,21 +101,27 @@ export class SceneTester<T = any> {
    * Создает тестовый набор для сцены
    * @param testCases Тестовые случаи
    */
-  createTestSuite(testCases: Array<{
-    name: string;
-    setup?: (tester: SceneTester<T>) => void;
-    test: (scene: T, context: MockedTelegramContext, adapter: MockedStorageAdapter) => Promise<void>;
-  }>): void {
+  createTestSuite(
+    testCases: Array<{
+      name: string;
+      setup?: (tester: SceneTester<C>) => void;
+      test: (
+        scene: C,
+        context: MockedTelegramContext,
+        adapter: MockedStorageAdapter
+      ) => Promise<void>;
+    }>
+  ): void {
     describe(`${this.sceneName} Tests`, () => {
-      let scene: T;
+      let scene: C;
 
       beforeEach(() => {
         // Сбрасываем все моки перед каждым тестом
         this.resetMocks();
-        
+
         // Создаем экземпляр сцены
         scene = this.createScene();
-        
+
         // Добавляем адаптер в контекст
         this.mockContext.storage = this.mockAdapter;
       });
@@ -124,7 +132,7 @@ export class SceneTester<T = any> {
       });
 
       // Создаем тесты для каждого тестового случая
-      testCases.forEach(testCase => {
+      testCases.forEach((testCase) => {
         it(testCase.name, async () => {
           // Выполняем настройку, если она указана
           if (testCase.setup) {
@@ -143,14 +151,22 @@ export class SceneTester<T = any> {
    * @param options Опции для теста
    */
   testEnter(options: {
-    setup?: (tester: SceneTester<T>) => void;
-    assertions: (scene: T, context: MockedTelegramContext, adapter: MockedStorageAdapter) => void;
+    setup?: (tester: SceneTester<C>) => void;
+    assertions: (
+      scene: C,
+      context: MockedTelegramContext,
+      adapter: MockedStorageAdapter
+    ) => void;
   }): void {
     this.createTestSuite([
       {
         name: "should handle enter correctly",
         setup: options.setup,
-        test: async (scene: T, context: MockedTelegramContext, adapter: MockedStorageAdapter) => {
+        test: async (
+          scene: C,
+          context: MockedTelegramContext,
+          adapter: MockedStorageAdapter
+        ) => {
           // Вызываем метод enter
           if ((scene as any).enter) {
             await (scene as any).enter(context);
@@ -158,8 +174,8 @@ export class SceneTester<T = any> {
 
           // Выполняем проверки
           options.assertions(scene, context, adapter);
-        }
-      }
+        },
+      },
     ]);
   }
 
@@ -168,14 +184,22 @@ export class SceneTester<T = any> {
    * @param options Опции для теста
    */
   testLeave(options: {
-    setup?: (tester: SceneTester<T>) => void;
-    assertions: (scene: T, context: MockedTelegramContext, adapter: MockedStorageAdapter) => void;
+    setup?: (tester: SceneTester<C>) => void;
+    assertions: (
+      scene: C,
+      context: MockedTelegramContext,
+      adapter: MockedStorageAdapter
+    ) => void;
   }): void {
     this.createTestSuite([
       {
         name: "should handle leave correctly",
         setup: options.setup,
-        test: async (scene: T, context: MockedTelegramContext, adapter: MockedStorageAdapter) => {
+        test: async (
+          scene: C,
+          context: MockedTelegramContext,
+          adapter: MockedStorageAdapter
+        ) => {
           // Вызываем метод leave
           if ((scene as any).leave) {
             await (scene as any).leave(context);
@@ -183,8 +207,8 @@ export class SceneTester<T = any> {
 
           // Выполняем проверки
           options.assertions(scene, context, adapter);
-        }
-      }
+        },
+      },
     ]);
   }
 }

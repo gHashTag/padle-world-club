@@ -1,162 +1,140 @@
+/**
+ * Схема базы данных Drizzle ORM
+ * Этот файл содержит определения таблиц и отношений между ними
+ */
+
 import {
   pgTable,
   serial,
   text,
-  varchar,
   timestamp,
   boolean,
   integer,
   jsonb,
-  unique,
-  uuid,
+  primaryKey,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 
+/**
+ * Пример таблицы для тестирования подключения
+ */
 export const testTable = pgTable("test_table", {
   id: serial("id").primaryKey(),
   name: text("name"),
 });
 
-export const usersTable = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  authId: text("auth_id").unique(),
-  email: text("email").unique(),
-  name: text("name"),
-  avatarUrl: text("avatar_url"),
-  telegram_id: integer("telegram_id").notNull().unique(),
-  username: varchar("username", { length: 255 }),
-  first_name: varchar("first_name", { length: 255 }),
-  last_name: varchar("last_name", { length: 255 }),
-  subscription_level: varchar("subscription_level", { length: 50 })
-    .default("free")
-    .notNull(),
-  subscription_expires_at: timestamp("subscription_expires_at"),
-  last_active_at: timestamp("last_active_at").defaultNow(),
+/**
+ * Таблица пользователей
+ * Хранит основную информацию о пользователях Telegram
+ */
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  telegram_id: text("telegram_id").notNull().unique(),
+  username: text("username"),
+  first_name: text("first_name"),
+  last_name: text("last_name"),
+  language_code: text("language_code"),
+  is_bot: boolean("is_bot").default(false),
+  is_premium: boolean("is_premium").default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
 });
 
-export const projectsTable = pgTable("projects", {
-  id: serial("id").primaryKey(),
-  user_id: uuid("user_id")
-    .notNull()
-    .references(() => usersTable.id, { onDelete: "cascade" }),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  industry: varchar("industry", { length: 255 }),
-  is_active: boolean("is_active").default(true).notNull(),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at")
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
-
-// New tables for Instagram Scraper Bot
-
-export const competitorsTable = pgTable(
-  "competitors",
+/**
+ * Таблица настроек пользователей
+ * Хранит настройки и предпочтения пользователей
+ */
+export const userSettings = pgTable(
+  "user_settings",
   {
     id: serial("id").primaryKey(),
-    project_id: integer("project_id")
-      .notNull()
-      .references(() => projectsTable.id, { onDelete: "cascade" }),
-    username: varchar("username", { length: 255 }).notNull(),
-    profile_url: text("profile_url").notNull(),
-    full_name: varchar("full_name", { length: 255 }),
-    notes: text("notes"),
-    is_active: boolean("is_active").default(true).notNull(),
-    added_at: timestamp("added_at").defaultNow().notNull(),
-    last_scraped_at: timestamp("last_scraped_at"),
+    user_id: integer("user_id").notNull(),
+    notifications_enabled: boolean("notifications_enabled").default(true),
+    preferred_language: text("preferred_language").default("ru"),
+    theme: text("theme").default("light"),
     created_at: timestamp("created_at").defaultNow().notNull(),
-    updated_at: timestamp("updated_at")
-      .defaultNow()
-      .notNull()
-      .$onUpdate(() => new Date()),
+    updated_at: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => {
     return {
-      projectUsernameUnq: unique("project_username_unq").on(
-        table.project_id,
-        table.username
-      ),
+      user_fk: foreignKey({
+        columns: [table.user_id],
+        foreignColumns: [users.id],
+        name: "user_settings_user_id_fk",
+      }),
     };
   }
 );
 
-export const hashtagsTable = pgTable(
-  "hashtags",
+/**
+ * Таблица сообщений
+ * Хранит историю сообщений пользователей
+ */
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull(),
+  chat_id: text("chat_id").notNull(),
+  message_text: text("message_text"),
+  message_type: text("message_type").notNull(),
+  telegram_message_id: integer("telegram_message_id"),
+  sent_at: timestamp("sent_at").defaultNow().notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+});
+
+/**
+ * Таблица сессий Wizard
+ * Хранит состояние wizard-сцен для восстановления при перезапуске бота
+ */
+export const wizardSessions = pgTable("wizard_sessions", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull(),
+  scene_id: text("scene_id").notNull(),
+  step: integer("step").notNull(),
+  state: jsonb("state").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  expires_at: timestamp("expires_at"),
+});
+
+/**
+ * Соединительная таблица для пользователей и их ролей
+ */
+export const userRoles = pgTable(
+  "user_roles",
   {
-    id: serial("id").primaryKey(),
-    project_id: integer("project_id")
-      .notNull()
-      .references(() => projectsTable.id, { onDelete: "cascade" }),
-    tag_name: varchar("tag_name", { length: 255 }).notNull(),
-    notes: text("notes"),
-    is_active: boolean("is_active").default(true).notNull(),
-    added_at: timestamp("added_at").defaultNow().notNull(),
-    last_scraped_at: timestamp("last_scraped_at"),
-    created_at: timestamp("created_at").defaultNow().notNull(),
-    updated_at: timestamp("updated_at")
-      .defaultNow()
-      .notNull()
-      .$onUpdate(() => new Date()),
+    user_id: integer("user_id").notNull(),
+    role_id: integer("role_id").notNull(),
+    assigned_at: timestamp("assigned_at").defaultNow().notNull(),
   },
-  (table) => {
-    return {
-      projectTagNameUnq: unique("project_tag_name_unq").on(
-        table.project_id,
-        table.tag_name
-      ),
-    };
-  }
+  (table) => ({
+    pk: primaryKey({ columns: [table.user_id, table.role_id] }),
+  })
 );
 
-export const reelsTable = pgTable("reels", {
+/**
+ * Таблица ролей пользователей
+ */
+export const roles = pgTable("roles", {
   id: serial("id").primaryKey(),
-  reel_url: text("reel_url").unique(),
-  project_id: integer("project_id")
-    .notNull()
-    .references(() => projectsTable.id, { onDelete: "cascade" }),
-  source_type: varchar("source_type", { length: 50 }),
-  source_identifier: varchar("source_identifier", { length: 255 }),
-  profile_url: text("profile_url"),
-  author_username: varchar("author_username", { length: 255 }),
+  name: text("name").notNull().unique(),
   description: text("description"),
-  views_count: integer("views_count"),
-  likes_count: integer("likes_count"),
-  comments_count: integer("comments_count"),
-  published_at: timestamp("published_at"),
-  audio_title: varchar("audio_title", { length: 255 }),
-  audio_artist: varchar("audio_artist", { length: 255 }),
-  thumbnail_url: text("thumbnail_url"),
-  video_download_url: text("video_download_url"),
-  raw_data: jsonb("raw_data"),
   created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at")
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
 });
 
-export const parsingRunsTable = pgTable("parsing_runs", {
-  id: serial("id").primaryKey(),
-  run_id: uuid("run_id").notNull().unique(),
-  project_id: integer("project_id").references(() => projectsTable.id, {
-    onDelete: "set null",
-  }), // или cascade, если нужно удалять логи при удалении проекта
-  source_type: varchar("source_type", { length: 50 }), // e.g., 'competitor', 'hashtag', 'overall'
-  source_id: integer("source_id"), // FK to competitorsTable.id or hashtagsTable.id, or null if 'overall'
-  status: varchar("status", { length: 50 }).notNull(), // e.g., 'started', 'running', 'completed', 'failed'
-  started_at: timestamp("started_at").defaultNow().notNull(),
-  ended_at: timestamp("ended_at"),
-  reels_found_count: integer("reels_found_count").default(0).notNull(),
-  reels_added_count: integer("reels_added_count").default(0).notNull(),
-  errors_count: integer("errors_count").default(0).notNull(),
-  log_message: text("log_message"),
-  error_details: jsonb("error_details"),
-  created_at: timestamp("created_at").defaultNow().notNull(),
-  updated_at: timestamp("updated_at")
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
+// Типы на основе схемы
+
+// Тип для пользователя из базы данных
+export type User = typeof users.$inferSelect;
+
+// Тип для создания нового пользователя
+export type NewUser = typeof users.$inferInsert;
+
+// Тип для настроек пользователя
+export type UserSettings = typeof userSettings.$inferSelect;
+
+// Тип для сообщения
+export type Message = typeof messages.$inferSelect;
+
+// Тип для сессии wizard
+export type WizardSession = typeof wizardSessions.$inferSelect;

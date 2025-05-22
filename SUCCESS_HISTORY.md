@@ -1,6 +1,7 @@
 ## Исправление всех ошибок типов в тестах (Июль 2024)
 
 **Проблема:** В проекте было множество ошибок типов в тестах, что затрудняло разработку и поддержку. Основные проблемы:
+
 - Несоответствие типов между тестами и реальным кодом
 - Проблемы с типами в моках для StorageAdapter и NeonAdapter
 - Проблемы с типами в контекстах Telegraf
@@ -8,6 +9,7 @@
 - Отсутствие единого подхода к созданию моков
 
 **Решение:**
+
 1. **Создали утилиты для создания моков**:
    - `createMockStorageAdapter` - для создания мока StorageAdapter
    - `createMockNeonAdapter` - для создания мока NeonAdapter
@@ -23,12 +25,14 @@
    - Удалили неиспользуемые импорты NeonAdapter
 
 **Результаты:**
+
 - Исправлены все ошибки типов в тестах
 - Создан единый подход к созданию моков
 - Улучшена структура типов в тестах
 - Повышена надежность и поддерживаемость тестов
 
 **Извлеченные уроки:**
+
 1. Важно иметь единый подход к созданию моков для обеспечения типобезопасности
 2. Использование mockImplementation вместо mockResolvedValue для асинхронных функций
 3. Правильное определение типов для контекстов Telegraf критично для тестирования
@@ -37,12 +41,14 @@
 ## Добавление Zod для валидации данных и улучшения типобезопасности (Июль 2024)
 
 **Проблема:** Проект страдал от множества ошибок типов (более 300), что затрудняло разработку и поддержку. Основные проблемы:
+
 - Несоответствие типов между различными частями приложения
 - Отсутствие валидации данных во время выполнения
 - Дублирование определений типов в разных файлах
 - Отсутствие единого источника правды для типов
 
 **Решение:**
+
 1. **Установили Zod**: `bun add zod`
 2. **Создали схемы Zod для основных типов данных**:
    - User, Project, Competitor, Hashtag, ReelContent, ReelsFilter, ParsingRunLog, ScraperSceneSessionData
@@ -53,6 +59,7 @@
 7. **Обеспечили единый источник правды для типов** - все типы теперь определены в схемах Zod
 
 **Результаты:**
+
 - Уменьшили количество ошибок типов с 301 до 274
 - Улучшили структуру типов в проекте
 - Добавили валидацию данных во время выполнения
@@ -60,6 +67,7 @@
 - Улучшили документацию типов через схемы Zod
 
 **Извлеченные уроки:**
+
 1. Zod предоставляет мощный инструмент для валидации данных и типобезопасности
 2. Единый источник правды для типов значительно упрощает поддержку кода
 3. Валидация данных во время выполнения помогает избежать ошибок, связанных с неправильными типами данных
@@ -75,6 +83,7 @@
 2. Обновили тесты в файле `competitor-scene-ontext.test.ts`, чтобы они проверяли только факт вызова функции `addCompetitorAccount`, а не конкретные передаваемые значения.
 
 3. Разделили тесты для функций валидации на два файла:
+
    - `validation.test.ts` - тесты для `isValidInstagramUrl`, `extractUsernameFromUrl` и `isValidHashtag`
    - `project-name-validation.test.ts` - тесты для `isValidProjectName`
 
@@ -83,6 +92,7 @@
 **Результат:** Все тесты успешно проходят, что позволяет продолжить разработку функциональности для скрапинга конкурентов.
 
 **Извлеченные уроки:**
+
 1. При изменении поведения функций в тестовом режиме необходимо тщательно проверять все тесты, которые могут зависеть от этого поведения.
 2. Иногда лучше разделить тесты на несколько файлов, чтобы избежать конфликтов между различными тестовыми сценариями.
 3. Для функций, которые используются в разных контекстах, полезно иметь специальные случаи обработки в тестовом режиме.
@@ -246,7 +256,7 @@
 - **Документация:** Создана подробная документация в файле `src/__tests__/e2e/README.md` с описанием подхода к тестированию, структуры тестов, хелпера `setupE2ETestEnvironment` и примерами использования.
 - **Коммит:** Текущий коммит
 
-## Успешная миграция тестов в директорию src/__tests__ (Июнь 2024)
+## Успешная миграция тестов в директорию src/**tests** (Июнь 2024)
 
 - **Описание:** Все тесты успешно перенесены из директории `__tests__` в директорию `src/__tests__`. Обновлена конфигурация тестов в `vitest.config.ts`. Проверено, что все тесты успешно проходят после миграции. В результате миграции структура проекта стала более современной и соответствует лучшим практикам.
 - **Ключевые изменения:**
@@ -341,16 +351,18 @@
   - **Декларативный подход**: Регистрация кнопок через декларативный интерфейс вместо императивного
   - **Улучшенная отладка**: Возможность включения подробного логирования для отдельных кнопок
 - **Пример использования:**
+
 ```typescript
 registerButtons(competitorScene, [
   {
     id: "exit_scene",
     handler: handleExitCompetitorSceneAction,
     errorMessage: "Произошла ошибка при выходе из сцены. Попробуйте еще раз.",
-    verbose: true
-  }
+    verbose: true,
+  },
 ]);
 ```
+
 - **Коммит:** Текущий коммит (Ветка: `feat/scrape-competitor-reels`)
 
 ## Улучшение обработки ошибок в централизованном обработчике кнопок (Май 2025)
@@ -375,23 +387,26 @@ registerButtons(competitorScene, [
   - **Централизованный мониторинг ошибок**: Администратор получает отчеты обо всех ошибках
   - **Более информативные сообщения об ошибках**: Пользователи видят код ошибки, который могут сообщить администратору
 - **Пример использования:**
+
 ```typescript
 registerButtons(scene, [
   {
-    id: 'button1',
+    id: "button1",
     handler: handleButton1,
-    errorMessage: 'Произошла ошибка при обработке кнопки 1. Попробуйте еще раз.',
+    errorMessage:
+      "Произошла ошибка при обработке кнопки 1. Попробуйте еще раз.",
     errorHandling: {
       showRetryButton: true,
-      retryButtonText: 'Повторить',
+      retryButtonText: "Повторить",
       showCancelButton: true,
-      cancelButtonText: 'Отмена',
+      cancelButtonText: "Отмена",
       sendErrorReport: true,
-      adminUserId: 123456789
-    }
-  }
+      adminUserId: 123456789,
+    },
+  },
 ]);
 ```
+
 - **Тесты:** Созданы тесты для проверки работы улучшенного обработчика кнопок, которые успешно проходят.
 - **Коммит:** Текущий коммит (Ветка: `feat/scrape-competitor-reels`)
 
@@ -416,35 +431,36 @@ registerButtons(scene, [
   - **Стандартизация**: Единый подход к созданию меню во всех сценах бота
   - **Автоматическая обработка ошибок**: Все ошибки в обработчиках меню автоматически обрабатываются и логируются
 - **Пример использования:**
+
 ```typescript
 const menuOptions: NestedMenuOptions = {
-  title: 'Главное меню',
+  title: "Главное меню",
   items: [
     {
-      text: 'Настройки',
-      id: 'settings',
+      text: "Настройки",
+      id: "settings",
       submenu: [
         {
-          text: 'Уведомления',
-          id: 'notifications',
-          handler: handleNotificationsAction
+          text: "Уведомления",
+          id: "notifications",
+          handler: handleNotificationsAction,
         },
         {
-          text: 'Профиль',
-          id: 'profile',
-          handler: handleProfileAction
-        }
-      ]
+          text: "Профиль",
+          id: "profile",
+          handler: handleProfileAction,
+        },
+      ],
     },
     {
-      text: 'Помощь',
-      id: 'help',
-      handler: handleHelpAction
-    }
+      text: "Помощь",
+      id: "help",
+      handler: handleHelpAction,
+    },
   ],
   showBackButton: true,
   showHomeButton: true,
-  columns: 2
+  columns: 2,
 };
 
 const sendMenu = registerNestedMenu(scene, menuOptions);
@@ -452,6 +468,7 @@ const sendMenu = registerNestedMenu(scene, menuOptions);
 // Отправка меню пользователю
 await sendMenu(ctx);
 ```
+
 - **Тесты:** Созданы тесты для проверки работы вложенных меню, которые успешно проходят.
 - **Коммит:** Текущий коммит (Ветка: `feat/scrape-competitor-reels`)
 
@@ -472,7 +489,9 @@ await sendMenu(ctx);
   - **[SUCCESS_HISTORY_WIZARD_SCENES.md](docs/SUCCESS_HISTORY_WIZARD_SCENES.md)**: История успеха с примерами решения конкретных проблем
   - **[WIZARD_SCENE_REFACTORING_CHECKLIST.md](docs/WIZARD_SCENE_REFACTORING_CHECKLIST.md)**: Чек-лист для рефакторинга существующих Wizard-сцен
 - **Примеры исправлений:**
+
   - **Исправление кнопки "Вернуться к списку" в визард-сцене конкурентов**:
+
     ```typescript
     competitorWizardScene.action("back_to_list", async (ctx: any) => {
       console.log(`[DEBUG] Обработчик кнопки 'back_to_list' вызван`);
@@ -487,7 +506,9 @@ await sendMenu(ctx);
       return ctx.wizard.selectStep(1);
     });
     ```
+
   - **Исправление кнопки "Выйти" в визард-сцене конкурентов**:
+
     ```typescript
     competitorWizardScene.action("exit_wizard", async (ctx: any) => {
       console.log(`[DEBUG] Обработчик кнопки 'exit_wizard' вызван`);
@@ -555,9 +576,14 @@ import { logger } from "../logger";
 /**
  * Очищает состояние сессии перед выходом из сцены
  */
-function clearSessionState(ctx: ScraperBotContext, reason: string = "general"): void {
+function clearSessionState(
+  ctx: ScraperBotContext,
+  reason: string = "general"
+): void {
   if (ctx.scene.session) {
-    logger.info(`[SceneName] Clearing session state before leaving (reason: ${reason})`);
+    logger.info(
+      `[SceneName] Clearing session state before leaving (reason: ${reason})`
+    );
     // Очистка всех необходимых полей состояния
     ctx.scene.session.step = undefined;
     // Специфичные для сцены поля
@@ -578,7 +604,9 @@ async function safeSceneTransition(
   reason: string = "general"
 ): Promise<void> {
   try {
-    logger.info(`[SceneName] Transitioning to ${targetScene} scene (reason: ${reason})`);
+    logger.info(
+      `[SceneName] Transitioning to ${targetScene} scene (reason: ${reason})`
+    );
     await ctx.scene.enter(targetScene);
   } catch (error) {
     logger.error(`[SceneName] Error entering ${targetScene} scene:`, error);
@@ -595,22 +623,30 @@ export class MyWizardScene extends Scenes.WizardScene<ScraperBotContext> {
       // Шаг 1: Начальный шаг
       async (ctx) => {
         logger.info(`[MyWizard] Шаг 1: Описание шага`);
-        logger.debug(`[MyWizard] Содержимое ctx.wizard.state:`, ctx.wizard.state);
+        logger.debug(
+          `[MyWizard] Содержимое ctx.wizard.state:`,
+          ctx.wizard.state
+        );
 
         // Проверка наличия пользователя
         if (!ctx.from) {
           logger.error("[MyWizard] ctx.from is undefined");
-          await ctx.reply("Не удалось определить пользователя. Попробуйте перезапустить бота.");
+          await ctx.reply(
+            "Не удалось определить пользователя. Попробуйте перезапустить бота."
+          );
           clearSessionState(ctx, "missing_user");
           return ctx.scene.leave();
         }
 
         // Получение данных из состояния или параметров
-        const itemId = ctx.wizard.state.itemId || ctx.scene.session.currentItemId;
+        const itemId =
+          ctx.wizard.state.itemId || ctx.scene.session.currentItemId;
 
         if (!itemId) {
           // Обработка отсутствия необходимых данных
-          await ctx.reply("Не удалось определить элемент. Пожалуйста, выберите из списка.");
+          await ctx.reply(
+            "Не удалось определить элемент. Пожалуйста, выберите из списка."
+          );
           clearSessionState(ctx, "missing_item_id");
           await safeSceneTransition(ctx, "fallback_scene", "missing_item_id");
           return;
@@ -626,8 +662,8 @@ export class MyWizardScene extends Scenes.WizardScene<ScraperBotContext> {
             ...Markup.inlineKeyboard([
               [Markup.button.callback("Кнопка 1", "button_1")],
               [Markup.button.callback("Кнопка 2", "button_2")],
-              [Markup.button.callback("Назад", "back_button")]
-            ])
+              [Markup.button.callback("Назад", "back_button")],
+            ]),
           });
         } catch (error) {
           // Обработка ошибок
@@ -644,7 +680,10 @@ export class MyWizardScene extends Scenes.WizardScene<ScraperBotContext> {
       // Шаг 2: Следующий шаг
       async (ctx) => {
         logger.info(`[MyWizard] Шаг 2: Описание шага`);
-        logger.debug(`[MyWizard] Содержимое ctx.wizard.state:`, ctx.wizard.state);
+        logger.debug(
+          `[MyWizard] Содержимое ctx.wizard.state:`,
+          ctx.wizard.state
+        );
 
         // Логика шага 2
         // ...
@@ -699,19 +738,20 @@ export class MyWizardScene extends Scenes.WizardScene<ScraperBotContext> {
 
 // 5. Функция для настройки обработчиков команд
 export function setupMyWizard(bot: any) {
-  bot.command('my_command', async (ctx: any) => {
+  bot.command("my_command", async (ctx: any) => {
     logger.info("[MyWizard] Command /my_command triggered");
-    await ctx.scene.enter('my_wizard_scene_id');
+    await ctx.scene.enter("my_wizard_scene_id");
   });
 
-  bot.hears('Текст кнопки', async (ctx: any) => {
+  bot.hears("Текст кнопки", async (ctx: any) => {
     logger.info("[MyWizard] Button 'Текст кнопки' clicked");
-    await ctx.scene.enter('my_wizard_scene_id');
+    await ctx.scene.enter("my_wizard_scene_id");
   });
 }
 ```
 
 - **Ключевые элементы паттерна:**
+
   1. **Утилитные функции:**
      - `clearSessionState` - очистка состояния сессии
      - `safeSceneTransition` - безопасный переход между сценами
@@ -731,6 +771,7 @@ export function setupMyWizard(bot: any) {
      - Регистрация обработчиков команд и текстовых сообщений
 
 - **Преимущества паттерна:**
+
   - **Единообразие:** Все сцены имеют одинаковую структуру
   - **Изоляция:** Каждая сцена содержит все необходимые компоненты
   - **Надежность:** Обработка ошибок и безопасные переходы
@@ -751,15 +792,18 @@ export function setupMyWizard(bot: any) {
 - **Ключевые компоненты:**
 
   1. **Планы тестирования:**
+
      - Подробный план ручного тестирования (`docs/TESTING_PLAN.md`) с 29 тест-кейсами
      - Упрощенный чек-лист для тестирования MVP (`docs/MVP_TESTING_CHECKLIST.md`)
      - Инструкция по тестированию (`docs/TESTING_INSTRUCTIONS.md`)
 
   2. **Скрипты для подготовки тестовой среды:**
+
      - Скрипт инициализации тестовой среды (`scripts/prepare-test-env.ts`)
      - Скрипт генерации данных с граничными случаями (`scripts/generate-edge-cases.ts`)
 
   3. **Тестовые данные:**
+
      - Базовые тестовые данные для проверки основной функциональности
      - Данные с граничными случаями для проверки обработки ошибок
      - Большие объемы данных для тестирования производительности
@@ -772,21 +816,25 @@ export function setupMyWizard(bot: any) {
 - **Области тестирования:**
 
   1. **Функциональное тестирование:**
+
      - Проверка основных функций бота (управление проектами, конкурентами, хештегами и т.д.)
      - Проверка навигации и переходов между сценами
      - Проверка обработки пользовательского ввода
 
   2. **Тестирование обработки ошибок:**
+
      - Проверка реакции на некорректные входные данные
      - Проверка обработки ошибок API
      - Проверка информативности сообщений об ошибках
 
   3. **Тестирование граничных случаев:**
+
      - Проверка работы с длинными названиями и описаниями
      - Проверка работы со специальными символами
      - Проверка работы с пустыми значениями
 
   4. **Тестирование производительности:**
+
      - Проверка времени отклика при большом количестве данных
      - Проверка использования памяти при длительной работе
      - Проверка скорости загрузки списков с большим количеством элементов
@@ -797,6 +845,7 @@ export function setupMyWizard(bot: any) {
      - Проверка корректной очистки состояния
 
 - **Преимущества системы тестирования:**
+
   - **Систематичность:** Структурированный подход к тестированию всех аспектов бота
   - **Повторяемость:** Возможность многократного выполнения одних и тех же тестов
   - **Автоматизация:** Скрипты для подготовки тестовой среды и генерации данных
@@ -804,22 +853,27 @@ export function setupMyWizard(bot: any) {
   - **Выявление проблем:** Раннее обнаружение потенциальных проблем до демонстрации заказчику
 
 - **Рекомендации по использованию:**
+
   1. Перед каждым релизом проводите полное тестирование по подробному плану
   2. При разработке новых функций добавляйте соответствующие тест-кейсы
   3. Регулярно обновляйте тестовые данные и сценарии
   4. Документируйте все найденные проблемы и их решения
   5. Используйте результаты тестирования для улучшения качества бота
 
-      // Явно указываем, что нужно перейти в сцену проектов
-      try {
-        console.log(`[DEBUG] Переход в сцену проектов после выхода из режима управления конкурентами`);
-        await ctx.scene.enter("instagram_scraper_projects");
-      } catch (error) {
-        console.error(`[ERROR] Ошибка при переходе в сцену проектов:`, error);
-        return ctx.scene.leave();
-      }
-    });
-    ```
+     // Явно указываем, что нужно перейти в сцену проектов
+     try {
+     console.log(`[DEBUG] Переход в сцену проектов после выхода из режима управления конкурентами`);
+     await ctx.scene.enter("instagram_scraper_projects");
+     } catch (error) {
+     console.error(`[ERROR] Ошибка при переходе в сцену проектов:`, error);
+     return ctx.scene.leave();
+     }
+     });
+
+  ```
+
+  ```
+
 - **Тесты:** Созданы тесты для проверки функциональности кнопок в визард-сцене конкурентов, которые успешно проходят.
 - **Преимущества:**
   - **Стабильная работа Wizard-сцен**: Устранены проблемы с дублированием обработчиков, обновлением данных и зависанием при выходе
@@ -832,6 +886,7 @@ export function setupMyWizard(bot: any) {
 
 - **Описание:** Разработаны и внедрены стандартные функции для очистки состояния и безопасного перехода между сценами. Эти функции обеспечивают единообразие обработки ошибок и предотвращают зависания при переходах между сценами.
 - **Ключевые улучшения:**
+
   - **Функция clearSessionState**:
     ```typescript
     /**
@@ -839,9 +894,14 @@ export function setupMyWizard(bot: any) {
      * @param ctx Контекст Telegraf
      * @param reason Причина очистки состояния (для логирования)
      */
-    function clearSessionState(ctx: ScraperBotContext, reason: string = "general"): void {
+    function clearSessionState(
+      ctx: ScraperBotContext,
+      reason: string = "general"
+    ): void {
       if (ctx.scene.session) {
-        logger.info(`[ReelsScene] Clearing session state before leaving (reason: ${reason})`);
+        logger.info(
+          `[ReelsScene] Clearing session state before leaving (reason: ${reason})`
+        );
         ctx.scene.session.reelsFilter = undefined;
         ctx.scene.session.reelsPage = 1;
         ctx.scene.session.currentReelId = undefined;
@@ -866,15 +926,21 @@ export function setupMyWizard(bot: any) {
       state: Record<string, any> = {}
     ): Promise<void> {
       try {
-        logger.info(`[ReelsScene] Transitioning to ${targetScene} scene (reason: ${reason})`);
+        logger.info(
+          `[ReelsScene] Transitioning to ${targetScene} scene (reason: ${reason})`
+        );
         await ctx.scene.enter(targetScene, state);
       } catch (error) {
-        logger.error(`[ReelsScene] Error entering ${targetScene} scene:`, error);
+        logger.error(
+          `[ReelsScene] Error entering ${targetScene} scene:`,
+          error
+        );
         await ctx.scene.leave();
       }
     }
     ```
   - **Применение функций в обработчиках**:
+
     ```typescript
     if (!ctx.from) {
       logger.error("[ReelsScene] ctx.from is undefined");
@@ -884,23 +950,22 @@ export function setupMyWizard(bot: any) {
 
       // Очистка состояния и безопасный переход в другую сцену
       clearSessionState(ctx, "missing_user");
-      await safeSceneTransition(ctx, "instagram_scraper_projects", "missing_user");
+      await safeSceneTransition(
+        ctx,
+        "instagram_scraper_projects",
+        "missing_user"
+      );
       return;
     }
     ```
+
 - **Прогресс рефакторинга сцен**:
   - **Высокий приоритет**:
     1. ✅ reels-scene.ts - Основная сцена для просмотра Reels (выполнено)
     2. ✅ analytics-scene.ts - Сцена для аналитики (выполнено)
     3. ✅ competitor-scene.ts - Сцена для управления конкурентами (выполнено)
-  - **Средний приоритет**:
-    4. ⏭️ reels-collection-scene.ts - Сцена для коллекций Reels (следующая в очереди)
-    5. project-scene.ts - Сцена для управления проектами
-    6. scraping-scene.ts - Сцена для скрапинга
-  - **Низкий приоритет**:
-    7. chatbot-scene.ts - Сцена для чат-бота
-    8. hashtag-scene.ts - Сцена для управления хэштегами
-    9. notification-scene.ts - Сцена для управления уведомлениями
+  - **Средний приоритет**: 4. ⏭️ reels-collection-scene.ts - Сцена для коллекций Reels (следующая в очереди) 5. project-scene.ts - Сцена для управления проектами 6. scraping-scene.ts - Сцена для скрапинга
+  - **Низкий приоритет**: 7. chatbot-scene.ts - Сцена для чат-бота 8. hashtag-scene.ts - Сцена для управления хэштегами 9. notification-scene.ts - Сцена для управления уведомлениями
 - **Тесты:** Созданы тесты для проверки функциональности `clearSessionState` и `safeSceneTransition`, которые проверяют корректную очистку состояния и обработку ошибок при переходе между сценами.
 - **Преимущества:**
   - **Стандартизация**: Единый подход к очистке состояния и переходам между сценами во всем проекте
@@ -908,3 +973,43 @@ export function setupMyWizard(bot: any) {
   - **Надежность**: Корректная обработка ошибок при переходе между сценами
   - **Предотвращение зависаний**: Явное указание целевой сцены и обработка ошибок предотвращают зависания
 - **Коммит:** Текущий коммит (Ветка: `feat/scrape-competitor-reels`)
+
+## Рефакторинг под Telegram Bot Starter Kit (Август 2024)
+
+**Задача:** Создать универсальный Telegram Bot Starter Kit на TypeScript путем рефакторинга существующего проекта.
+
+**Процесс:**
+
+1.  **Анализ и планирование:** Определены специфичные для проекта модули, подлежащие удалению, и универсальные паттерны, которые нужно сохранить и обобщить.
+2.  **Удаление специфичных модулей:**
+    - Удалены сцены, связанные с аналитикой, конкурентами, хештегами, проектами (кроме базовых), сбором reels и скрапингом.
+    - Удалены сервисы, реализующие специфическую бизнес-логику (чат-бот, эмбеддинги, маркетинговая аналитика, коллекции reels, транскрипция, моки сервисов Apify и Scraper).
+    - Значительно упрощены схемы Zod в `src/schemas/index.ts`, оставлены только `UserSchema`, `User` (тип) и базовая `BotSceneSessionDataSchema` с типом `BotSceneSessionData`.
+    - Удалены специфичные адаптеры, оставлен интерфейс `StorageAdapter` и его реализация `MemoryAdapter`.
+    - Удалено большинство тестов, покрывавших специфичную логику.
+    - Удалены специфичные скрипты.
+3.  **Сохранение и генерализация универсальных паттернов:**
+    - Сохранен шаблон `src/templates/wizard-scene-template.ts` (будет доработан).
+    - Сохранен и адаптирован `DIContainer`.
+    - Сохранен интерфейс `StorageAdapter` и реализация `MemoryAdapter`.
+    - Сохранены универсальные утилиты: `logger`, `validation-zod`, `button-handler`, `keyboard-utils`.
+    - Сохранена и адаптирована инфраструктура для тестирования в `src/__tests__/framework`.
+    - Сохранены универсальные скрипты: `tdd-cycle.sh`, `generate-wizard-scene.ts`, `quality-check.sh`.
+    - Очищен и адаптирован `src/bot.ts` для базовой функциональности стартер-кита (удалена локализация i18n, упрощено управление сессиями).
+    - Сохранены конфигурационные файлы (`.env.example`, `drizzle.config.ts`, `tsconfig.json` и т.д.).
+4.  **Исправление ошибок типов:** Проведена масштабная работа по устранению ошибок типов TypeScript, возникших после удаления и изменения модулей. Все ошибки типов были успешно устранены.
+
+**Результаты:**
+
+- Структура проекта значительно упрощена и подготовлена для использования в качестве Telegram Bot Starter Kit.
+- Удален весь специфичный для предыдущего проекта код.
+- Сохранены и адаптированы ключевые универсальные паттерны и утилиты.
+- Кодовая база приведена в консистентное состояние без ошибок типов.
+
+**Следующие шаги:**
+
+- Добавление README и базовой документации для стартер-кита.
+- Дальнейшая доработка и тестирование универсальных компонентов (например, `wizard-scene-template.ts`).
+- Настройка CI/CD.
+
+* **Коммит:** `c276a6bf41c42556741569c4718f203681330405` (Ветка: `refactor/starter-kit-structure`)

@@ -5,14 +5,15 @@
  * с автоматической обработкой ошибок и логированием.
  */
 
-import { Scenes } from 'telegraf';
-import { ScraperBotContext } from '../types';
-import { logger, LogType } from './logger';
+import { Scenes } from "telegraf";
+import { logger, LogType } from "./logger";
+import type { Middleware } from "telegraf";
+import { BaseBotContext } from "../types";
 
 /**
  * Тип обработчика кнопки
  */
-export type ButtonHandler = (ctx: ScraperBotContext) => Promise<any>;
+export type ButtonHandler = (ctx: BaseBotContext) => Promise<any>;
 
 /**
  * Тип для данных callback query
@@ -26,7 +27,7 @@ interface DataQuery {
  * Проверка наличия data в callback query
  */
 function isDataQuery(query: any): query is DataQuery {
-  return query && typeof query.data === 'string';
+  return query && typeof query.data === "string";
 }
 
 /**
@@ -35,8 +36,12 @@ function isDataQuery(query: any): query is DataQuery {
  * @returns Уникальный идентификатор ошибки в формате "ERR-XXXX-XXXX"
  */
 function generateErrorId(): string {
-  const randomPart1 = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  const randomPart2 = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const randomPart1 = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0");
+  const randomPart2 = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0");
   return `ERR-${randomPart1}-${randomPart2}`;
 }
 
@@ -61,7 +66,7 @@ export interface ErrorHandlingOptions {
   /** Текст для кнопки отмены действия */
   cancelButtonText?: string;
   /** Функция для обработки отмены действия */
-  onCancel?: (ctx: ScraperBotContext) => Promise<void>;
+  onCancel?: (ctx: BaseBotContext) => Promise<void>;
   /** Отправлять ли отчет об ошибке администратору */
   sendErrorReport?: boolean;
   /** ID администратора для отправки отчетов об ошибках */
@@ -134,7 +139,9 @@ export interface ButtonOptions {
  * @param options Опции для регистрации кнопки
  * @returns Функция-обработчик для регистрации в сцене
  */
-export function createButtonHandler(options: ButtonOptions) {
+export function createButtonHandler<T extends BaseBotContext>(
+  options: ButtonOptions
+): Middleware<T> {
   const {
     id,
     handler,
@@ -143,7 +150,7 @@ export function createButtonHandler(options: ButtonOptions) {
     answerCallbackOnError = true,
     errorCallbackText = "Ошибка",
     verbose = false,
-    errorHandling = {}
+    errorHandling = {},
   } = options;
 
   // Объединяем базовые опции с расширенными опциями обработки ошибок
@@ -158,19 +165,20 @@ export function createButtonHandler(options: ButtonOptions) {
     cancelButtonText: errorHandling.cancelButtonText ?? "Отмена",
     onCancel: errorHandling.onCancel,
     sendErrorReport: errorHandling.sendErrorReport ?? false,
-    adminUserId: errorHandling.adminUserId
+    adminUserId: errorHandling.adminUserId,
   };
 
   // Возвращаем функцию-обработчик для регистрации в сцене
-  return async (ctx: ScraperBotContext) => {
-    const buttonId = typeof id === 'string' ? id : id.toString();
+  return async (ctx: T) => {
+    const buttonId = typeof id === "string" ? id : id.toString();
     const userId = ctx.from?.id;
     const username = ctx.from?.username;
 
     // Логируем нажатие кнопки
-    const callbackData = ctx.callbackQuery && isDataQuery(ctx.callbackQuery)
-      ? ctx.callbackQuery.data
-      : undefined;
+    const callbackData =
+      ctx.callbackQuery && isDataQuery(ctx.callbackQuery)
+        ? ctx.callbackQuery.data
+        : undefined;
 
     logger.userAction(`Нажата кнопка: ${buttonId}`, {
       userId,
@@ -179,8 +187,8 @@ export function createButtonHandler(options: ButtonOptions) {
         buttonId,
         callbackData,
         hasSession: !!ctx.session,
-        hasSceneSession: !!ctx.scene?.session
-      }
+        hasSceneSession: !!ctx.scene?.session,
+      },
     });
 
     if (verbose) {
@@ -191,8 +199,8 @@ export function createButtonHandler(options: ButtonOptions) {
         data: {
           session: !!ctx.session,
           sceneSession: !!ctx.scene?.session,
-          callbackQuery: ctx.callbackQuery
-        }
+          callbackQuery: ctx.callbackQuery,
+        },
       });
     }
 
@@ -203,7 +211,7 @@ export function createButtonHandler(options: ButtonOptions) {
       // Логируем успешное выполнение
       logger.botAction(`Успешно обработана кнопка: ${buttonId}`, {
         userId,
-        username
+        username,
       });
 
       return result;
@@ -212,15 +220,16 @@ export function createButtonHandler(options: ButtonOptions) {
       const errorId = generateErrorId();
 
       // Получаем информацию о сцене
-      const sceneName = ctx.scene?.current?.id || 'unknown_scene';
+      const sceneName = ctx.scene?.current?.id || "unknown_scene";
 
       // Получаем данные callback query
-      const errorCallbackData = ctx.callbackQuery && isDataQuery(ctx.callbackQuery)
-        ? ctx.callbackQuery.data
-        : undefined;
+      const errorCallbackData =
+        ctx.callbackQuery && isDataQuery(ctx.callbackQuery)
+          ? ctx.callbackQuery.data
+          : undefined;
 
       // Получаем стек вызовов ошибки
-      const errorStack = (error as Error).stack || 'No stack trace available';
+      const errorStack = (error as Error).stack || "No stack trace available";
 
       // Логируем ошибку с расширенной информацией
       logger.error(`Ошибка при обработке кнопки ${buttonId} [${errorId}]`, {
@@ -234,8 +243,8 @@ export function createButtonHandler(options: ButtonOptions) {
           callbackData: errorCallbackData,
           sceneName,
           errorStack,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
 
       try {
@@ -244,18 +253,22 @@ export function createButtonHandler(options: ButtonOptions) {
 
         // Добавляем кнопку повторного выполнения, если нужно
         if (errorOptions.showRetryButton) {
-          keyboard.push([{
-            text: errorOptions.retryButtonText || 'Повторить',
-            callback_data: errorCallbackData || buttonId
-          }]);
+          keyboard.push([
+            {
+              text: errorOptions.retryButtonText || "Повторить",
+              callback_data: errorCallbackData || buttonId,
+            },
+          ]);
         }
 
         // Добавляем кнопку отмены, если нужно
         if (errorOptions.showCancelButton) {
-          keyboard.push([{
-            text: errorOptions.cancelButtonText || 'Отмена',
-            callback_data: `cancel_${buttonId}`
-          }]);
+          keyboard.push([
+            {
+              text: errorOptions.cancelButtonText || "Отмена",
+              callback_data: `cancel_${buttonId}`,
+            },
+          ]);
         }
 
         // Формируем сообщение об ошибке с идентификатором
@@ -265,8 +278,8 @@ export function createButtonHandler(options: ButtonOptions) {
         if (keyboard.length > 0) {
           await ctx.reply(errorMessageWithId, {
             reply_markup: {
-              inline_keyboard: keyboard
-            }
+              inline_keyboard: keyboard,
+            },
           });
         } else {
           await ctx.reply(errorMessageWithId);
@@ -275,10 +288,13 @@ export function createButtonHandler(options: ButtonOptions) {
         // Выходим из сцены, если нужно
         if (errorOptions.leaveSceneOnError) {
           await ctx.scene.leave();
-          logger.botAction(`Выход из сцены после ошибки в кнопке ${buttonId} [${errorId}]`, {
-            userId,
-            username
-          });
+          logger.botAction(
+            `Выход из сцены после ошибки в кнопке ${buttonId} [${errorId}]`,
+            {
+              userId,
+              username,
+            }
+          );
         }
 
         // Отвечаем на callback query, если нужно
@@ -289,19 +305,24 @@ export function createButtonHandler(options: ButtonOptions) {
         // Отправляем отчет об ошибке администратору, если нужно
         if (errorOptions.sendErrorReport && errorOptions.adminUserId) {
           try {
-            const adminMessage = `🚨 Ошибка в боте!\n\n` +
+            const adminMessage =
+              `🚨 Ошибка в боте!\n\n` +
               `Код ошибки: ${errorId}\n` +
               `Пользователь: ${username || userId}\n` +
               `Сцена: ${sceneName}\n` +
               `Кнопка: ${buttonId}\n` +
               `Ошибка: ${(error as Error).message}\n\n` +
-              `Стек вызовов:\n\`\`\`\n${errorStack.slice(0, 500)}${errorStack.length > 500 ? '...' : ''}\n\`\`\``;
+              `Стек вызовов:\n\`\`\`\n${errorStack.slice(0, 500)}${errorStack.length > 500 ? "..." : ""}\n\`\`\``;
 
             // Отправляем сообщение администратору через бота
             // Примечание: ctx.telegram.sendMessage доступен через контекст
-            await ctx.telegram.sendMessage(errorOptions.adminUserId, adminMessage, {
-              parse_mode: 'Markdown'
-            });
+            await ctx.telegram.sendMessage(
+              errorOptions.adminUserId,
+              adminMessage,
+              {
+                parse_mode: "Markdown",
+              }
+            );
 
             logger.info(`Отчет об ошибке ${errorId} отправлен администратору`, {
               userId,
@@ -309,20 +330,23 @@ export function createButtonHandler(options: ButtonOptions) {
               type: LogType.SYSTEM,
               data: {
                 errorId,
-                adminUserId: errorOptions.adminUserId
-              }
+                adminUserId: errorOptions.adminUserId,
+              },
             });
           } catch (adminError) {
-            logger.error(`Не удалось отправить отчет об ошибке администратору`, {
-              userId,
-              username,
-              error: adminError as Error,
-              type: LogType.ERROR,
-              data: {
-                errorId,
-                originalError: error
+            logger.error(
+              `Не удалось отправить отчет об ошибке администратору`,
+              {
+                userId,
+                username,
+                error: adminError as Error,
+                type: LogType.ERROR,
+                data: {
+                  errorId,
+                  originalError: error,
+                },
               }
-            });
+            );
           }
         }
       } catch (replyError) {
@@ -334,8 +358,8 @@ export function createButtonHandler(options: ButtonOptions) {
           data: {
             errorId,
             originalError: error,
-            buttonId
-          }
+            buttonId,
+          },
         });
       }
 
@@ -350,23 +374,22 @@ export function createButtonHandler(options: ButtonOptions) {
  * @param scene Сцена, в которой нужно зарегистрировать обработчик
  * @param options Опции для регистрации кнопки
  */
-export function registerButton(
-  scene: Scenes.BaseScene<ScraperBotContext>,
+export function registerButton<T extends BaseBotContext>(
+  scene: Scenes.BaseScene<T>,
   options: ButtonOptions
 ) {
   const handler = createButtonHandler(options);
   scene.action(options.id, handler);
 
-  const buttonId = typeof options.id === 'string'
-    ? options.id
-    : options.id.toString();
+  const buttonId =
+    typeof options.id === "string" ? options.id : options.id.toString();
 
   logger.debug(`Зарегистрирован обработчик для ${buttonId}`, {
     type: LogType.SYSTEM,
     data: {
       sceneName: scene.id,
-      buttonId
-    }
+      buttonId,
+    },
   });
 }
 
@@ -377,14 +400,14 @@ export function registerButton(
  * @param buttonId Идентификатор кнопки
  * @param onCancel Функция для обработки отмены действия
  */
-function registerCancelHandler(
-  scene: Scenes.BaseScene<ScraperBotContext>,
+function registerCancelHandler<T extends BaseBotContext>(
+  scene: Scenes.BaseScene<T>,
   buttonId: string,
-  onCancel?: (ctx: ScraperBotContext) => Promise<void>
+  onCancel?: (ctx: BaseBotContext) => Promise<void>
 ) {
   const cancelButtonId = `cancel_${buttonId}`;
 
-  scene.action(cancelButtonId, async (ctx) => {
+  scene.action(cancelButtonId, async (ctx: any) => {
     const userId = ctx.from?.id;
     const username = ctx.from?.username;
 
@@ -392,8 +415,8 @@ function registerCancelHandler(
       userId,
       username,
       data: {
-        buttonId: cancelButtonId
-      }
+        buttonId: cancelButtonId,
+      },
     });
 
     try {
@@ -410,18 +433,20 @@ function registerCancelHandler(
 
       logger.botAction(`Успешно обработана отмена действия: ${buttonId}`, {
         userId,
-        username
+        username,
       });
     } catch (error) {
       logger.error(`Ошибка при обработке отмены действия: ${buttonId}`, {
         userId,
         username,
         error: error as Error,
-        type: LogType.ERROR
+        type: LogType.ERROR,
       });
 
       // Отправляем сообщение об ошибке
-      await ctx.reply("Произошла ошибка при отмене действия. Попробуйте еще раз.");
+      await ctx.reply(
+        "Произошла ошибка при отмене действия. Попробуйте еще раз."
+      );
     }
   });
 
@@ -429,8 +454,8 @@ function registerCancelHandler(
     type: LogType.SYSTEM,
     data: {
       sceneName: scene.id,
-      buttonId: cancelButtonId
-    }
+      buttonId: cancelButtonId,
+    },
   });
 }
 
@@ -440,31 +465,37 @@ function registerCancelHandler(
  * @param scene Сцена, в которой нужно зарегистрировать обработчики
  * @param optionsArray Массив опций для регистрации кнопок
  */
-export function registerButtons(
-  scene: Scenes.BaseScene<ScraperBotContext>,
+export function registerButtons<T extends BaseBotContext>(
+  scene: Scenes.BaseScene<T>,
   optionsArray: ButtonOptions[]
 ) {
-  logger.info(`Регистрация ${optionsArray.length} обработчиков кнопок в сцене ${scene.id}`, {
-    type: LogType.SYSTEM,
-    data: {
-      sceneName: scene.id,
-      buttonCount: optionsArray.length
+  logger.info(
+    `Регистрация ${optionsArray.length} обработчиков кнопок в сцене ${scene.id}`,
+    {
+      type: LogType.SYSTEM,
+      data: {
+        sceneName: scene.id,
+        buttonCount: optionsArray.length,
+      },
     }
-  });
+  );
 
   for (const options of optionsArray) {
     registerButton(scene, options);
 
-    // Если включена опция отмены действия, регистрируем обработчик для кнопки отмены
     if (options.errorHandling?.showCancelButton) {
-      const buttonId = typeof options.id === 'string' ? options.id : options.id.toString();
+      const buttonId =
+        typeof options.id === "string" ? options.id : options.id.toString();
       registerCancelHandler(scene, buttonId, options.errorHandling?.onCancel);
     }
   }
 
-  logger.info(`Зарегистрировано ${optionsArray.length} обработчиков кнопок в сцене ${scene.id}`, {
-    type: LogType.SYSTEM
-  });
+  logger.info(
+    `Зарегистрировано ${optionsArray.length} обработчиков кнопок в сцене ${scene.id}`,
+    {
+      type: LogType.SYSTEM,
+    }
+  );
 }
 
 /**
@@ -476,18 +507,18 @@ export function registerButtons(
  */
 export function createNestedMenu(
   menuOptions: NestedMenuOptions,
-  currentPath: string = ''
+  currentPath: string = ""
 ): {
-  keyboard: any[][],
-  handlers: ButtonOptions[]
+  keyboard: any[][];
+  handlers: ButtonOptions[];
 } {
   const {
     items,
     showBackButton = true,
-    backButtonText = '« Назад',
+    backButtonText = "« Назад",
     showHomeButton = true,
-    homeButtonText = '🏠 Главное меню',
-    columns = 1
+    homeButtonText = "🏠 Главное меню",
+    columns = 1,
   } = menuOptions;
 
   const keyboard: any[][] = [];
@@ -503,7 +534,7 @@ export function createNestedMenu(
     // Добавляем кнопку в клавиатуру
     row.push({
       text: item.text,
-      callback_data: itemId
+      callback_data: itemId,
     });
 
     // Если достигли нужного количества колонок или это последний элемент, добавляем строку в клавиатуру
@@ -517,7 +548,7 @@ export function createNestedMenu(
       handlers.push({
         id: itemId,
         handler: item.handler,
-        errorHandling: item.errorHandling
+        errorHandling: item.errorHandling,
       });
     }
 
@@ -536,10 +567,13 @@ export function createNestedMenu(
               showHomeButton,
               homeButtonText,
               columns,
-              errorHandling: menuOptions.errorHandling
+              errorHandling: menuOptions.errorHandling,
             };
 
-            const { keyboard: submenuKeyboard } = createNestedMenu(submenuOptions, itemId);
+            const { keyboard: submenuKeyboard } = createNestedMenu(
+              submenuOptions,
+              itemId
+            );
 
             // Добавляем кнопки навигации
             const navigationRow = [];
@@ -547,14 +581,14 @@ export function createNestedMenu(
             if (showBackButton) {
               navigationRow.push({
                 text: backButtonText,
-                callback_data: `back_${itemId}`
+                callback_data: `back_${itemId}`,
               });
             }
 
             if (showHomeButton) {
               navigationRow.push({
                 text: homeButtonText,
-                callback_data: 'home'
+                callback_data: "home",
               });
             }
 
@@ -565,11 +599,11 @@ export function createNestedMenu(
             // Отправляем сообщение с подменю
             await ctx.reply(item.text, {
               reply_markup: {
-                inline_keyboard: submenuKeyboard
-              }
+                inline_keyboard: submenuKeyboard,
+              },
             });
           },
-          errorHandling: item.errorHandling
+          errorHandling: item.errorHandling,
         });
       }
 
@@ -583,7 +617,7 @@ export function createNestedMenu(
           showHomeButton,
           homeButtonText,
           columns,
-          errorHandling: menuOptions.errorHandling
+          errorHandling: menuOptions.errorHandling,
         },
         itemId
       );
@@ -599,7 +633,7 @@ export function createNestedMenu(
   if (showBackButton && currentPath) {
     navigationRow.push({
       text: backButtonText,
-      callback_data: `back_${currentPath}`
+      callback_data: `back_${currentPath}`,
     });
 
     // Добавляем обработчик для кнопки "Назад"
@@ -607,14 +641,14 @@ export function createNestedMenu(
       id: `back_${currentPath}`,
       handler: async (ctx) => {
         // Получаем родительский путь
-        const parentPath = currentPath.split('_').slice(0, -1).join('_');
+        const parentPath = currentPath.split("_").slice(0, -1).join("_");
 
         // Если это корневое меню, просто отправляем его
         if (!parentPath) {
           await ctx.reply(menuOptions.title, {
             reply_markup: {
-              inline_keyboard: keyboard
-            }
+              inline_keyboard: keyboard,
+            },
           });
           return;
         }
@@ -631,32 +665,35 @@ export function createNestedMenu(
             showHomeButton,
             homeButtonText,
             columns,
-            errorHandling: menuOptions.errorHandling
+            errorHandling: menuOptions.errorHandling,
           };
 
-          const { keyboard: parentKeyboard } = createNestedMenu(parentMenuOptions, parentPath);
+          const { keyboard: parentKeyboard } = createNestedMenu(
+            parentMenuOptions,
+            parentPath
+          );
 
           await ctx.reply(parentItem.text, {
             reply_markup: {
-              inline_keyboard: parentKeyboard
-            }
+              inline_keyboard: parentKeyboard,
+            },
           });
         }
       },
-      errorHandling: menuOptions.errorHandling
+      errorHandling: menuOptions.errorHandling,
     });
   }
 
   if (showHomeButton) {
     navigationRow.push({
       text: homeButtonText,
-      callback_data: 'home'
+      callback_data: "home",
     });
 
     // Добавляем обработчик для кнопки "Главное меню"
     if (currentPath) {
       handlers.push({
-        id: 'home',
+        id: "home",
         handler: async (ctx) => {
           // Отправляем корневое меню
           const rootMenuOptions: NestedMenuOptions = {
@@ -665,18 +702,18 @@ export function createNestedMenu(
             showBackButton: false,
             showHomeButton: false,
             columns,
-            errorHandling: menuOptions.errorHandling
+            errorHandling: menuOptions.errorHandling,
           };
 
           const { keyboard: rootKeyboard } = createNestedMenu(rootMenuOptions);
 
           await ctx.reply(menuOptions.title, {
             reply_markup: {
-              inline_keyboard: rootKeyboard
-            }
+              inline_keyboard: rootKeyboard,
+            },
           });
         },
-        errorHandling: menuOptions.errorHandling
+        errorHandling: menuOptions.errorHandling,
       });
     }
   }
@@ -695,8 +732,11 @@ export function createNestedMenu(
  * @param path Путь к пункту
  * @returns Найденный пункт меню или undefined
  */
-function findItemByPath(items: NestedMenuItem[], path: string): NestedMenuItem | undefined {
-  const pathParts = path.split('_');
+function findItemByPath(
+  items: NestedMenuItem[],
+  path: string
+): NestedMenuItem | undefined {
+  const pathParts = path.split("_");
 
   if (pathParts.length === 0) {
     return undefined;
@@ -706,7 +746,7 @@ function findItemByPath(items: NestedMenuItem[], path: string): NestedMenuItem |
   let currentItem: NestedMenuItem | undefined;
 
   for (const part of pathParts) {
-    currentItem = currentItems.find(item => item.id === part);
+    currentItem = currentItems.find((item) => item.id === part);
 
     if (!currentItem) {
       return undefined;
@@ -727,15 +767,15 @@ function findItemByPath(items: NestedMenuItem[], path: string): NestedMenuItem |
  * @param menuOptions Опции для вложенного меню
  */
 export function registerNestedMenu(
-  scene: Scenes.BaseScene<ScraperBotContext>,
+  scene: Scenes.BaseScene<BaseBotContext>,
   menuOptions: NestedMenuOptions
 ) {
   logger.info(`Регистрация вложенного меню в сцене ${scene.id}`, {
     type: LogType.SYSTEM,
     data: {
       sceneName: scene.id,
-      menuTitle: menuOptions.title
-    }
+      menuTitle: menuOptions.title,
+    },
   });
 
   const { handlers } = createNestedMenu(menuOptions);
@@ -748,18 +788,18 @@ export function registerNestedMenu(
     data: {
       sceneName: scene.id,
       menuTitle: menuOptions.title,
-      handlersCount: handlers.length
-    }
+      handlersCount: handlers.length,
+    },
   });
 
   // Возвращаем функцию для отправки меню
-  return async (ctx: ScraperBotContext) => {
+  return async (ctx: BaseBotContext) => {
     const { keyboard } = createNestedMenu(menuOptions);
 
     await ctx.reply(menuOptions.title, {
       reply_markup: {
-        inline_keyboard: keyboard
-      }
+        inline_keyboard: keyboard,
+      },
     });
   };
 }

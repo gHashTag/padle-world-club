@@ -1,283 +1,254 @@
 import * as dotenv from "dotenv";
-import { Telegraf, session, Markup /*, MemorySessionStore*/ } from "telegraf";
-// import { Scenes } from "telegraf"; // Удаляем неиспользуемый импорт Scenes
-import { NeonAdapter } from "./adapters/neon-adapter";
-import { setupInstagramScraperBot } from "../index"; // Импортируем функцию настройки из корневого index.ts
-import { logger, LogLevel, LogType } from "./utils/logger"; // Импортируем логгер
-import type {
-  ScraperBotContext,
-  InstagramScraperBotConfig,
-  StorageAdapter,
-} from "./types";
+import { Telegraf, session, Scenes, Context, Markup } from "telegraf";
+import { logger, LogLevel, LogType } from "./utils/logger";
+import { StorageAdapter } from "./adapters/storage-adapter";
+import { MemoryAdapter } from "./adapters/memory-adapter";
+import { User } from "./schemas";
+import { errorHandler } from "./middlewares/error-handler";
+import { config } from "./config";
 
-// <<< Создаем middleware для проверки/создания пользователя >>>
+// --- Типы Контекста и Сессии ---
+export interface SessionData
+  extends Scenes.SceneSession<Scenes.WizardSessionData> {
+  user?: User;
+}
+
+export interface CustomContext extends Context {
+  storage: StorageAdapter;
+  session: SessionData;
+  scene: Scenes.SceneContextScene<CustomContext, Scenes.WizardSessionData>;
+}
+
+let bot: Telegraf<CustomContext>;
+
+// --- Middleware ---
 async function ensureUserMiddleware(
-  ctx: ScraperBotContext,
+  ctx: CustomContext,
   next: () => Promise<void>
 ) {
-  // +++ Добавляем лог начала работы middleware +++
-  console.log("[DEBUG] ensureUserMiddleware: Запуск...");
-
   if (!ctx.from?.id) {
-    console.warn("[DEBUG] ensureUserMiddleware: Обновление без ctx.from.id.");
-    return; // Не можем обработать без ID
+    logger.warn("ensureUserMiddleware: Обновление без ctx.from.id.", {
+      type: LogType.SYSTEM,
+    });
+    return;
   }
-  const telegramId = ctx.from.id; // Сохраним для логов
-  console.log(
-    `[DEBUG] ensureUserMiddleware: Обработка пользователя ${telegramId}.`
-  );
+  const telegramId = ctx.from.id;
 
   if (!ctx.storage) {
-    console.error(
-      "[ERROR] ensureUserMiddleware: Middleware вызвано до инициализации ctx.storage"
-    );
+    logger.error("ensureUserMiddleware: ctx.storage не инициализирован.", {
+      type: LogType.SYSTEM,
+    });
+    if (ctx.reply) {
+      await ctx
+        .reply(
+          "Произошла внутренняя ошибка (storage not init). Пожалуйста, попробуйте позже."
+        )
+        .catch(() => {});
+    }
     return;
   }
 
   try {
-    console.log(
-      `[DEBUG] ensureUserMiddleware: Поиск пользователя ${telegramId}...`
-    );
     let user = await ctx.storage.getUserByTelegramId(telegramId);
 
     if (!user) {
-      console.log(
-        `[INFO] ensureUserMiddleware: Пользователь ${telegramId} не найден, попытка создания...`
+      logger.info(
+        "ensureUserMiddleware: Пользователь " +
+          telegramId +
+          " не найден, создаем нового.",
+        { type: LogType.USER_ACTION }
       );
       const username =
-        ctx.from.username || ctx.from.first_name || `User_${telegramId}`;
-      // +++ Добавляем лог перед вызовом createUser +++
-      console.log(
-        `[DEBUG] ensureUserMiddleware: Вызов createUser для ${telegramId} с username "${username}"...`
-      );
-      user = await ctx.storage.createUser(telegramId, username);
-      // +++ Добавляем лог после вызова createUser +++
+        ctx.from.username || ctx.from.first_name || "User_" + telegramId;
+      const userData: Partial<User> = {
+        telegram_id: telegramId,
+        username: username,
+        first_name: ctx.from.first_name,
+        last_name: ctx.from.last_name,
+      };
+      user = await ctx.storage.createUser(userData);
+
       if (user) {
-        console.log(
-          `[INFO] ensureUserMiddleware: Пользователь ${telegramId} (${username}) успешно создан. ID в базе: ${user.id}`
+        logger.info(
+          "ensureUserMiddleware: Пользователь " +
+            telegramId +
+            " (" +
+            user.username +
+            ") успешно создан. ID: " +
+            user.id,
+          { type: LogType.USER_ACTION }
         );
       } else {
-        // !!! Важный лог, если createUser вернул null/undefined
-        console.error(
-          `[ERROR] ensureUserMiddleware: createUser для ${telegramId} вернул ${user}. Пользователь НЕ создан.`
+        logger.error(
+          "ensureUserMiddleware: createUser для " +
+            telegramId +
+            " вернул null/undefined.",
+          { type: LogType.USER_ACTION }
         );
-        // Решаем, что делать - прервать или нет? Пока прервем.
-        await ctx
-          .reply(
-            "Не удалось создать вашу учетную запись в системе. Попробуйте позже."
-          )
-          .catch(() => {});
+        if (ctx.reply) {
+          await ctx
+            .reply("Не удалось создать вашу учетную запись. Попробуйте позже.")
+            .catch(() => {});
+        }
         return;
       }
     } else {
-      console.log(
-        `[INFO] ensureUserMiddleware: Пользователь ${telegramId} (${user.username || "без username"}) найден. ID в базе: ${user.id}.`
+      logger.debug(
+        "ensureUserMiddleware: Пользователь " +
+          telegramId +
+          " (" +
+          (user.username || "N/A") +
+          ") найден. ID: " +
+          user.id,
+        { type: LogType.USER_ACTION }
       );
     }
 
-    // +++ Добавляем лог перед присвоением ctx.user +++
-    console.log(
-      `[DEBUG] ensureUserMiddleware: Присвоение ctx.session.user для ${telegramId}. Пользователь:`,
-      JSON.stringify(user)
-    );
     if (!ctx.session) {
-      ctx.session = {};
+      ctx.session = {} as SessionData;
     }
-    ctx.session.user = user; // Используем ctx.session вместо ctx.scene.session
-    // +++ Добавляем лог после присвоения ctx.user +++
-    console.log(
-      `[DEBUG] ensureUserMiddleware: ctx.session.user успешно присвоено для ${telegramId}.`
-    );
+    ctx.session.user = user;
   } catch (error) {
-    console.error(
-      `[ERROR] ensureUserMiddleware: Ошибка при поиске/создании пользователя ${telegramId}:`,
-      error
+    logger.error(
+      "ensureUserMiddleware: Ошибка при работе с пользователем " + telegramId,
+      {
+        error: error instanceof Error ? error : new Error(String(error)),
+        type: LogType.USER_ACTION,
+      }
     );
-    await ctx
-      .reply(
-        "Произошла ошибка при проверке вашей учетной записи. Попробуйте позже."
-      )
-      .catch(() => {});
-    return; // Прерываем выполнение
+    if (ctx.reply) {
+      await ctx
+        .reply(
+          "Произошла ошибка при проверке вашей учетной записи. Попробуйте позже."
+        )
+        .catch(() => {});
+    }
+    return;
   }
 
-  // +++ Добавляем лог перед вызовом next() +++
-  console.log(
-    `[DEBUG] ensureUserMiddleware: Вызов next() для пользователя ${telegramId}.`
-  );
   return next();
 }
 
+// --- Основная функция запуска бота ---
 async function startBot() {
-  dotenv.config(); // Убрали явный path, используем стандартный поиск .env
+  dotenv.config();
 
-  // Инициализация логгера
   logger.configure({
     logToConsole: true,
-    minLevel: LogLevel.DEBUG
+    minLevel: LogLevel.DEBUG,
   });
-  logger.info("Запуск бота", { type: LogType.SYSTEM });
+  logger.info("Запуск бота...", { type: LogType.SYSTEM });
 
-  const BOT_TOKEN = process.env.BOT_TOKEN;
-  const DATABASE_URL = process.env.DATABASE_URL; // Проверяем наличие, т.к. адаптер использует его внутри
-
+  const BOT_TOKEN = process.env.BOT_TOKEN || config.BOT_TOKEN;
   if (!BOT_TOKEN) {
-    console.error("Ошибка: BOT_TOKEN не найден в .env файле.");
+    logger.fatal("BOT_TOKEN не найден в .env файле или конфигурации.", {
+      type: LogType.SYSTEM,
+    });
     process.exit(1);
   }
 
-  if (!DATABASE_URL) {
-    // Даже если адаптер читает его сам, нам нужно убедиться, что он есть
-    console.error("Ошибка: DATABASE_URL не найден в .env файле.");
+  bot = new Telegraf<CustomContext>(BOT_TOKEN);
+
+  const storage = new MemoryAdapter();
+  try {
+    logger.info("Хранилище (MemoryAdapter) готово к использованию.", {
+      type: LogType.SYSTEM,
+    });
+  } catch (error) {
+    logger.fatal("Ошибка инициализации хранилища.", {
+      error: error instanceof Error ? error : new Error(String(error)),
+      type: LogType.SYSTEM,
+    });
     process.exit(1);
   }
 
-  let storageAdapter: NeonAdapter | undefined;
+  bot.use(
+    session({
+      defaultSession: () => ({}) as SessionData,
+    })
+  );
+
+  bot.use((ctx: CustomContext, next) => {
+    ctx.storage = storage;
+    return next();
+  });
+
+  bot.use(ensureUserMiddleware);
+
+  bot.start(async (ctx) => {
+    const userFirstName =
+      ctx.session?.user?.first_name || ctx.from?.first_name || "незнакомец";
+    await ctx.reply(
+      `Привет, ${userFirstName}! Я простой бот-стартер. Используй /help для списка команд.`,
+      Markup.removeKeyboard()
+    );
+  });
+
+  bot.help(async (ctx) => {
+    const helpMessage =
+      "Доступные команды:\n" +
+      "/start - Начальное приветствие\n" +
+      "/help - Это сообщение\n" +
+      "Больше команд может быть добавлено через setupCommands.";
+    await ctx.reply(helpMessage);
+  });
+
+  bot.catch((err: any, ctx: CustomContext) => {
+    errorHandler(err, ctx);
+  });
+  logger.info("Telegraf global error handler registered.");
+
+  logger.info("Запуск Telegraf...", { type: LogType.SYSTEM });
 
   try {
-    console.log("Запуск бота из src/bot.ts...");
-    const bot = new Telegraf<ScraperBotContext>(BOT_TOKEN);
-
-    // Используем session middleware из Telegraf
-    const { session } = require('telegraf');
-    bot.use(session());
-
-    // Добавляем свой middleware для логирования сессии
-    bot.use((ctx, next) => {
-      console.log("[DEBUG] Проверка сессии в middleware");
-
-      // Логируем наличие сессии
-      console.log("[DEBUG] ctx.session существует?", !!ctx.session);
-
-      // Инициализируем ctx.session, если его нет (хотя session middleware должен это делать)
-      if (!ctx.session) {
-        console.log("[DEBUG] ctx.session не существует, создаем");
-        (ctx as any).session = {
-          user: null,
-          __scenes: {}
-        };
-      }
-
-      return next();
-    });
-
-    // Добавляем адаптер в контекст
-    storageAdapter = new NeonAdapter();
-    bot.use((ctx, next) => {
-      ctx.storage = storageAdapter as StorageAdapter;
-      return next();
-    });
-
-    // <<< СНАЧАЛА НАСТРАИВАЕМ СЦЕНЫ (включая stage.middleware()) >>>
-    const config: InstagramScraperBotConfig = {
-      telegramBotToken: BOT_TOKEN,
-      // здесь можно добавить конфигурацию, если она нужна, например, apifyClientToken, если он есть
-      // apifyClientToken: process.env.APIFY_CLIENT_TOKEN,
-    };
-
-    console.log("Инициализация адаптера хранилища...");
-    await storageAdapter.initialize();
-    console.log("Адаптер хранилища инициализирован.");
-
-    // Передаем созданные экземпляры в функцию настройки (которая добавит stage)
-    setupInstagramScraperBot(bot, storageAdapter, config);
-    console.log("Модуль бота настроен (включая сцены).");
-
-    // <<< ПОТОМ РЕГИСТРИРУЕМ MIDDLEWARE ПРОВЕРКИ ПОЛЬЗОВАТЕЛЯ >>>
-    bot.use(ensureUserMiddleware);
-
-    // <<< Добавляем обработчик команды /start >>>
-    bot.start(async (ctx) => {
-      const username =
-        ctx.session?.user?.username ||
-        ctx.from?.first_name ||
-        "пользователь";
-      const welcomeMessage = `Привет, ${username}! Чем могу помочь?`;
-      // Основная клавиатура
-      const mainMenuKeyboard = Markup.keyboard([
-        ["📊 Проекты", "🔍 Конкуренты"],
-        ["#️⃣ Хэштеги", "🎬 Запустить скрапинг"],
-        ["📱 Результаты", "ℹ️ Помощь"],
-      ]).resize(); // Делаем клавиатуру компактнее
-
-      await ctx.reply(welcomeMessage, mainMenuKeyboard);
-    });
-
-    // Обработчик ошибок Telegraf
-    bot.catch((err: any, ctx: ScraperBotContext) => {
-      console.error(`Ошибка Telegraf для ${ctx.updateType}`, err);
-      ctx.reply("Упс, что-то пошло не так. Попробуйте еще раз позже.").catch(e => console.error("Ошибка отправки сообщения об ошибке", e));
-    });
-
-    // Глобальный middleware для логирования всех входящих обновлений
-    bot.use(async (ctx, next) => {
-      // Добавляем ctx.scene.session если его нет (важно для команд вне сцен)
-      // console.log("[DEBUG] Global middleware: Начало обработки ctx.update", JSON.stringify(ctx.update, null, 2));
-      // console.log("[DEBUG] Global middleware: Текущий ctx.scene", JSON.stringify(ctx.scene, null, 2));
-      // console.log("[DEBUG] Global middleware: Наличие ctx.session", !!ctx.session);
-      // console.log("[DEBUG] Global middleware: Наличие ctx.scene?.session", !!ctx.scene?.session);
-
-      // Проверяем наличие ctx.session и инициализируем, если отсутствует
-      // Это нужно, чтобы ctx.session всегда было доступно,
-      // даже для команд, которые не входят в сцены (например /start, /help)
-      if (!ctx.session) {
-        console.log("[DEBUG] Global middleware: ctx.session отсутствует, инициализируем пустым объектом");
-        ctx.session = {}; // Инициализация значением по умолчанию
-      }
-
-      // Явное создание сессии, если ее нет. Это может быть необходимо для команд, не входящих в сцены.
-      // Telegraf-session-local должен делать это автоматически, но на всякий случай.
-      // if (!ctx.scene.session) { // Оставляем как есть или уточняем логику, если нужно
-      // console.log(
-      //   "[DEBUG] Global middleware: ctx.scene.session все еще отсутствует после проверок, принудительно создаем."
-      // );
-      // (ctx.scene as any).session = {};
-      // }
-
-      // Логирование информации о пользователе и чате
-      // ... existing code ...
-
-      return next();
-    });
-
-    console.log("Запуск Telegraf...");
-    await bot.launch();
-    console.log("Бот успешно запущен!");
-
-    // Обеспечиваем graceful stop
-    const stopBot = async (signal: string) => {
-      console.log(`Получен ${signal}. Остановка бота...`);
-      bot.stop(signal);
-      if (storageAdapter) {
-        try {
-          await storageAdapter.close();
-          console.log("Соединение с БД закрыто.");
-        } catch (closeError) {
-          console.error("Ошибка при закрытии соединения с БД:", closeError);
-        }
-      }
-      console.log("Бот остановлен.");
-      process.exit(0);
-    };
-
-    process.once("SIGINT", () => stopBot("SIGINT"));
-    process.once("SIGTERM", () => stopBot("SIGTERM"));
-  } catch (error) {
-    console.error("Критическая ошибка при запуске или работе бота:", error);
-    if (storageAdapter) {
-      try {
-        await storageAdapter.close();
-        console.log("Соединение с БД закрыто из-за ошибки.");
-      } catch (closeError) {
-        console.error(
-          "Ошибка при закрытии соединения с БД после основной ошибки:",
-          closeError
-        );
-      }
+    if (process.env.NODE_ENV === "development") {
+      logger.info("Bot is running in development mode with polling.");
+      await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+      await bot.launch();
+      logger.info(`Bot @${bot.botInfo?.username} started! (Telegraf)`);
+    } else {
+      logger.info("Bot is running in production mode (webhook setup pending).");
+      logger.warn(
+        "Production mode with webhook is not fully implemented for Telegraf. Falling back to polling for now."
+      );
+      await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+      await bot.launch();
+      logger.info(`Bot @${bot.botInfo?.username} started! (Telegraf)`);
     }
+  } catch (err) {
+    logger.error("Error starting Telegraf bot", {
+      error: err instanceof Error ? err : new Error(String(err)),
+      type: LogType.SYSTEM,
+    });
     process.exit(1);
   }
+
+  logger.info("Telegraf bot setup complete. Waiting for messages...");
 }
 
-// Запускаем асинхронную функцию
-startBot();
+startBot().catch((error: unknown) => {
+  logger.fatal("Критическая ошибка при запуске бота", {
+    error: error instanceof Error ? error : new Error(String(error)),
+    type: LogType.SYSTEM,
+  });
+  process.exit(1);
+});
+
+process.once("SIGINT", () => {
+  logger.info("SIGINT received, shutting down Telegraf bot gracefully...");
+  if (bot) {
+    bot.stop("SIGINT");
+  }
+  logger.info("Telegraf bot stopped.");
+  process.exit(0);
+});
+process.once("SIGTERM", () => {
+  logger.info("SIGTERM received, shutting down Telegraf bot gracefully...");
+  if (bot) {
+    bot.stop("SIGTERM");
+  }
+  logger.info("Telegraf bot stopped.");
+  process.exit(0);
+});
+
+export { bot };

@@ -1,231 +1,99 @@
-/**
- * Модуль Instagram Scraper Bot для Telegram
- *
- * Предоставляет функциональность для скрапинга Instagram Reels
- * в нише эстетической медицины через интерфейс Telegram бота.
- */
-
 import { Telegraf, Scenes } from "telegraf";
-import { competitorScene } from "./src/scenes/competitor-scene";
-import { competitorWizardScene, setupCompetitorWizard } from "./src/scenes/competitor-wizard-scene";
-import { projectScene } from "./src/scenes/project-scene";
-import { projectWizardScene, setupProjectWizard } from "./src/scenes/project-wizard-scene";
-import { hashtagScene } from "./src/scenes/hashtag-scene";
-import { hashtagWizardScene, setupHashtagWizard } from "./src/scenes/hashtag-wizard-scene";
-import { scrapingScene } from "./src/scenes/scraping-scene";
-import { scrapingWizardScene, setupScrapingWizard } from "./src/scenes/scraping-wizard-scene";
-import { reelsScene } from "./src/scenes/reels-scene";
-import { reelsWizardScene, setupReelsWizard } from "./src/scenes/reels-wizard-scene";
-import { analyticsScene } from "./src/scenes/analytics-scene";
-import { analyticsWizardScene, setupAnalyticsWizard } from "./src/scenes/analytics-wizard-scene";
-import { notificationScene } from "./src/scenes/notification-scene";
-import { notificationWizardScene, setupNotificationWizard } from "./src/scenes/notification-wizard-scene";
-import { ReelsCollectionScene } from "./src/scenes/reels-collection-scene";
-import { ReelsCollectionWizardScene, setupReelsCollectionWizard } from "./src/scenes/reels-collection-wizard-scene";
-import { ChatbotScene } from "./src/scenes/chatbot-scene";
-import { ChatbotWizardScene, setupChatbotWizard } from "./src/scenes/chatbot-wizard-scene";
-import type { Middleware } from "telegraf";
-import type {
-  StorageAdapter,
-  ScraperBotContext,
-  InstagramScraperBotConfig,
-  // Project, // Закомментировано: не используется напрямую в этом файле, только реэкспортируется
-  // Competitor, // Закомментировано: не используется напрямую в этом файле, только реэкспортируется
-  // Hashtag, // Закомментировано: не используется напрямую в этом файле, только реэкспортируется
-  // ReelContent, // Закомментировано: не используется напрямую в этом файле, только реэкспортируется
-} from "@/types";
-// import type { MiddlewareFn } from "telegraf/types" // Закомментировано
-// import type { ScraperBotContext } from "./types_telegraf" // Закомментировано
+import { session } from "telegraf";
+import { config } from "./src/config";
+import { logger, LogType } from "./src/utils/logger";
+import type { BaseBotContext } from "./src/types";
+import { errorHandler } from "./src/middlewares/error-handler";
+import { MemoryAdapter } from "./src/adapters/memory-adapter";
+import { createExampleWizardScene } from "./src/templates/wizard-scene-template";
+import { setupCommands } from "./src/commands";
 
-// import {
-//   type StorageAdapter,
-//   type User,
-//   type Project,
-//   type Competitor,
-// } from "@/types" // Закомментировано
+// Экспорты для использования стартер-кита как библиотеки
+export { Telegraf, Scenes };
+export type { BaseBotContext } from "./src/types";
+export type { StorageAdapter } from "./src/adapters/storage-adapter";
+export { MemoryAdapter } from "./src/adapters/memory-adapter";
+export { createExampleWizardScene } from "./src/templates/wizard-scene-template";
+export { errorHandler } from "./src/middlewares/error-handler";
+export { logger, LogType } from "./src/utils/logger";
 
-// import {
-//   createNeonStorageAdapter,
-//   initializeNeonStorage,
-//   createMultitenantNeonStorageAdapter,
-// } from "@/storage" // Закомментировано
+// Вспомогательная функция для форматирования ошибок
+const formatError = (err: unknown): Error =>
+  err instanceof Error ? err : new Error(String(err));
 
-// import { logger } from "./logger" // Закомментировано
+// Определяем, является ли текущий файл точкой входа
+// import.meta.main доступен только в Bun, поэтому проверяем его наличие
+const isEntryPoint =
+  (typeof import.meta.main === "boolean" && import.meta.main) ||
+  process.argv[1]?.endsWith("index.ts") ||
+  import.meta.url.endsWith("index.ts");
 
-// Экспортируем типы
-export type {
-  StorageAdapter,
-  ScraperBotContext,
-  // Project, // Закомментировано: не используется напрямую в этом файле, только реэкспортируется
-  // Competitor, // Закомментировано: не используется напрямую в этом файле, только реэкспортируется
-  // Hashtag, // Закомментировано: не используется напрямую в этом файле, только реэкспортируется
-  // ReelContent as Reel, // Закомментировано: не используется напрямую в этом файле, только реэкспортируется
-  InstagramScraperBotConfig,
-} from "@/types";
+// Запуск бота если файл выполняется напрямую
+if (isEntryPoint) {
+  try {
+    // Создаем экземпляр бота
+    const bot = new Telegraf<BaseBotContext>(config.BOT_TOKEN);
 
-// Экспорт функций хранилища
-// export * from "@/storage" // Закомментировано
+    // Создаем адаптер хранилища
+    const storage = new MemoryAdapter();
 
-// Экспорт функций скрапера
-// export * from "@/agent" // Закомментировано временно
+    // Инициализируем хранилище
+    await storage.initialize();
 
-/**
- * Настройка модуля Instagram Scraper Bot
- *
- * @param bot Экземпляр Telegraf бота
- * @param storageAdapter Адаптер хранилища данных
- * @param config Конфигурация модуля
- * @returns Объект с API модуля
- */
-export function setupInstagramScraperBot(
-  bot: Telegraf<ScraperBotContext>, // Используем импортированный ScraperBotContext
-  storageAdapter: StorageAdapter,
-  config: InstagramScraperBotConfig
-) {
-  // Инициализируем сцены
-  const stage = new Scenes.Stage<ScraperBotContext>([
-    projectScene,
-    projectWizardScene, // Добавляем новую визард-сцену для проектов
-    competitorScene,
-    competitorWizardScene, // Добавляем новую визард-сцену для конкурентов
-    hashtagScene,
-    hashtagWizardScene, // Добавляем новую визард-сцену для хештегов
-    scrapingScene,
-    scrapingWizardScene, // Добавляем новую визард-сцену для скрапинга
-    reelsScene,
-    reelsWizardScene, // Добавляем новую визард-сцену для просмотра Reels
-    analyticsScene,
-    analyticsWizardScene, // Добавляем новую визард-сцену для аналитики
-    notificationScene,
-    notificationWizardScene, // Добавляем новую визард-сцену для уведомлений
-    new ReelsCollectionScene(storageAdapter),
-    new ReelsCollectionWizardScene(storageAdapter), // Добавляем новую визард-сцену для коллекций Reels
-    new ChatbotScene(storageAdapter, process.env.OPENAI_API_KEY),
-    new ChatbotWizardScene(storageAdapter, process.env.OPENAI_API_KEY), // Добавляем новую визард-сцену для чат-бота
-    // Здесь будут добавляться другие сцены
-  ]);
+    // Добавляем хранилище и конфигурацию в контекст бота
+    bot.use((ctx, next) => {
+      ctx.storage = storage;
+      ctx.config = {
+        telegramBotToken: config.BOT_TOKEN,
+        ...config,
+      };
+      return next();
+    });
 
-  // Добавляем middleware для доступа к хранилищу и конфигурации
-  bot.use((ctx: ScraperBotContext, next) => {
-    // Явно типизируем ctx
-    ctx.storage = storageAdapter;
-    ctx.scraperConfig = config;
-    return next();
-  });
+    // Подключаем middleware для обработки ошибок
+    bot.catch((err, ctx) => {
+      // Безопасное приведение типов для контекста
+      // @ts-expect-error: Типы CustomContext и BaseBotContext несовместимы
+      errorHandler(err, ctx);
+    });
 
-  // Подключаем Stage middleware
-  bot.use(stage.middleware() as Middleware<ScraperBotContext>);
+    // Подключаем middleware
+    bot.use(session());
 
-  // Настраиваем обработчики для wizard-сцен
-  setupProjectWizard(bot);
-  setupCompetitorWizard(bot);
-  setupHashtagWizard(bot);
-  setupScrapingWizard(bot);
-  setupReelsWizard(bot);
-  setupAnalyticsWizard(bot);
-  setupNotificationWizard(bot);
-  setupReelsCollectionWizard(bot);
-  setupChatbotWizard(bot);
+    // Создаем и регистрируем сцены
+    const exampleScene = createExampleWizardScene();
+    const stage = new Scenes.Stage<BaseBotContext>([exampleScene]);
+    bot.use(stage.middleware());
 
-  // Регистрируем обработчики команд
-  bot.command("projects", (ctx) =>
-    ctx.scene.enter("project_wizard")
-  );
-  bot.command("competitors", (ctx) =>
-    ctx.scene.enter("competitor_wizard")
-  );
-  bot.command("hashtags", (ctx) =>
-    ctx.scene.enter("hashtag_wizard")
-  );
-  bot.command("scrape", (ctx) =>
-    ctx.scene.enter("scraping_wizard")
-  );
-  bot.command("reels", (ctx) =>
-    ctx.scene.enter("reels_wizard")
-  );
-  bot.command("analytics", (ctx) =>
-    ctx.scene.enter("analytics_wizard")
-  );
-  bot.command("notifications", (ctx) =>
-    ctx.scene.enter("notification_wizard")
-  );
-  bot.command("collections", (ctx) =>
-    ctx.scene.enter("reels_collection_wizard")
-  );
-  bot.command("chatbot", (ctx) =>
-    ctx.scene.enter("chatbot_wizard")
-  );
+    // Регистрируем команды
+    // @ts-expect-error: Типы не совместимы, но функционально это работает
+    setupCommands(bot);
 
-  // Обработчики текстовых сообщений для меню
-  bot.hears("📊 Проекты", (ctx) =>
-    ctx.scene.enter("project_wizard")
-  );
-  bot.hears("🔍 Конкуренты", (ctx) => {
-    console.log("[DEBUG] Обработчик кнопки '🔍 Конкуренты' вызван");
-    return ctx.scene.enter("competitor_wizard");
-  });
-  bot.hears("#️⃣ Хэштеги", (ctx) => {
-    console.log("[DEBUG] Обработчик кнопки '#️⃣ Хэштеги' вызван");
-    return ctx.scene.enter("hashtag_wizard");
-  });
-  bot.hears("🎬 Запустить скрапинг", (ctx) =>
-    ctx.scene.enter("scraping_wizard")
-  );
-  bot.hears("👀 Просмотр Reels", (ctx) =>
-    ctx.scene.enter("reels_wizard")
-  );
-  bot.hears("📈 Аналитика", (ctx) =>
-    ctx.scene.enter("analytics_wizard")
-  );
-  bot.hears("🔔 Уведомления", (ctx) =>
-    ctx.scene.enter("notification_wizard")
-  );
-  bot.hears("📋 Коллекции Reels", (ctx) =>
-    ctx.scene.enter("reels_collection_wizard")
-  );
-  bot.hears("🤖 Чат-бот", (ctx) =>
-    ctx.scene.enter("chatbot_wizard")
-  );
+    // Запускаем бота
+    await bot.launch();
+    logger.info("Бот успешно запущен", { type: LogType.SYSTEM });
 
-  // Возвращаем API модуля
-  return {
-    // Методы для входа в сцены
-    enterProjectScene: () => "project_wizard",
-    enterCompetitorScene: () => "competitor_wizard",
-    enterHashtagScene: () => "hashtag_wizard",
-    enterScrapingScene: () => "scraping_wizard",
-    enterReelsScene: () => "reels_wizard",
-    enterAnalyticsScene: () => "analytics_wizard",
-    enterNotificationScene: () => "notification_wizard",
-    enterReelsCollectionScene: () => "reels_collection_wizard",
-    enterChatbotScene: () => "chatbot_wizard",
+    // Обработка завершения работы
+    const shutdown = async (signal: string) => {
+      logger.info(`Получен сигнал ${signal}, завершаем работу...`, {
+        type: LogType.SYSTEM,
+      });
+      bot.stop(signal);
+      await storage.close().catch((err) =>
+        logger.error("Ошибка при закрытии хранилища", {
+          error: formatError(err),
+          type: LogType.ERROR,
+        })
+      );
+    };
 
-    // Получение кнопок для меню
-    getMenuButtons: () => [
-      ["📊 Проекты", "🔍 Конкуренты"],
-      ["#️⃣ Хэштеги", "🎬 Запустить скрапинг"],
-      ["👀 Просмотр Reels", "📈 Аналитика"],
-      ["🔔 Уведомления", "📋 Коллекции Reels"],
-      ["🤖 Чат-бот", "ℹ️ Помощь"],
-    ],
-
-    // Получение команд для регистрации в Telegram
-    getCommands: () => [
-      { command: "projects", description: "Управление проектами" },
-      { command: "competitors", description: "Управление конкурентами" },
-      { command: "hashtags", description: "Управление хэштегами" },
-      { command: "scrape", description: "Запустить скрапинг" },
-      { command: "reels", description: "Просмотр Reels" },
-      { command: "analytics", description: "Аналитика данных" },
-      { command: "notifications", description: "Настройка уведомлений" },
-      { command: "collections", description: "Коллекции Reels" },
-      { command: "chatbot", description: "Чат-бот для общения с видео" },
-    ],
-  };
+    process.once("SIGINT", () => shutdown("SIGINT"));
+    process.once("SIGTERM", () => shutdown("SIGTERM"));
+  } catch (err) {
+    logger.error("Ошибка при запуске бота", {
+      error: formatError(err),
+      type: LogType.ERROR,
+    });
+    process.exit(1);
+  }
 }
-
-// Установка обработчика ошибок
-// bot.catch((err: any, ctx: ScraperBotContext) => {
-//   logger.error(`Ooops, encountered an error for ${ctx.updateType}`, err);
-//   ctx.reply("Упс, что-то пошло не так. Попробуйте еще раз позже.");
-// });
