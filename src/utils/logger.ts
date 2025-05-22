@@ -16,12 +16,16 @@ export enum LogLevel {
 
 // Типы логов
 export enum LogType {
-  SYSTEM = "SYSTEM",
-  USER_ACTION = "USER_ACTION",
-  BOT_ACTION = "BOT_ACTION",
-  DATABASE = "DATABASE",
-  API = "API",
-  ERROR = "ERROR",
+  INFO = "info",
+  ERROR = "error",
+  WARNING = "warning",
+  DEBUG = "debug",
+  SYSTEM = "system",
+  SCENE = "scene",
+  USER_ACTION = "user_action",
+  DATABASE = "database",
+  NETWORK = "network",
+  PERFORMANCE = "performance",
 }
 
 // Интерфейс для записи лога
@@ -255,7 +259,7 @@ export class Logger {
   ) {
     this.log({
       level: LogLevel.INFO,
-      type: LogType.BOT_ACTION,
+      type: LogType.SYSTEM,
       message,
       ...options,
     });

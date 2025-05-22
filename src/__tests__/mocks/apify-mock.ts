@@ -5,7 +5,23 @@
  * без реальных API-запросов.
  */
 
-import { InstagramReel } from "../../types";
+// Определяем локальный интерфейс для InstagramReel вместо импорта
+export interface InstagramReel {
+  id: string;
+  url: string;
+  publication_date?: Date;
+  views_count?: number;
+  likes_count?: number;
+  comments_count?: number;
+  description?: string;
+  author_username?: string;
+  author_id?: string;
+  audio_title?: string;
+  audio_artist?: string;
+  thumbnail_url?: string;
+  duration_seconds?: number;
+  raw_data?: any;
+}
 
 // Моковые данные для тестирования
 const MOCK_REELS: Record<string, any[]> = {

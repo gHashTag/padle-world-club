@@ -1,11 +1,28 @@
 import { z } from "zod";
 import {
   UserSchema,
-  ProjectSchema,
-  HashtagSchema,
-  ReelContentSchema,
-  ParsingRunLogSchema,
+  UserSettingsSchema,
+  SceneStateSchema,
+  ActivityLogSchema,
+  NotificationSettingsSchema,
 } from "../schemas";
+
+/**
+ * Валидирует данные с помощью Zod схемы
+ * @param schema Схема Zod для валидации
+ * @param data Данные для валидации
+ * @returns Валидированные данные или null в случае ошибки
+ */
+export function validateWithSchema<T>(
+  schema: z.ZodType<T>,
+  data: unknown
+): T | null {
+  try {
+    return schema.parse(data);
+  } catch (error) {
+    return null;
+  }
+}
 
 /**
  * Валидирует данные пользователя с помощью Zod
@@ -13,68 +30,43 @@ import {
  * @returns Валидированные данные пользователя или null в случае ошибки
  */
 export function validateUser(data: unknown) {
-  try {
-    return UserSchema.parse(data);
-  } catch (error) {
-    console.error("Ошибка валидации пользователя:", error);
-    return null;
-  }
+  return validateWithSchema(UserSchema, data);
 }
 
 /**
- * Валидирует данные проекта с помощью Zod
- * @param data Данные проекта для валидации
- * @returns Валидированные данные проекта или null в случае ошибки
+ * Валидирует данные настроек пользователя с помощью Zod
+ * @param data Данные настроек пользователя для валидации
+ * @returns Валидированные данные настроек пользователя или null в случае ошибки
  */
-export function validateProject(data: unknown) {
-  try {
-    return ProjectSchema.parse(data);
-  } catch (error) {
-    console.error("Ошибка валидации проекта:", error);
-    return null;
-  }
+export function validateUserSettings(data: unknown) {
+  return validateWithSchema(UserSettingsSchema, data);
 }
 
 /**
- * Валидирует данные хештега с помощью Zod
- * @param data Данные хештега для валидации
- * @returns Валидированные данные хештега или null в случае ошибки
+ * Валидирует данные состояния сцены с помощью Zod
+ * @param data Данные состояния сцены для валидации
+ * @returns Валидированные данные состояния сцены или null в случае ошибки
  */
-export function validateHashtag(data: unknown) {
-  try {
-    return HashtagSchema.parse(data);
-  } catch (error) {
-    console.error("Ошибка валидации хештега:", error);
-    return null;
-  }
+export function validateSceneState(data: unknown) {
+  return validateWithSchema(SceneStateSchema, data);
 }
 
 /**
- * Валидирует данные Reel с помощью Zod
- * @param data Данные Reel для валидации
- * @returns Валидированные данные Reel или null в случае ошибки
+ * Валидирует данные лога активности с помощью Zod
+ * @param data Данные лога активности для валидации
+ * @returns Валидированные данные лога активности или null в случае ошибки
  */
-export function validateReelContent(data: unknown) {
-  try {
-    return ReelContentSchema.parse(data);
-  } catch (error) {
-    console.error("Ошибка валидации Reel:", error);
-    return null;
-  }
+export function validateActivityLog(data: unknown) {
+  return validateWithSchema(ActivityLogSchema, data);
 }
 
 /**
- * Валидирует данные лога запуска парсинга с помощью Zod
- * @param data Данные лога запуска парсинга для валидации
- * @returns Валидированные данные лога запуска парсинга или null в случае ошибки
+ * Валидирует данные настроек уведомлений с помощью Zod
+ * @param data Данные настроек уведомлений для валидации
+ * @returns Валидированные данные настроек уведомлений или null в случае ошибки
  */
-export function validateParsingRunLog(data: unknown) {
-  try {
-    return ParsingRunLogSchema.parse(data);
-  } catch (error) {
-    console.error("Ошибка валидации лога запуска парсинга:", error);
-    return null;
-  }
+export function validateNotificationSettings(data: unknown) {
+  return validateWithSchema(NotificationSettingsSchema, data);
 }
 
 /**
@@ -84,52 +76,25 @@ export function validateParsingRunLog(data: unknown) {
  * @returns Валидированный массив данных или пустой массив в случае ошибки
  */
 export function validateArray<T>(schema: z.ZodType<T>, data: unknown): T[] {
-  console.log(
-    `[DEBUG] validateArray: Начало валидации массива данных, тип схемы: ${schema.constructor.name}`
-  );
-
   if (!Array.isArray(data)) {
-    console.error(`[ERROR] validateArray: Данные не являются массивом:`, data);
     return [];
   }
 
-  console.log(`[DEBUG] validateArray: Размер массива: ${data.length}`);
-
   try {
-    const result = z.array(schema).parse(data);
-    console.log(
-      `[DEBUG] validateArray: Успешная валидация, результат содержит ${result.length} элементов`
-    );
-    return result;
+    return z.array(schema).parse(data);
   } catch (error) {
-    console.error("Ошибка валидации массива:", error);
-
-    // Попробуем валидировать каждый элемент отдельно, чтобы найти проблемный
+    // Если валидация массива не удалась, пробуем валидировать каждый элемент отдельно
     if (Array.isArray(data)) {
-      console.log(
-        `[DEBUG] validateArray: Попытка валидации каждого элемента отдельно...`
-      );
-      const validItems: T[] = [];
-
-      data.forEach((item, index) => {
-        try {
-          const validItem = schema.parse(item);
-          validItems.push(validItem);
-        } catch (itemError) {
-          console.error(
-            `[ERROR] validateArray: Ошибка валидации элемента ${index}:`,
-            itemError
-          );
-          console.log(`[DEBUG] validateArray: Проблемный элемент:`, item);
-        }
-      });
-
-      console.log(
-        `[DEBUG] validateArray: Успешно валидировано ${validItems.length} из ${data.length} элементов`
-      );
-      return validItems;
+      return data
+        .map((item) => {
+          try {
+            return schema.parse(item);
+          } catch {
+            return null;
+          }
+        })
+        .filter((item): item is T => item !== null);
     }
-
     return [];
   }
 }
@@ -144,37 +109,37 @@ export function validateUsers(data: unknown) {
 }
 
 /**
- * Валидирует массив проектов с помощью Zod
- * @param data Массив данных проектов для валидации
- * @returns Валидированный массив проектов или пустой массив в случае ошибки
+ * Валидирует массив настроек пользователей с помощью Zod
+ * @param data Массив данных настроек пользователей для валидации
+ * @returns Валидированный массив настроек пользователей или пустой массив в случае ошибки
  */
-export function validateProjects(data: unknown) {
-  return validateArray(ProjectSchema, data);
+export function validateUserSettingsArray(data: unknown) {
+  return validateArray(UserSettingsSchema, data);
 }
 
 /**
- * Валидирует массив хештегов с помощью Zod
- * @param data Массив данных хештегов для валидации
- * @returns Валидированный массив хештегов или пустой массив в случае ошибки
+ * Валидирует массив состояний сцен с помощью Zod
+ * @param data Массив данных состояний сцен для валидации
+ * @returns Валидированный массив состояний сцен или пустой массив в случае ошибки
  */
-export function validateHashtags(data: unknown) {
-  return validateArray(HashtagSchema, data);
+export function validateSceneStates(data: unknown) {
+  return validateArray(SceneStateSchema, data);
 }
 
 /**
- * Валидирует массив Reels с помощью Zod
- * @param data Массив данных Reels для валидации
- * @returns Валидированный массив Reels или пустой массив в случае ошибки
+ * Валидирует массив логов активности с помощью Zod
+ * @param data Массив данных логов активности для валидации
+ * @returns Валидированный массив логов активности или пустой массив в случае ошибки
  */
-export function validateReelContents(data: unknown) {
-  return validateArray(ReelContentSchema, data);
+export function validateActivityLogs(data: unknown) {
+  return validateArray(ActivityLogSchema, data);
 }
 
 /**
- * Валидирует массив логов запуска парсинга с помощью Zod
- * @param data Массив данных логов запуска парсинга для валидации
- * @returns Валидированный массив логов запуска парсинга или пустой массив в случае ошибки
+ * Валидирует массив настроек уведомлений с помощью Zod
+ * @param data Массив данных настроек уведомлений для валидации
+ * @returns Валидированный массив настроек уведомлений или пустой массив в случае ошибки
  */
-export function validateParsingRunLogs(data: unknown) {
-  return validateArray(ParsingRunLogSchema, data);
+export function validateNotificationSettingsArray(data: unknown) {
+  return validateArray(NotificationSettingsSchema, data);
 }
