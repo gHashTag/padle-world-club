@@ -1,7 +1,6 @@
-// Placeholder for logger implementation
-export const logger = {
-  info: console.log,
-  warn: console.warn,
-  error: console.error,
-  debug: console.debug,
-};
+// Реэкспортируем логгер из utils/logger для удобства
+import { logger as utilsLogger, LogLevel, LogType } from "./utils/logger";
+
+// Экспортируем логгер и типы для внешнего использования
+export const logger = utilsLogger;
+export { LogLevel, LogType };
