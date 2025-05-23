@@ -3,7 +3,10 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { Pool } from "pg";
 import * as schema from "../../../db/schema";
-import { users, userAccountLinks, NewUser, NewUserAccountLink } from "../../../db/schema";
+
+import { users, NewUser } from "../../../db/schema";
+// import { userAccountLinks, NewUserAccountLink, UserAccountLink } from "../../../db/schema"; // Закомментировано
+
 
 // TODO: Перенести URL в переменные окружения, специфичные для тестов,
 // и убедиться, что это отдельная тестовая база данных!
@@ -50,11 +53,10 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
         userRole: "player", // Используем значение из нашего enum
       };
 
-      const insertedUsers = await db
+      const [insertedUser] = await db
         .insert(users)
         .values(newUserInput)
         .returning();
-      const insertedUser = insertedUsers[0];
 
       expect(insertedUser).toBeDefined();
       expect(insertedUser.id).toBeTypeOf("string"); // uuid
@@ -308,8 +310,7 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
         memberId: "LNK123",
         userRole: "player",
       };
-      const insertedUsers = await db.insert(users).values(newUser).returning();
-      // testUser = insertedUsers[0]; // Закомментировано
+      await db.insert(users).values(newUser).returning(); // Просто выполняем действие, если testUser не нужен далее
     });
 
     it("должен успешно создавать связь аккаунта для существующего пользователя", async () => {
