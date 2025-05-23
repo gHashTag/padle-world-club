@@ -52,7 +52,7 @@ alwaysApply: false
     *   Применить миграцию к БД разработки (`drizzle-kit migrate`).
     *   (Проверка корректности создания таблиц и перечислений в БД выполнена косвенно через успешное применение миграции).
 
-4.  ✏️ **Тестирование (Модель `User` и `UserAccountLink` с использованием Vitest и `scripts/tdd-cycle.sh`):**
+4.  ✅ **Тестирование (Модель `User` и `UserAccountLink` с использованием Vitest и `scripts/tdd-cycle.sh`):**
     *   Создать тестовый файл `src/__tests__/integration/db/user.test.ts`.
     *   **Тесты для `User`:**
         *   Создание пользователя (с обязательными/опциональными полями).
@@ -73,6 +73,4 @@ alwaysApply: false
 ---
 
 ➡️ **Следующий активный шаг:**
-**4. Тестирование (Модель `User` и `UserAccountLink` с использованием Vitest и `scripts/tdd-cycle.sh`):**
-    *   Создать тестовый файл `src/__tests__/integration/db/user.test.ts`.
-    *   Написать и выполнить тесты для `User` и `UserAccountLink`.
+**Phase 2: Итеративное Расширение на Остальные Модели**
