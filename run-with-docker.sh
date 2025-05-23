@@ -21,12 +21,12 @@ fi
 
 # Проверяем наличие .env файла
 if [ ! -f .env ]; then
-    echo "⚠️ Файл .env не найден. Создаем его из .env.example..."
-    if [ -f .env.example ]; then
-        cp .env.example .env
-        echo "✅ Файл .env создан из .env.example"
+    echo "⚠️ Файл .env не найден. Создаем его из example.env..."
+    if [ -f example.env ]; then
+        cp example.env .env
+        echo "✅ Файл .env создан из example.env"
     else
-        echo "❌ Файл .env.example не найден. Пожалуйста, создайте файл .env вручную."
+        echo "❌ Файл example.env не найден. Пожалуйста, создайте файл .env вручную."
         exit 1
     fi
 fi
