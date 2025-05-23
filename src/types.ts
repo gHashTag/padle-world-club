@@ -8,6 +8,9 @@ import {
 } from "./schemas";
 import { StorageAdapter } from "./adapters/storage-adapter";
 
+// Тип для каналов уведомлений (соответствует notificationChannelEnum в схеме БД)
+export type NotificationChannel = "whatsapp" | "telegram" | "email" | "app_push";
+
 // Реэкспортируем типы для обратной совместимости
 export type {
   User,
