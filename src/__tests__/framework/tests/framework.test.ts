@@ -174,7 +174,7 @@ describe("Telegram Test Framework", () => {
 
     it("should allow setting context", () => {
       const newContext = createMockContext({
-        telegramId: 42,
+        userId: 42,
         messageText: "Updated message",
       });
 
