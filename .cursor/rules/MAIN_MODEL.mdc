@@ -1,0 +1,1127 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Отлично! Эта русская пословица как нельзя кстати. Давайте "семь раз отмерим", чтобы заложить прочный фундамент для нашего паддл-центра.
+
+Изучив обновленное техническое задание, я разработал детальную модель базы данных для PostgreSQL, адаптированную под нужды сетевых паддл-центров. Эта модель учитывает все ключевые функциональные требования, включая бронирование, рейтинги, тренировки, турниры, магазин и администрирование, а также будущие интеграции.
+
+### Философия дизайна базы данных
+
+1.  **Централизация пользователя (`User`):** Максимально расширяем эту сущность, чтобы она могла играть множество ролей (игрок, тренер, администратор), избегая дублирования.
+2.  **Гибкость расписания:** Разделяем определения классов/тренировок от их конкретных расписаний (`ClassDefinition` и `ClassSchedule`).
+3.  **Детализация бронирования:** `Booking` (бронирование корта) и `BookingParticipant` (участники и их платежи) для разделенной оплаты.
+4.  **Комплексный финансовый учет:** Централизованная таблица `Payment` для всех денежных транзакций, связывающая их с источниками (бронирования, покупки, пакеты).
+5.  **Рейтинговая система и активность:** Отдельная таблица для истории изменений рейтинга, а также логирование активностей для бонусной системы.
+6.  **Учет сети клубов:** Четкое отделение `Venue` (отдельного клуба) от общих сущностей, чтобы данные были уникальными для каждого клуба, но централизованно управляемыми.
+7.  **Масштабируемость:** Использование UUID для ID, индексов для часто запрашиваемых полей, ENUM-типов для ограниченных наборов значений. Полиморфные связи (где сущность может относиться к нескольким типам) реализованы через `related_entity_id` и `related_entity_type`.
+8.  **Аудит:** `createdAt` и `updatedAt` на всех таблицах для отслеживания изменений.
+
+### Предлагаемая модель базы данных (TypeScript & PostgreSQL)
+
+Используем TypeScript для описания моделей, а затем представим соответствующие CREATE TABLE для PostgreSQL.
+
+#### 1. ENUMS (Перечисления)
+
+**`src/database/enums.ts`**
+
+```typescript
+export enum UserRole {
+  Player = "player", // Игрок, основной пользователь
+  Coach = "coach", // Тренер (обладает расширенными правами и расписанием)
+  ClubStaff = "club_staff", // Сотрудник клуба (администратор, менеджер зала)
+  Admin = "admin", // Главный администратор (многоуровневый доступ)
+}
+
+export enum UserSkillLevel {
+  Beginner = "beginner",
+  Intermediate = "intermediate",
+  Advanced = "advanced",
+  Pro = "pro",
+}
+
+export enum Gender {
+  Male = "male",
+  Female = "female",
+  Other = "other",
+  Unknown = "unknown",
+}
+
+export enum CourtType {
+  Paddle = "paddle",
+  Tennis = "tennis",
+}
+
+export enum BookingStatus {
+  Confirmed = "confirmed",
+  PendingPayment = "pending_payment", // Бронь в ожидании полной оплаты
+  Cancelled = "cancelled",
+  Completed = "completed",
+}
+
+export enum PaymentStatus {
+  Success = "success",
+  Failed = "failed",
+  Pending = "pending",
+  Refunded = "refunded",
+  Partial = "partial", // Частичная оплата
+}
+
+export enum PaymentMethod {
+  Card = "card",
+  Cash = "cash",
+  BankTransfer = "bank_transfer",
+  BonusPoints = "bonus_points",
+}
+
+
+export enum BookingPurpose {
+  FreePlay = "free_play",
+  GroupTraining = "group_training",
+  PrivateTraining = "private_training",
+  TournamentMatch = "tournament_match",
+  Other = "other",
+}
+
+export enum ClassType {
+  GroupTraining = "group_training",
+  OpenPlaySession = "open_play_session", // Открытая игра, организуемая клубом
+  CoachedDrill = "coached_drill", // Тренировка с тренером, не индивидуальная
+}
+
+export enum ClassScheduleStatus {
+  Scheduled = "scheduled",
+  Cancelled = "cancelled",
+  Completed = "completed",
+  Draft = "draft",
+}
+
+export enum ClassParticipantStatus {
+  Registered = "registered",
+  Attended = "attended",
+  NoShow = "no_show",
+  Cancelled = "cancelled",
+}
+
+export enum TrainingPackageType {
+  GroupTraining = "group_training",
+  PrivateTraining = "private_training",
+}
+
+export enum UserTrainingPackageStatus {
+  Active = "active",
+  Expired = "expired",
+  Completed = "completed",
+  Cancelled = "cancelled",
+}
+
+export enum GameSessionStatus { // Для автоматического подбора игр
+  OpenForPlayers = "open_for_players", // Идет сбор игроков
+  Full = "full", // Игроки собраны
+  InProgress = "in_progress",
+  Completed = "completed",
+  Cancelled = "cancelled",
+}
+
+export enum RatingChangeReason {
+  GameSession = "game_session",
+  TournamentMatch = "tournament_match",
+  ManualAdjustment = "manual_adjustment",
+}
+
+export enum BonusTransactionType {
+  Earned = "earned",
+  Spent = "spent",
+}
+
+export enum TournamentType {
+  SinglesElimination = "singles_elimination",
+  DoublesRoundRobin = "doubles_round_robin",
+  Other = "other",
+}
+
+export enum TournamentStatus {
+  Upcoming = "upcoming",
+  RegistrationOpen = "registration_open",
+  InProgress = "in_progress",
+  Completed = "completed",
+  Cancelled = "cancelled",
+}
+
+export enum TournamentParticipantStatus {
+  Registered = "registered",
+  CheckedIn = "checked_in",
+  Withdrawn = "withdrawn",
+}
+
+export enum ProductCategoryType {
+  CourtGear = "court_gear",
+  Apparel = "apparel",
+  Drinks = "drinks",
+  Snacks = "snacks",
+  Other = "other",
+}
+
+export enum OrderStatus {
+  Pending = "pending",
+  Completed = "completed",
+  Cancelled = "cancelled",
+  Refunded = "refunded",
+}
+
+export enum StockTransactionType {
+  Sale = "sale",     // Продажа клиенту
+  Purchase = "purchase", // Закупка (пополнение склада)
+  Adjustment = "adjustment", // Корректировка (инвентаризация, брак)
+  Return = "return",   // Возврат товара от клиента
+}
+
+export enum TaskStatus {
+  Open = "open",
+  InProgress = "in_progress",
+  Completed = "completed",
+  Blocked = "blocked",
+}
+
+export enum TaskPriority {
+  Low = "low",
+  Medium = "medium",
+  High = "high",
+  Urgent = "urgent",
+}
+
+export enum NotificationType {
+  BookingReminder = "booking_reminder",
+  GameInvite = "game_invite",
+  TournamentUpdate = "tournament_update",
+  PaymentConfirmation = "payment_confirmation",
+  PackageExpiration = "package_expiration",
+  CustomMessage = "custom_message",
+  StockAlert = "stock_alert",
+}
+
+export enum NotificationChannel {
+  WhatsApp = "whatsapp",
+  Telegram = "telegram",
+  Email = "email",
+  AppPush = "app_push", // Будущая возможность
+}
+
+export enum FeedbackCategory {
+  CourtQuality = "court_quality",
+  GameExperience = "game_experience",
+  TrainingQuality = "training_quality",
+  StaffService = "staff_service",
+  SystemSuggestion = "system_suggestion",
+  Other = "other",
+}
+
+export enum FeedbackStatus {
+  New = "new",
+  InReview = "in_review",
+  Resolved = "resolved",
+  Archived = "archived",
+}
+
+export enum ExternalSystem {
+  Exporta = "exporta",
+  GoogleCalendar = "google_calendar",
+  WhatsAppAPI = "whatsapp_api",
+  TelegramAPI = "telegram_api",
+  PaymentGatewayAPI = "payment_gateway_api",
+  Other = "other",
+}
+
+export enum ExternalEntityMappingType {
+  User = "user",
+  Booking = "booking",
+  Court = "court",
+  Class = "class",
+  Venue = "venue",
+  // Добавьте другие сущности по мере необходимости
+}
+
+export enum AISuggestionType {
+  GameMatching = "game_matching",
+  CourtFillOptimization = "court_fill_optimization",
+  DemandPrediction = "demand_prediction",
+  RatingUpdate = "rating_update",
+}
+```
+
+#### 2. MODELS (Модели данных)
+
+**`src/database/models.ts`**
+
+```typescript
+import {
+  UserRole, UserSkillLevel, Gender, CourtType, BookingStatus, PaymentStatus, PaymentMethod, BookingPurpose,
+  ClassType, ClassScheduleStatus, ClassParticipantStatus, TrainingPackageType, UserTrainingPackageStatus,
+  GameSessionStatus, RatingChangeReason, BonusTransactionType, TournamentType, TournamentStatus, TournamentParticipantStatus,
+  ProductCategoryType, OrderStatus, StockTransactionType, TaskStatus, TaskPriority, NotificationType, NotificationChannel,
+  FeedbackCategory, FeedbackStatus, ExternalSystem, ExternalEntityMappingType, AISuggestionType
+} from "./enums";
+
+// --- Базовая модель ---
+export interface BaseModel {
+  id: string; // UUID (для PostgreSQL)
+  createdAt: Date; // TIMESTAMP WITH TIME ZONE
+  updatedAt: Date; // TIMESTAMP WITH TIME ZONE
+}
+
+// --- Пользователи и их профили ---
+export interface User extends BaseModel {
+  username: string; // NVARCHAR(255), UNIQUE, для входа в систему/идентификации
+  passwordHash: string; // NVARCHAR(255), хеш пароля
+  firstName: string; // NVARCHAR(255)
+  lastName: string; // NVARCHAR(255)
+  email: string; // NVARCHAR(255), UNIQUE
+  phone: string | null; // NVARCHAR(50), UNIQUE
+  memberId: string; // NVARCHAR(50), UNIQUE, например "DQ227510"
+  userRole: UserRole; // ENUM
+  currentRating: number; // FLOAT, текущий рейтинг игрока
+  bonusPoints: number; // INT, баланс бонусных баллов
+  profileImageUrl: string | null; // TEXT, URL к аватару
+  gender: Gender | null; // ENUM
+  dateOfBirth: Date | null; // DATE, для расчета возраста
+  homeVenueId: string | null; // FK -> Venue, домашний клуб пользователя
+  isAccountVerified: boolean; // BOOLEAN, подтвержден ли аккаунт
+  lastLoginAt: Date | null; // TIMESTAMP WITH TIME ZONE
+  lastActivityAt: Date | null; // TIMESTAMP WITH TIME ZONE
+}
+
+export interface UserAccountLink extends BaseModel {
+  userId: string; // FK -> User
+  platform: NotificationChannel; // ENUM ('whatsapp', 'telegram')
+  platformUserId: string; // ID пользователя в мессенджере
+  isPrimary: boolean; // BOOLEAN, основной аккаунт для уведомлений
+  // PRIMARY KEY (platform, platformUserId)
+}
+
+// --- Клубы и корты ---
+export interface Venue extends BaseModel {
+  name: string; // NVARCHAR(255), UNIQUE
+  address: string; // TEXT
+  city: string; // NVARCHAR(100)
+  country: string; // NVARCHAR(100)
+  phoneNumber: string | null; // NVARCHAR(50)
+  email: string | null; // NVARCHAR(255)
+  isActive: boolean; // BOOLEAN, активно ли место проведения
+  gCalResourceId: string | null; // NVARCHAR(255), ID ресурса в Google Calendar
+}
+
+export interface Court extends BaseModel {
+  venueId: string; // FK -> Venue
+  name: string; // NVARCHAR(255), например "Корт 1"
+  courtType: CourtType; // ENUM
+  hourlyRate: number; // NUMERIC(10, 2), базовая стоимость часа
+  description: string | null; // TEXT
+  isActive: boolean; // BOOLEAN
+}
+
+// --- Бронирование кортов ---
+export interface Booking extends BaseModel {
+  courtId: string; // FK -> Court
+  startTime: Date; // TIMESTAMP WITH TIME ZONE
+  endTime: Date; // TIMESTAMP WITH TIME ZONE
+  durationMinutes: number; // INT
+  status: BookingStatus; // ENUM
+  totalAmount: number; // NUMERIC(10, 2)
+  currency: string; // NVARCHAR(3)
+  bookedByUserId: string; // FK -> User, кто инициатор брони
+  bookingPurpose: BookingPurpose; // ENUM
+  relatedEntityId: string | null; // UUID, полиморфная ссылка на ClassSchedule, GameSession, TournamentMatch
+  notes: string | null; // TEXT
+}
+
+export interface BookingParticipant extends BaseModel {
+  bookingId: string; // FK -> Booking
+  userId: string; // FK -> User
+  amountOwed: number; // NUMERIC(10, 2), сколько должен этот участник
+  amountPaid: number; // NUMERIC(10, 2), сколько оплатил этот участник
+  paymentStatus: PaymentStatus; // ENUM, статус оплаты участника
+  participationStatus: ClassParticipantStatus; // ENUM, пришел/нет, отменил
+  isHost: boolean; // BOOLEAN, инициатор брони
+  // PRIMARY KEY (bookingId, userId)
+}
+
+// --- Финансы и платежи ---
+export interface Payment extends BaseModel {
+  userId: string; // FK -> User, кто платил
+  amount: number; // NUMERIC(10, 2), общая сумма платежа
+  currency: string; // NVARCHAR(3)
+  status: PaymentStatus; // ENUM
+  paymentMethod: PaymentMethod; // ENUM
+  gatewayTransactionId: string | null; // NVARCHAR(255), ID транзакции в платежной системе
+  description: string | null; // TEXT (например, "Оплата брони №XYZ", "Покупка товара Ракетка")
+  // Полиморфные связи с источниками:
+  relatedBookingParticipantId: string | null; // FK -> BookingParticipant (если платеж относится к части брони)
+  relatedOrderId: string | null; // FK -> Order (если оплата за покупку из магазина)
+  relatedUserTrainingPackageId: string | null; // FK -> UserTrainingPackage (если оплата за пакет тренировок)
+}
+
+// --- Тренировки и классы ---
+export interface ClassDefinition extends BaseModel {
+  name: string; // NVARCHAR(255)
+  description: string | null; // TEXT
+  classType: ClassType; // ENUM
+  basePrice: number; // NUMERIC(10, 2)
+  currency: string; // NVARCHAR(3)
+  minSkillLevel: UserSkillLevel | null; // ENUM
+  maxSkillLevel: UserSkillLevel | null; // ENUM
+  isActive: boolean; // BOOLEAN
+}
+
+export interface ClassSchedule extends BaseModel {
+  classDefinitionId: string; // FK -> ClassDefinition
+  venueId: string; // FK -> Venue
+  instructorId: string; // FK -> User (тренер)
+  startTime: Date; // TIMESTAMP WITH TIME ZONE
+  endTime: Date; // TIMESTAMP WITH TIME ZONE
+  courtId: string; // FK -> Court (корт, на котором проводится занятие)
+  maxParticipants: number; // INT
+  currentParticipants: number; // INT (derived/updated on participant changes)
+  status: ClassScheduleStatus; // ENUM
+}
+
+export interface ClassParticipant extends BaseModel {
+  classScheduleId: string; // FK -> ClassSchedule
+  userId: string; // FK -> User
+  status: ClassParticipantStatus; // ENUM
+  paidWithPackageId: string | null; // FK -> UserTrainingPackage, если оплачено пакетом
+  // PRIMARY KEY (classScheduleId, userId)
+}
+
+export interface TrainingPackageDefinition extends BaseModel {
+  name: string; // NVARCHAR(255)
+  description: string | null; // TEXT
+  packageType: TrainingPackageType; // ENUM
+  numberOfSessions: number; // INT
+  price: number; // NUMERIC(10, 2)
+  currency: string; // NVARCHAR(3)
+  validityDurationDays: number; // INT, сколько дней действует пакет с момента покупки
+  isActive: boolean; // BOOLEAN
+}
+
+export interface UserTrainingPackage extends BaseModel {
+  userId: string; // FK -> User
+  packageDefinitionId: string; // FK -> TrainingPackageDefinition
+  purchaseDate: Date; // TIMESTAMP WITH TIME ZONE
+  expirationDate: Date; // TIMESTAMP WITH TIME ZONE (рассчитывается на основе validityDurationDays)
+  sessionsUsed: number; // INT
+  sessionsTotal: number; // INT (копируется из определения)
+  status: UserTrainingPackageStatus; // ENUM
+}
+
+// --- Организация игр и подбор игроков ---
+export interface GameSession extends BaseModel {
+  venueId: string; // FK -> Venue
+  courtId: string | null; // FK -> Court, если игра на конкретном корте
+  startTime: Date; // TIMESTAMP WITH TIME ZONE
+  endTime: Date; // TIMESTAMP WITH TIME ZONE
+  gameType: "public_match" | "private_match"; // ENUM, открытая игра или закрытая
+  neededSkillLevel: UserSkillLevel; // ENUM, требуемый уровень для подбора
+  maxPlayers: number; // INT, обычно 4 для паддла
+  currentPlayers: number; // INT (derived/updated)
+  status: GameSessionStatus; // ENUM
+  createdByUserId: string; // FK -> User, кто создал сессию
+  hostUserId: string | null; // FK -> User, кто ведет сессию, если отличается от создателя
+  matchScore: string | null; // NVARCHAR(50), например "6-4 3-6 7-5"
+  winnerUserIds: string[] | null; // UUID[], массив ID победителей
+
+  // Связь с бронированием корта, если GameSession использует существующий Booking
+  relatedBookingId: string | null; // FK -> Booking
+}
+
+export interface GamePlayer extends BaseModel {
+  gameSessionId: string; // FK -> GameSession
+  userId: string; // FK -> User
+  participationStatus: ClassParticipantStatus; // ENUM, подтвердил ли участие
+  // PRIMARY KEY (gameSessionId, userId)
+}
+
+// --- Рейтинговая система ---
+export interface RatingChange extends BaseModel {
+  userId: string; // FK -> User
+  oldRating: number; // FLOAT
+  newRating: number; // FLOAT
+  changeReason: RatingChangeReason; // ENUM
+  relatedGameSessionId: string | null; // FK -> GameSession
+  relatedTournamentMatchId: string | null; // FK -> TournamentMatch
+  notes: string | null; // TEXT
+}
+
+// --- Турниры ---
+export interface Tournament extends BaseModel {
+  venueId: string; // FK -> Venue
+  name: string; // NVARCHAR(255)
+  description: string | null; // TEXT
+  tournamentType: TournamentType; // ENUM
+  skillLevelCategory: UserSkillLevel; // ENUM, для какого уровня турнир
+  startDate: Date; // TIMESTAMP WITH TIME ZONE
+  endDate: Date; // TIMESTAMP WITH TIME ZONE
+  registrationFee: number; // NUMERIC(10, 2)
+  currency: string; // NVARCHAR(3)
+  maxParticipants: number; // INT (или maxTeams)
+  status: TournamentStatus; // ENUM
+  rulesUrl: string | null; // TEXT, ссылка на правила турнира
+}
+
+export interface TournamentParticipant extends BaseModel {
+  tournamentId: string; // FK -> Tournament
+  userId: string; // FK -> User
+  registrationDate: Date; // TIMESTAMP WITH TIME ZONE
+  status: TournamentParticipantStatus; // ENUM
+  partnerUserId: string | null; // FK -> User (для парных турниров)
+  teamId: string | null; // FK -> TournamentTeam (если турнир командный)
+  // PRIMARY KEY (tournamentId, userId)
+}
+
+export interface TournamentTeam extends BaseModel { // Если турнир командный
+  id: string;
+  tournamentId: string; // FK -> Tournament
+  name: string; // NVARCHAR(255)
+  player1Id: string; // FK -> User
+  player2Id: string | null; // FK -> User (для парных, если игрок 2)
+  // PRIMARY KEY (id, tournamentId) - Composite ID, чтобы команда была уникальна в рамках турнира
+}
+
+export interface TournamentMatch extends BaseModel {
+  tournamentId: string; // FK -> Tournament
+  courtId: string | null; // FK -> Court, где проводится матч
+  matchNumber: number; // INT, порядковый номер матча в турнире
+  round: string; // NVARCHAR(50), например "Quarter-final", "Round 1"
+  startTime: Date; // TIMESTAMP WITH TIME ZONE
+  endTime: Date; // TIMESTAMP WITH TIME ZONE
+  status: TournamentStatus; // ENUM
+  score: string | null; // NVARCHAR(50), финальный счет
+  winnerTeamId: string | null; // FK -> TournamentTeam, если командный
+  loserTeamId: string | null; // FK -> TournamentTeam, если командный
+  winnerPlayerIds: string[] | null; // UUID[], массив ID победителей (если без команд)
+  loserPlayerIds: string[] | null; // UUID[], массив ID проигравших (если без команд)
+}
+
+// --- Магазин и инвентарь ---
+export interface ProductCategory extends BaseModel {
+  name: string; // NVARCHAR(100), UNIQUE
+  description: string | null; // TEXT
+  type: ProductCategoryType; // ENUM
+}
+
+export interface Product extends BaseModel {
+  categoryId: string; // FK -> ProductCategory
+  name: string; // NVARCHAR(255)
+  description: string | null; // TEXT
+  price: number; // NUMERIC(10, 2), цена за единицу
+  currency: string; // NVARCHAR(3)
+  imageUrl: string | null; // TEXT
+  currentStock: number; // INT, текущий остаток на складе
+  reorderThreshold: number; // INT, порог для заказа
+  isActive: boolean; // BOOLEAN
+}
+
+export interface Order extends BaseModel {
+  userId: string; // FK -> User, кто сделал заказ
+  orderDate: Date; // TIMESTAMP WITH TIME ZONE
+  totalAmount: number; // NUMERIC(10, 2)
+  currency: string; // NVARCHAR(3)
+  status: OrderStatus; // ENUM
+  paymentId: string | null; // FK -> Payment (ссылка на платеж за этот заказ)
+}
+
+export interface OrderItem extends BaseModel {
+  orderId: string; // FK -> Order
+  productId: string; // FK -> Product
+  quantity: number; // INT
+  unitPriceAtSale: number; // NUMERIC(10, 2), цена на момент продажи
+  // PRIMARY KEY (orderId, productId)
+}
+
+export interface StockTransaction extends BaseModel {
+  productId: string; // FK -> Product
+  transactionType: StockTransactionType; // ENUM
+  quantityChange: number; // INT (положительное для прихода, отрицательное для расхода)
+  currentStockAfter: number; // INT (для аудита)
+  relatedOrderId: string | null; // FK -> OrderItem (для продаж)
+  notes: string | null; // TEXT
+}
+
+// --- Задачи и обратная связь ---
+export interface Task extends BaseModel {
+  assignedToUserId: string | null; // FK -> User, кому назначена
+  createdByUserId: string; // FK -> User, кто создал
+  venueId: string | null; // FK -> Venue, если задача относится к клубу
+  title: string; // NVARCHAR(255)
+  description: string | null; // TEXT
+  dueDate: Date | null; // TIMESTAMP WITH TIME ZONE
+  status: TaskStatus; // ENUM
+  priority: TaskPriority; // ENUM
+  relatedEntityId: string | null; // UUID, полиморфная ссылка на сущность, к которой относится задача
+  relatedEntityType: string | null; // NVARCHAR(50), тип связанной сущности (e.g., 'booking', 'user', 'court')
+}
+
+export interface Feedback extends BaseModel {
+  userId: string | null; // FK -> User, кто оставил (nullable для анонимных)
+  venueId: string | null; // FK -> Venue, о каком клубе
+  category: FeedbackCategory; // ENUM
+  rating: number | null; // INT (от 1 до 5)
+  comment: string | null; // TEXT
+  status: FeedbackStatus; // ENUM
+  resolvedByUserId: string | null; // FK -> User (кто разрешил проблему)
+}
+
+// --- Уведомления ---
+export interface Notification extends BaseModel {
+  userId: string | null; // FK -> User, кому предназначается (если null, то системное)
+  type: NotificationType; // ENUM
+  message: string; // TEXT
+  channel: NotificationChannel; // ENUM
+  isSent: boolean; // BOOLEAN
+  sentAt: Date | null; // TIMESTAMP WITH TIME ZONE
+  isRead: boolean; // BOOLEAN
+  readAt: Date | null; // TIMESTAMP WITH TIME ZONE
+  relatedEntityId: string | null; // UUID, ссылка на сущность, к которой относится уведомление
+  relatedEntityType: string | null; // NVARCHAR(50)
+}
+
+// --- Интеграция с внешними системами ---
+export interface ExternalSystemMapping extends BaseModel {
+  externalSystem: ExternalSystem; // ENUM (например, 'exporta', 'google_calendar')
+  externalEntityId: string; // ID сущности во внешней системе
+  ourEntityId: string; // ID сущности в нашей системе
+  entityType: ExternalEntityMappingType; // ENUM
+  lastSyncedAt: Date; // TIMESTAMP WITH TIME ZONE
+  syncStatus: PaymentStatus; // ENUM (SUCCESS, FAILED)
+  errorMessage: string | null; // TEXT
+  // PRIMARY KEY (externalSystem, externalEntityId, entityType)
+}
+
+// --- AI Агент Логирование ---
+export interface AISuggestionLog extends BaseModel {
+  type: AISuggestionType; // ENUM (game_matching, court_fill_optimization)
+  inputParameters: any; // JSONB, входные данные для ИИ (например, характеристики игроков)
+  outputResult: any; // JSONB, результат от ИИ (например, рекомендованные игроки)
+  executedByUserId: string | null; // FK -> User, кто инициировал запрос ИИ
+  confidenceScore: number | null; // FLOAT (0-1), уверенность ИИ в рекомендации
+}
+```
+
+#### 3. РЕЛЯЦИОННАЯ СТРУКТУРА (PostgreSQL `CREATE TABLE` и связи)
+
+**Оговорки:**
+
+*   `UUID PRIMARY KEY DEFAULT gen_random_uuid()`: Использование UUID как первичных ключей позволяет легко масштабироваться и избегать коллизий в распределенных системах, а также скрывать реальное количество записей. `gen_random_uuid()` - это функция PostgreSQL для генерации UUID.
+*   `ON DELETE CASCADE`: Если основная запись удаляется, удаляются и связанные записи.
+*   `ON DELETE SET NULL`: Если основная запись удаляется, FK устанавливается в NULL (требует nullable FK).
+*   `ON DELETE RESTRICT`: Запрещает удаление основной записи, если есть связанные.
+*   `NVARCHAR(X)`: В PostgreSQL обычно используется `VARCHAR(X)` или `TEXT`. Я использую `NVARCHAR` для напоминания о поддержке Unicode.
+
+```sql
+-- Включение расширения для генерации UUID, если еще не включено
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; -- Для старых версий
+-- В большинстве современных PostgreSQL (13+) gen_random_uuid() доступен по умолчанию.
+
+-- ENUMs (Перечисления)
+CREATE TYPE user_role AS ENUM ('player', 'coach', 'club_staff', 'admin');
+CREATE TYPE user_skill_level AS ENUM ('beginner', 'intermediate', 'advanced', 'pro');
+CREATE TYPE gender_type AS ENUM ('male', 'female', 'other', 'unknown');
+CREATE TYPE court_type AS ENUM ('paddle', 'tennis');
+CREATE TYPE booking_status AS ENUM ('confirmed', 'pending_payment', 'cancelled', 'completed');
+CREATE TYPE payment_status AS ENUM ('success', 'failed', 'pending', 'refunded', 'partial');
+CREATE TYPE payment_method AS ENUM ('card', 'cash', 'bank_transfer', 'bonus_points');
+CREATE TYPE booking_purpose AS ENUM ('free_play', 'group_training', 'private_training', 'tournament_match', 'other');
+CREATE TYPE class_type AS ENUM ('group_training', 'open_play_session', 'coached_drill');
+CREATE TYPE class_schedule_status AS ENUM ('scheduled', 'cancelled', 'completed', 'draft');
+CREATE TYPE class_participant_status AS ENUM ('registered', 'attended', 'no_show', 'cancelled');
+CREATE TYPE training_package_type AS ENUM ('group_training', 'private_training');
+CREATE TYPE user_training_package_status AS ENUM ('active', 'expired', 'completed', 'cancelled');
+CREATE TYPE game_session_status AS ENUM ('open_for_players', 'full', 'in_progress', 'completed', 'cancelled');
+CREATE TYPE rating_change_reason AS ENUM ('game_session', 'tournament_match', 'manual_adjustment');
+CREATE TYPE bonus_transaction_type AS ENUM ('earned', 'spent');
+CREATE TYPE tournament_type AS ENUM ('singles_elimination', 'doubles_round_robin', 'other');
+CREATE TYPE tournament_status AS ENUM ('upcoming', 'registration_open', 'in_progress', 'completed', 'cancelled');
+CREATE TYPE tournament_participant_status AS ENUM ('registered', 'checked_in', 'withdrawn');
+CREATE TYPE product_category_type AS ENUM ('court_gear', 'apparel', 'drinks', 'snacks', 'other');
+CREATE TYPE order_status AS ENUM ('pending', 'completed', 'cancelled', 'refunded');
+CREATE TYPE stock_transaction_type AS ENUM ('sale', 'purchase', 'adjustment', 'return');
+CREATE TYPE task_status AS ENUM ('open', 'in_progress', 'completed', 'blocked');
+CREATE TYPE task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+CREATE TYPE notification_type AS ENUM ('booking_reminder', 'game_invite', 'tournament_update', 'payment_confirmation', 'package_expiration', 'custom_message', 'stock_alert');
+CREATE TYPE notification_channel AS ENUM ('whatsapp', 'telegram', 'email', 'app_push');
+CREATE TYPE feedback_category AS ENUM ('court_quality', 'game_experience', 'training_quality', 'staff_service', 'system_suggestion', 'other');
+CREATE TYPE feedback_status AS ENUM ('new', 'in_review', 'resolved', 'archived');
+CREATE TYPE external_system AS ENUM ('exporta', 'google_calendar', 'whatsapp_api', 'telegram_api', 'payment_gateway_api', 'other');
+CREATE TYPE external_entity_mapping_type AS ENUM ('user', 'booking', 'court', 'class', 'venue', 'class_schedule', 'product', 'training_package_definition');
+CREATE TYPE ai_suggestion_type AS ENUM ('game_matching', 'court_fill_optimization', 'demand_prediction', 'rating_update');
+
+
+-- Таблица Пользователей (Users)
+CREATE TABLE "user" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    phone VARCHAR(50) UNIQUE,
+    member_id VARCHAR(50) UNIQUE NOT NULL,
+    user_role user_role NOT NULL,
+    current_rating FLOAT DEFAULT 1500.0 NOT NULL,
+    bonus_points INTEGER DEFAULT 0 NOT NULL,
+    profile_image_url TEXT,
+    gender gender_type,
+    date_of_birth DATE,
+    home_venue_id UUID REFERENCES venue(id) ON DELETE SET NULL,
+    is_account_verified BOOLEAN DEFAULT FALSE NOT NULL,
+    last_login_at TIMESTAMP WITH TIME ZONE,
+    last_activity_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Связей аккаунтов пользователя (UserAccountLink)
+CREATE TABLE user_account_link (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    platform notification_channel NOT NULL,
+    platform_user_id VARCHAR(255) NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (platform, platform_user_id)
+);
+
+-- Таблица Клубов/Локаций (Venue)
+CREATE TABLE venue (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) UNIQUE NOT NULL,
+    address TEXT NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    country VARCHAR(100) NOT NULL,
+    phone_number VARCHAR(50),
+    email VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    g_cal_resource_id VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Кортов (Court)
+CREATE TABLE court (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    venue_id UUID NOT NULL REFERENCES venue(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    court_type court_type NOT NULL,
+    hourly_rate NUMERIC(10, 2) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (venue_id, name) -- Корт должен быть уникальным в рамках клуба
+);
+
+-- Таблица Бронирований (Booking)
+CREATE TABLE booking (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    court_id UUID NOT NULL REFERENCES court(id) ON DELETE RESTRICT, -- Нельзя удалить корт, если есть брони
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    duration_minutes INTEGER NOT NULL,
+    status booking_status NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    booked_by_user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
+    booking_purpose booking_purpose NOT NULL,
+    -- Полиморфная ссылка на GameSession, ClassSchedule, TournamentMatch
+    related_entity_id UUID,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Участников Бронирования (BookingParticipant)
+CREATE TABLE booking_participant (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_id UUID NOT NULL REFERENCES booking(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
+    amount_owed NUMERIC(10, 2) NOT NULL,
+    amount_paid NUMERIC(10, 2) DEFAULT 0.00 NOT NULL,
+    payment_status payment_status NOT NULL DEFAULT 'pending',
+    participation_status class_participant_status NOT NULL DEFAULT 'registered',
+    is_host BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (booking_id, user_id) -- Участник может быть в брони только один раз
+);
+
+-- Таблица Платежей (Payment)
+CREATE TABLE payment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
+    amount NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    status payment_status NOT NULL,
+    payment_method payment_method NOT NULL,
+    gateway_transaction_id VARCHAR(255),
+    description TEXT,
+    -- Полиморфные связи с источниками платежа
+    related_booking_participant_id UUID REFERENCES booking_participant(id) ON DELETE SET NULL,
+    related_order_id UUID REFERENCES "order"(id) ON DELETE SET NULL,
+    related_user_training_package_id UUID REFERENCES user_training_package(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Определений Классов/Тренировок (ClassDefinition)
+CREATE TABLE class_definition (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    class_type class_type NOT NULL,
+    base_price NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    min_skill_level user_skill_level,
+    max_skill_level user_skill_level,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Расписания Классов/Тренировок (ClassSchedule)
+CREATE TABLE class_schedule (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    class_definition_id UUID NOT NULL REFERENCES class_definition(id) ON DELETE RESTRICT,
+    venue_id UUID NOT NULL REFERENCES venue(id) ON DELETE RESTRICT,
+    instructor_id UUID NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    court_id UUID NOT NULL REFERENCES court(id) ON DELETE RESTRICT,
+    max_participants INTEGER NOT NULL,
+    current_participants INTEGER DEFAULT 0 NOT NULL,
+    status class_schedule_status NOT NULL,
+    related_booking_id UUID REFERENCES booking(id) ON DELETE SET NULL, -- Связь с бронированием корта под это занятие
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Участников Класса (ClassParticipant)
+CREATE TABLE class_participant (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    class_schedule_id UUID NOT NULL REFERENCES class_schedule(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    status class_participant_status NOT NULL,
+    paid_with_package_id UUID REFERENCES user_training_package(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (class_schedule_id, user_id)
+);
+
+-- Таблица Определений Пакетов Тренировок (TrainingPackageDefinition)
+CREATE TABLE training_package_definition (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    package_type training_package_type NOT NULL,
+    number_of_sessions INTEGER NOT NULL,
+    price NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    validity_duration_days INTEGER NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Пакетов Тренировок Пользователя (UserTrainingPackage)
+CREATE TABLE user_training_package (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    package_definition_id UUID NOT NULL REFERENCES training_package_definition(id) ON DELETE CASCADE,
+    purchase_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    expiration_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    sessions_used INTEGER DEFAULT 0 NOT NULL,
+    sessions_total INTEGER NOT NULL,
+    status user_training_package_status NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Рейтинговых Изменений (RatingChange)
+CREATE TABLE rating_change (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    old_rating FLOAT NOT NULL,
+    new_rating FLOAT NOT NULL,
+    change_reason rating_change_reason NOT NULL,
+    related_game_session_id UUID REFERENCES game_session(id) ON DELETE SET NULL,
+    related_tournament_match_id UUID REFERENCES tournament_match(id) ON DELETE SET NULL,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Игровых Сессий (GameSession) - для автоподбора игр
+CREATE TABLE game_session (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    venue_id UUID NOT NULL REFERENCES venue(id) ON DELETE RESTRICT,
+    court_id UUID REFERENCES court(id) ON DELETE SET NULL, -- Может быть не привязан к корту изначально
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    game_type VARCHAR(50) NOT NULL, -- e.g., 'public_match', 'private_match'
+    needed_skill_level user_skill_level NOT NULL,
+    max_players INTEGER NOT NULL,
+    current_players INTEGER DEFAULT 0 NOT NULL,
+    status game_session_status NOT NULL,
+    created_by_user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
+    host_user_id UUID REFERENCES "user"(id) ON DELETE SET NULL,
+    match_score VARCHAR(50),
+    winner_user_ids UUID[], -- Массив UUID пользователей
+    related_booking_id UUID REFERENCES booking(id) ON DELETE SET NULL, -- Если эта сессия использует существующее бронирование
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Игроков Сессии (GamePlayer)
+CREATE TABLE game_player (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    game_session_id UUID NOT NULL REFERENCES game_session(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    participation_status class_participant_status NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (game_session_id, user_id)
+);
+
+-- Таблица Бонусных Транзакций (BonusTransaction)
+CREATE TABLE bonus_transaction (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    amount INTEGER NOT NULL,
+    transaction_type bonus_transaction_type NOT NULL,
+    reason TEXT,
+    -- Полиморфная связь с источником транзакции (Booking, Payment, Order, etc.)
+    related_entity_id UUID,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Турниров (Tournament)
+CREATE TABLE tournament (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    venue_id UUID NOT NULL REFERENCES venue(id) ON DELETE RESTRICT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    tournament_type tournament_type NOT NULL,
+    skill_level_category user_skill_level NOT NULL,
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    registration_fee NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    max_participants INTEGER NOT NULL,
+    status tournament_status NOT NULL,
+    rules_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Команд Турнира (TournamentTeam)
+CREATE TABLE tournament_team (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tournament_id UUID NOT NULL REFERENCES tournament(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    player1_id UUID NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
+    player2_id UUID REFERENCES "user"(id) ON DELETE RESTRICT, -- NULL для одиночных
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (tournament_id, name)
+);
+
+-- Таблица Участников Турнира (TournamentParticipant)
+CREATE TABLE tournament_participant (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tournament_id UUID NOT NULL REFERENCES tournament(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    registration_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    status tournament_participant_status NOT NULL,
+    partner_user_id UUID REFERENCES "user"(id) ON DELETE SET NULL, -- Для пар, если не используем команды
+    team_id UUID REFERENCES tournament_team(id) ON DELETE SET NULL, -- Для командных турниров
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (tournament_id, user_id)
+);
+
+
+-- Таблица Матчей Турнира (TournamentMatch)
+CREATE TABLE tournament_match (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tournament_id UUID NOT NULL REFERENCES tournament(id) ON DELETE CASCADE,
+    court_id UUID REFERENCES court(id) ON DELETE SET NULL,
+    match_number INTEGER NOT NULL,
+    round VARCHAR(50) NOT NULL,
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    status tournament_status NOT NULL,
+    score VARCHAR(50),
+    winner_team_id UUID REFERENCES tournament_team(id) ON DELETE SET NULL,
+    loser_team_id UUID REFERENCES tournament_team(id) ON DELETE SET NULL,
+    winner_player_ids UUID[], -- Массив ID победителей (если нет команд)
+    loser_player_ids UUID[], -- Массив ID проигравших (если нет команд)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Категорий Продуктов (ProductCategory)
+CREATE TABLE product_category (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    type product_category_type NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Продуктов (Product)
+CREATE TABLE product (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category_id UUID NOT NULL REFERENCES product_category(id) ON DELETE RESTRICT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    image_url TEXT,
+    current_stock INTEGER NOT NULL,
+    reorder_threshold INTEGER NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Заказов (Order) - покупки в магазине
+CREATE TABLE "order" (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
+    order_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    status order_status NOT NULL,
+    payment_id UUID REFERENCES payment(id) ON DELETE SET NULL, -- Связь с фактическим платежом
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Деталей Заказа (OrderItem)
+CREATE TABLE order_item (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL REFERENCES "order"(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES product(id) ON DELETE RESTRICT,
+    quantity INTEGER NOT NULL,
+    unit_price_at_sale NUMERIC(10, 2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (order_id, product_id)
+);
+
+-- Таблица Складских Транзакций (StockTransaction)
+CREATE TABLE stock_transaction (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL REFERENCES product(id) ON DELETE RESTRICT,
+    transaction_type stock_transaction_type NOT NULL,
+    quantity_change INTEGER NOT NULL,
+    current_stock_after INTEGER NOT NULL, -- Для аудита
+    related_order_item_id UUID REFERENCES order_item(id) ON DELETE SET NULL, -- Для продаж
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Задач (Task)
+CREATE TABLE task (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    assigned_to_user_id UUID REFERENCES "user"(id) ON DELETE SET NULL,
+    created_by_user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
+    venue_id UUID REFERENCES venue(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    due_date TIMESTAMP WITH TIME ZONE,
+    status task_status NOT NULL,
+    priority task_priority NOT NULL,
+    -- Полиморфные связи
+    related_entity_id UUID,
+    related_entity_type VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Обратной Связи (Feedback)
+CREATE TABLE feedback (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES "user"(id) ON DELETE SET NULL,
+    venue_id UUID REFERENCES venue(id) ON DELETE SET NULL,
+    category feedback_category NOT NULL,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5), -- От 1 до 5
+    comment TEXT,
+    status feedback_status NOT NULL DEFAULT 'new',
+    resolved_by_user_id UUID REFERENCES "user"(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица Уведомлений (Notification)
+CREATE TABLE notification (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES "user"(id) ON DELETE CASCADE,
+    type notification_type NOT NULL,
+    message TEXT NOT NULL,
+    channel notification_channel NOT NULL,
+    is_sent BOOLEAN DEFAULT FALSE NOT NULL,
+    sent_at TIMESTAMP WITH TIME ZONE,
+    is_read BOOLEAN DEFAULT FALSE NOT NULL,
+    read_at TIMESTAMP WITH TIME ZONE,
+    -- Полиморфные связи
+    related_entity_id UUID,
+    related_entity_type VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Таблица для маппинга ID внешних систем (ExternalSystemMapping)
+CREATE TABLE external_system_mapping (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    external_system external_system NOT NULL,
+    external_entity_id VARCHAR(255) NOT NULL,
+    our_entity_id UUID NOT NULL, -- UUID нашей сущности
+    entity_type external_entity_mapping_type NOT NULL,
+    last_synced_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    sync_status payment_status NOT NULL, -- Используем payment_status для success/failed/pending
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE (external_system, external_entity_id, entity_type) -- Уникальный маппинг
+);
+
+-- Таблица логирования запросов к AI (AISuggestionLog)
+CREATE TABLE ai_suggestion_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type ai_suggestion_type NOT NULL,
+    input_parameters JSONB, -- Данные запроса
+    output_result JSONB, -- Ответ ИИ
+    executed_by_user_id UUID REFERENCES "user"(id) ON DELETE SET NULL,
+    confidence_score FLOAT, -- Оценка уверенности ИИ
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+```
+
+### Ключевые соображения и будущие возможности:
+
+1.  **Нормализация и денормализация:** Я применил достаточную степень нормализации, чтобы избежать избыточности и обеспечить целостность данных. В некоторых случаях (например, `current_players` в `ClassSchedule` или `winner_user_ids` в `GameSession`) добавлена небольшая денормализация для удобства чтения и производительности, но это требует аккуратного управления при обновлении.
+2.  **Полиморфные связи:** Использование `related_entity_id` и `related_entity_type` (например, в `Booking`, `Payment`, `Task`, `Notification`, `BonusTransaction`) позволяет связывать одну запись со множеством других типов сущностей. Это гибкое, но требует внимательной работы на уровне приложения для поддержания целостности.
+3.  **История цен:** `unit_price_at_sale` в `OrderItem` хранит цену продукта на момент продажи, что критично для финансового учета, поскольку цены могут меняться.
+4.  **Расширяемость:** Модель спроектирована так, чтобы можно было легко добавлять новые сущности (например, `CoachAvailability` для тонкого управления расписанием тренеров, `Achievements` для геймификации).
+5.  **Рейтинги:** `current_rating` в таблице `User` может быть обновляемым полем (триггер или сервисный слой), а `RatingChange` хранит детальную историю для аналитики и аудита.
+6.  **Уведомления:** Гибкая система уведомлений позволяет отправлять сообщения по разным каналам.
+7.  **Аналитика:** Структура данных изначально поддерживает сбор информации для аналитических отчетов по заполняемости, финансам, активности пользователей и т.д.
+8.  **Масштабируемость сети:** Таблица `Venue` является ключевой для поддержки множества клубов. Большая часть данных (Courts, Classes, Bookings, Tournaments, etc.) будет привязана к конкретному `Venue`.
+
+Эта модель должна стать надежным "фундаментом" для универсального решения, способного удовлетворить текущие и будущие потребности сетевых паддл-центров.
