@@ -1,5 +1,5 @@
 /**
- * Схема базы данных Drizzle ORM для Padle World Club
+ * Схема базы данных Drizzle ORM для Padel World Club
  * Этот файл является точкой входа для всех схем таблиц.
  */
 
