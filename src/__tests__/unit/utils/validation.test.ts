@@ -1,11 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, mock } from "bun:test";
-import {
-  isValidInstagramUrl,
-  extractUsernameFromUrl,
-  isValidHashtag,
-} from "../../../utils/validation";
 
-// Мокируем модуль validation для тестов
+// Мокируем модуль validation для тестов. Важно вызывать mock.module до
+// импорта модуля, чтобы тесты использовали подменённые реализации.
 mock.module("../../../utils/validation", () => {
   return {
     isValidInstagramUrl: (url: string) => {
@@ -64,6 +60,12 @@ mock.module("../../../utils/validation", () => {
     }
   };
 });
+
+import {
+  isValidInstagramUrl,
+  extractUsernameFromUrl,
+  isValidHashtag,
+} from "../../../utils/validation";
 
 describe("Validation Utils", () => {
   // Сохраняем оригинальное значение NODE_ENV
