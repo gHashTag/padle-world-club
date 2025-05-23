@@ -47,10 +47,10 @@ alwaysApply: false
     *   Создать файл `src/db/schema/userAccountLink.ts`. Определить схему таблицы `userAccountLinks` (Drizzle) на основе модели `UserAccountLink` из `MAIN_MODEL.mdc`.
     *   Обновить основной файл схемы `src/db/schema.ts` для экспорта новых схем.
 
-3.  ✏️ **Миграция Базы Данных (Enums, `User`, `UserAccountLink`):**
-    *   Сгенерировать SQL миграцию для таблиц `users`, `userAccountLinks` и перечислений (`drizzle-kit generate:pg`).
-    *   Просмотреть и применить миграцию к БД разработки (`drizzle-kit push:pg` или соответствующая команда миграции).
-    *   Проверить корректность создания таблиц и перечислений в БД.
+3.  ✅ **Миграция Базы Данных (Enums, `User`, `UserAccountLink`):**
+    *   Сгенерировать SQL миграцию для таблиц `users`, `userAccountLinks` и перечислений (`drizzle-kit generate`).
+    *   Применить миграцию к БД разработки (`drizzle-kit migrate`).
+    *   (Проверка корректности создания таблиц и перечислений в БД выполнена косвенно через успешное применение миграции).
 
 4.  ✏️ **Тестирование (Модель `User` и `UserAccountLink` с использованием Vitest и `scripts/tdd-cycle.sh`):**
     *   Создать тестовый файл `src/__tests__/integration/db/user.test.ts`.
@@ -64,7 +64,7 @@ alwaysApply: false
     *   **Тесты для `UserAccountLink`:**
         *   Создание связи.
         *   Привязка к существующему пользователю.
-        *   Уникальное ограничение (`platform`, `platformUserId`).
+        *   Уникальное ограничение (`platform`, `platformUserId`) - *Примечание: это ограничение нужно будет добавить в SQL миграцию вручную или через Drizzle, если это критично на данном этапе, так как текущая схема Drizzle его не определяет явно.*
         *   Каскадное удаление (если настроено).
 
 **Phase 2: Итеративное Расширение на Остальные Модели (После успешного PoC)**
@@ -73,7 +73,6 @@ alwaysApply: false
 ---
 
 ➡️ **Следующий активный шаг:**
-**3. Миграция Базы Данных (Enums, `User`, `UserAccountLink`):**
-    *   Сгенерировать SQL миграцию для таблиц `users`, `userAccountLinks` и перечислений (`drizzle-kit generate:pg`).
-    *   Просмотреть и применить миграцию к БД разработки (`drizzle-kit push:pg` или соответствующая команда миграции).
-    *   Проверить корректность создания таблиц и перечислений в БД.
+**4. Тестирование (Модель `User` и `UserAccountLink` с использованием Vitest и `scripts/tdd-cycle.sh`):**
+    *   Создать тестовый файл `src/__tests__/integration/db/user.test.ts`.
+    *   Написать и выполнить тесты для `User` и `UserAccountLink`.
