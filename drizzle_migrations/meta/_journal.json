@@ -1,12 +1,12 @@
 {
-  "version": "5",
-  "dialect": "pg",
+  "version": "6",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1717070000000,
-      "tag": "0000_starter_kit_setup",
+      "version": "6",
+      "when": 1747988380107,
+      "tag": "0000_ordinary_black_crow",
       "breakpoints": true
     }
   ]
