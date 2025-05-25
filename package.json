@@ -19,6 +19,9 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "generate:scene": "bun run scripts/generate-wizard-scene.ts",
+    "seed:db": "bun run src/scripts/seed-database.ts",
+    "bot": "bun run src/telegram-bot/bot.ts",
+    "bot:dev": "bun run --watch src/telegram-bot/bot.ts",
     "tdd": "bash scripts/tdd-cycle.sh",
     "prepare": "bun run build:full",
     "postinstall": "node -e \"try { require('fs').symlinkSync('./example.env', './.env', 'file') } catch (e) {}\""
@@ -56,12 +59,14 @@
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.29.5",
     "pg": "^8.11.3",
+    "postgres": "^3.4.7",
     "telegraf": "^4.16.3",
     "telegraf-i18n": "^6.6.0",
     "uuid": "^11.1.0",
     "zod": "^3.24.4"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.8.0",
     "@types/bun": "^1.2.12",
     "@types/pg": "^8.11.0",
     "@vitest/coverage-v8": "3.1.3",
