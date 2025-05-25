@@ -7,7 +7,7 @@ import { Telegraf, Context } from "telegraf";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "../db/schema";
-import { TextToSQLService } from "./services/text-to-sql.service";
+import { AITextToSQLService } from "./services/ai-text-to-sql.service";
 import { DatabaseContextService } from "./services/database-context.service";
 
 // Типы
@@ -38,14 +38,14 @@ const client = postgres(DATABASE_URL);
 const db = drizzle(client, { schema });
 
 // Сервисы
-const textToSQLService = new TextToSQLService(db);
+const aiTextToSQLService = new AITextToSQLService(db);
 const databaseContextService = new DatabaseContextService(db);
 
 // Middleware для проверки админских прав
 bot.use(async (ctx, next) => {
   const userId = ctx.from?.id;
   const username = ctx.from?.username;
-  
+
   if (!userId) {
     return;
   }
@@ -131,7 +131,7 @@ bot.help(async (ctx) => {
 bot.command('stats', async (ctx) => {
   try {
     const stats = await databaseContextService.getDatabaseStats();
-    
+
     const statsMessage = `
 📊 **Статистика базы данных**
 
@@ -171,9 +171,9 @@ bot.command('stats', async (ctx) => {
 bot.command('schema', async (ctx) => {
   try {
     const schemaInfo = await databaseContextService.getSchemaInfo();
-    
+
     let schemaMessage = "🗄️ **Схема базы данных**\n\n";
-    
+
     for (const table of schemaInfo) {
       schemaMessage += `**${table.name}** (${table.recordCount} записей)\n`;
       schemaMessage += `${table.description}\n`;
@@ -230,7 +230,7 @@ bot.command('examples', async (ctx) => {
 // Обработка текстовых сообщений
 bot.on('text', async (ctx) => {
   const userMessage = ctx.message.text;
-  
+
   if (!userMessage || userMessage.startsWith('/')) {
     return;
   }
@@ -238,31 +238,45 @@ bot.on('text', async (ctx) => {
   try {
     // Показываем индикатор печати
     await ctx.sendChatAction('typing');
-    
-    // Преобразуем текст в SQL
-    const sqlResult = await textToSQLService.convertToSQL(userMessage);
-    
+
+    // Преобразуем текст в SQL с помощью AI
+    const sqlResult = await aiTextToSQLService.convertToSQL(userMessage);
+
     if (!sqlResult.success) {
       await ctx.reply(`❌ **Ошибка:** ${sqlResult.error}`, { parse_mode: 'Markdown' });
       return;
     }
 
+    // Показываем уверенность AI в запросе
+    if (sqlResult.confidence && sqlResult.confidence < 0.7) {
+      await ctx.reply(`⚠️ **Внимание:** Уверенность AI в запросе низкая (${Math.round(sqlResult.confidence * 100)}%). Результат может быть неточным.`, { parse_mode: 'Markdown' });
+    }
+
     // Выполняем запрос
-    const queryResult = await textToSQLService.executeQuery(sqlResult.sql);
-    
+    const queryResult = await aiTextToSQLService.executeQuery(sqlResult.sql!);
+
     if (!queryResult.success) {
       await ctx.reply(`❌ **Ошибка выполнения:** ${queryResult.error}`, { parse_mode: 'Markdown' });
       return;
     }
 
-    // Форматируем и отправляем результат
-    const formattedResult = await textToSQLService.formatResult(
+    // Форматируем результат с помощью AI
+    const formattedResult = await aiTextToSQLService.formatResultWithAI(
       userMessage,
-      sqlResult.sql,
-      queryResult.data
+      sqlResult.sql!,
+      queryResult.data!
     );
 
-    await ctx.reply(formattedResult, { parse_mode: 'Markdown' });
+    // Добавляем информацию о производительности
+    let performanceInfo = '';
+    if (queryResult.executionTime) {
+      performanceInfo = `\n\n⏱️ **Время выполнения:** ${queryResult.executionTime}ms`;
+    }
+    if (sqlResult.confidence) {
+      performanceInfo += `\n🎯 **Уверенность AI:** ${Math.round(sqlResult.confidence * 100)}%`;
+    }
+
+    await ctx.reply(formattedResult + performanceInfo, { parse_mode: 'Markdown' });
 
   } catch (error) {
     console.error('Error processing message:', error);
@@ -279,15 +293,15 @@ bot.catch((err, ctx) => {
 // Запуск бота
 export async function startBot() {
   console.log("🤖 Запуск Telegram бота...");
-  
+
   try {
     await bot.launch();
     console.log("✅ Telegram бот запущен успешно!");
-    
+
     // Graceful shutdown
     process.once('SIGINT', () => bot.stop('SIGINT'));
     process.once('SIGTERM', () => bot.stop('SIGTERM'));
-    
+
   } catch (error) {
     console.error("❌ Ошибка запуска бота:", error);
     throw error;

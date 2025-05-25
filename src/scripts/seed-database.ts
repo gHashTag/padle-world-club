@@ -4,6 +4,7 @@
  */
 
 import { drizzle } from "drizzle-orm/postgres-js";
+import { sql } from "drizzle-orm";
 import postgres from "postgres";
 import { faker } from "@faker-js/faker";
 import * as schema from "../db/schema";
@@ -11,7 +12,8 @@ import * as schema from "../db/schema";
 // Настройка faker для русского языка
 faker.setDefaultRefDate('2024-01-01T00:00:00.000Z');
 
-const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:password@localhost:5432/padle_world_club";
+// Используем тот же URL что и в drizzle.config.ts
+const DATABASE_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_z6BWURv1GHbu@ep-dry-base-a1uf8xwo-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
 
 async function seedDatabase() {
   console.log("🌱 Начинаем наполнение базы данных тестовыми данными...");
@@ -20,6 +22,50 @@ async function seedDatabase() {
   const db = drizzle(client, { schema });
 
   try {
+    // Проверяем существует ли таблица user
+    console.log("🔍 Проверяем существование таблиц...");
+
+    let userCount = 0;
+    try {
+      const existingUsers = await db.execute(sql`SELECT COUNT(*) as count FROM "user"`);
+      userCount = Number(existingUsers[0]?.count || 0);
+      console.log(`📊 Найдено ${userCount} пользователей в БД`);
+    } catch (error) {
+      if (error.message?.includes('relation "user" does not exist')) {
+        console.log("⚠️  Таблица 'user' не существует. Нужно применить миграции.");
+        console.log("🔧 Запустите: npx drizzle-kit push");
+        console.log("   Затем выберите 'Yes, I want to execute all statements'");
+        throw new Error("Таблицы не созданы. Примените миграции сначала.");
+      }
+      throw error;
+    }
+
+    if (userCount > 0) {
+      console.log(`📊 Найдено ${userCount} пользователей. Очищаем БД перед наполнением...`);
+
+      // Очищаем таблицы в правильном порядке (учитывая foreign keys)
+      await db.execute(sql`TRUNCATE TABLE rating_change CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE game_player CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE game_session CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE tournament_participant CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE tournament CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE class_participant CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE class_schedule CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE class_definition CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE user_training_package CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE training_package_definition CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE payment CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE booking_participant CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE booking CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE court CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE venue CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE notification CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE task CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE feedback CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE "user" CASCADE`);
+
+      console.log("✅ База данных очищена");
+    }
     // 1. Создаем пользователей
     console.log("👥 Создаем пользователей...");
     const users = await createUsers(db);
@@ -46,7 +92,7 @@ async function seedDatabase() {
 
     // 7. Создаем игровые сессии
     console.log("🎮 Создаем игровые сессии...");
-    const gameSessions = await createGameSessions(db, courts, users);
+    const gameSessions = await createGameSessions(db, courts, users, venues);
 
     // 8. Добавляем игроков в сессии
     console.log("🏃 Добавляем игроков в сессии...");
@@ -178,8 +224,7 @@ async function createCourts(db: any, venues: any[]) {
       courts.push({
         venueId: venue.id,
         name: `Корт ${i}`,
-        courtType: faker.helpers.arrayElement(["indoor", "outdoor"]),
-        surface: faker.helpers.arrayElement(["artificial_grass", "concrete", "clay"]),
+        courtType: faker.helpers.arrayElement(["paddle", "tennis"]),
         hourlyRate: faker.number.float({ min: 1500, max: 3000 }),
         isActive: faker.datatype.boolean({ probability: 0.9 }),
         description: `Профессиональный корт для паддл-тенниса`,
@@ -199,14 +244,18 @@ async function createBookings(db: any, users: any[], courts: any[]) {
   for (let i = 0; i < 100; i++) {
     const startTime = faker.date.future();
     const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // +2 часа
+    const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
 
     bookings.push({
       courtId: faker.helpers.arrayElement(courts).id,
-      userId: faker.helpers.arrayElement(users).id,
       startTime,
       endTime,
-      totalPrice: faker.number.float({ min: 3000, max: 6000 }),
-      status: faker.helpers.arrayElement(["confirmed", "pending", "cancelled", "completed"]),
+      durationMinutes,
+      status: faker.helpers.arrayElement(["confirmed", "pending_payment", "cancelled", "completed"]),
+      totalAmount: faker.number.float({ min: 3000, max: 6000 }),
+      currency: "RUB",
+      bookedByUserId: faker.helpers.arrayElement(users).id,
+      bookingPurpose: faker.helpers.arrayElement(["free_play", "group_training", "private_training", "tournament_match", "other"]),
       notes: faker.lorem.sentence(),
     });
   }
@@ -223,13 +272,29 @@ async function createBookingParticipants(db: any, bookings: any[], users: any[])
   for (const booking of bookings) {
     // Добавляем 1-3 дополнительных участников к каждому бронированию
     const participantCount = faker.number.int({ min: 1, max: 3 });
+    const usedUserIds = new Set(); // Отслеживаем уже добавленных пользователей
 
     for (let i = 0; i < participantCount; i++) {
+      // Выбираем пользователя, которого еще нет в этом бронировании
+      let selectedUser;
+      let attempts = 0;
+      do {
+        selectedUser = faker.helpers.arrayElement(users);
+        attempts++;
+      } while (usedUserIds.has(selectedUser.id) && attempts < 10);
+
+      if (attempts >= 10) break; // Избегаем бесконечного цикла
+
+      usedUserIds.add(selectedUser.id);
+
       participants.push({
         bookingId: booking.id,
-        userId: faker.helpers.arrayElement(users).id,
-        role: faker.helpers.arrayElement(["player", "guest"]),
-        joinedAt: faker.date.recent(),
+        userId: selectedUser.id,
+        amountOwed: faker.number.float({ min: 500, max: 2000 }),
+        amountPaid: faker.number.float({ min: 0, max: 1000 }),
+        paymentStatus: faker.helpers.arrayElement(["success", "pending", "failed"]),
+        participationStatus: faker.helpers.arrayElement(["registered", "attended", "no_show", "cancelled"]),
+        isHost: faker.datatype.boolean({ probability: 0.2 }),
       });
     }
   }
@@ -240,19 +305,19 @@ async function createBookingParticipants(db: any, bookings: any[], users: any[])
 }
 
 // Функция создания платежей
-async function createPayments(db: any, bookings: any[], _users: any[]) {
+async function createPayments(db: any, bookings: any[], users: any[]) {
   const payments = [];
 
   for (const booking of bookings) {
     if (booking.status === "confirmed" || booking.status === "completed") {
       payments.push({
-        bookingId: booking.id,
-        userId: booking.userId,
-        amount: booking.totalPrice,
+        userId: booking.bookedByUserId,
+        amount: booking.totalAmount,
+        currency: booking.currency,
+        status: faker.helpers.arrayElement(["success", "pending", "failed"]),
         paymentMethod: faker.helpers.arrayElement(["card", "cash", "bank_transfer", "bonus_points"]),
-        status: faker.helpers.arrayElement(["completed", "pending", "failed"]),
-        transactionId: faker.string.uuid(),
-        paidAt: faker.date.recent(),
+        gatewayTransactionId: faker.string.uuid(),
+        description: `Оплата бронирования корта`,
       });
     }
   }
@@ -263,25 +328,27 @@ async function createPayments(db: any, bookings: any[], _users: any[]) {
 }
 
 // Функция создания игровых сессий
-async function createGameSessions(db: any, courts: any[], users: any[]) {
+async function createGameSessions(db: any, courts: any[], users: any[], venues: any[]) {
   const gameSessions = [];
 
   for (let i = 0; i < 80; i++) {
     const startTime = faker.date.recent();
     const endTime = new Date(startTime.getTime() + 90 * 60 * 1000); // +1.5 часа
+    const selectedCourt = faker.helpers.arrayElement(courts);
+    const selectedVenue = venues.find(v => v.id === selectedCourt.venueId) || faker.helpers.arrayElement(venues);
 
     gameSessions.push({
-      courtId: faker.helpers.arrayElement(courts).id,
-      organizerId: faker.helpers.arrayElement(users).id,
+      venueId: selectedVenue.id,
+      courtId: selectedCourt.id,
       startTime,
       endTime,
-      gameType: faker.helpers.arrayElement(["singles", "doubles"]),
-      skillLevel: faker.helpers.arrayElement(["beginner", "intermediate", "advanced", "professional"]),
+      gameType: faker.helpers.arrayElement(["public_match", "private_match"]),
+      neededSkillLevel: faker.helpers.arrayElement(["beginner", "intermediate", "advanced", "professional"]),
       maxPlayers: faker.helpers.arrayElement([2, 4]),
       currentPlayers: 0, // Будет обновлено после добавления игроков
-      status: faker.helpers.arrayElement(["scheduled", "in_progress", "completed", "cancelled"]),
-      isRanked: faker.datatype.boolean(),
-      notes: faker.lorem.sentence(),
+      status: faker.helpers.arrayElement(["open_for_players", "full", "in_progress", "completed", "cancelled"]),
+      createdByUserId: faker.helpers.arrayElement(users).id,
+      hostUserId: faker.helpers.arrayElement(users).id,
     });
   }
 
@@ -296,15 +363,25 @@ async function createGamePlayers(db: any, gameSessions: any[], users: any[]) {
 
   for (const session of gameSessions) {
     const playerCount = Math.min(session.maxPlayers, faker.number.int({ min: 2, max: session.maxPlayers }));
+    const usedUserIds = new Set(); // Отслеживаем уже добавленных пользователей
 
     for (let i = 0; i < playerCount; i++) {
+      // Выбираем пользователя, которого еще нет в этой сессии
+      let selectedUser;
+      let attempts = 0;
+      do {
+        selectedUser = faker.helpers.arrayElement(users);
+        attempts++;
+      } while (usedUserIds.has(selectedUser.id) && attempts < 10);
+
+      if (attempts >= 10) break; // Избегаем бесконечного цикла
+
+      usedUserIds.add(selectedUser.id);
+
       gamePlayers.push({
         gameSessionId: session.id,
-        userId: faker.helpers.arrayElement(users).id,
-        team: faker.helpers.arrayElement(["team_a", "team_b"]),
-        position: faker.helpers.arrayElement(["left", "right"]),
-        score: session.status === "completed" ? faker.number.int({ min: 0, max: 6 }) : null,
-        joinedAt: faker.date.recent(),
+        userId: selectedUser.id,
+        participationStatus: faker.helpers.arrayElement(["registered", "attended", "no_show", "cancelled"]),
       });
     }
   }
@@ -318,22 +395,31 @@ async function createGamePlayers(db: any, gameSessions: any[], users: any[]) {
 async function createRatingChanges(db: any, users: any[], gameSessions: any[]) {
   const ratingChanges = [];
 
-  const completedSessions = gameSessions.filter(s => s.status === "completed" && s.isRanked);
+  const completedSessions = gameSessions.filter(s => s.status === "completed");
 
   for (const session of completedSessions) {
     // Создаем изменения рейтинга для 2-4 игроков
     const playerCount = faker.number.int({ min: 2, max: 4 });
 
     for (let i = 0; i < playerCount; i++) {
+      const oldRating = faker.number.float({ min: 1200, max: 2000 });
+      const change = faker.number.float({ min: -50, max: 50 });
+      const newRating = oldRating + change;
+
       ratingChanges.push({
         userId: faker.helpers.arrayElement(users).id,
-        gameSessionId: session.id,
-        oldRating: faker.number.float({ min: 1200, max: 2000 }),
-        newRating: faker.number.float({ min: 1200, max: 2000 }),
-        ratingChange: faker.number.float({ min: -50, max: 50 }),
-        reason: "game_result",
+        oldRating,
+        newRating,
+        changeAmount: change,
+        changeReason: "game_session",
+        relatedGameSessionId: session.id,
       });
     }
+  }
+
+  if (ratingChanges.length === 0) {
+    console.log(`   ⚠️  Нет завершенных сессий для создания изменений рейтинга`);
+    return [];
   }
 
   const insertedRatingChanges = await db.insert(schema.ratingChanges).values(ratingChanges).returning();
@@ -358,11 +444,12 @@ async function createTournaments(db: any, venues: any[]) {
       registrationDeadline: new Date(startDate.getTime() - 3 * 24 * 60 * 60 * 1000), // -3 дня
       maxParticipants: faker.number.int({ min: 16, max: 64 }),
       currentParticipants: 0,
-      entryFee: faker.number.float({ min: 2000, max: 10000 }),
+      registrationFee: faker.number.float({ min: 2000, max: 10000 }),
+      currency: "RUB",
       prizePool: faker.number.float({ min: 50000, max: 200000 }),
-      tournamentType: faker.helpers.arrayElement(["single_elimination", "double_elimination", "round_robin"]),
-      skillLevel: faker.helpers.arrayElement(["open", "beginner", "intermediate", "advanced"]),
-      status: faker.helpers.arrayElement(["upcoming", "registration_open", "in_progress", "completed"]),
+      tournamentType: faker.helpers.arrayElement(["singles_elimination", "doubles_round_robin", "other"]),
+      skillLevelCategory: faker.helpers.arrayElement(["beginner", "intermediate", "advanced", "professional"]),
+      status: faker.helpers.arrayElement(["upcoming", "registration_open", "in_progress", "completed", "cancelled"]),
       rules: faker.lorem.paragraph(),
     });
   }
