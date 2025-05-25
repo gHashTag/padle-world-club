@@ -100,34 +100,37 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
     it.todo("должен успешно удалять пользователя");
   });
 
-  describe("UserAccountLink Model", () => {
-    // let testUser: User; // Закомментировано
+  /* Блок describe для UserAccountLink Model удален, так как тесты перенесены 
+     в src/__tests__/integration/db/userAccountLink.test.ts
+  // describe("UserAccountLink Model", () => {
+  //   // let testUser: User; // Закомментировано
 
-    beforeEach(async () => {
-      // Создаем тестового пользователя для UserAccountLink тестов
-      const newUser: NewUser = {
-        username: "linktestuser",
-        passwordHash: "testhash",
-        firstName: "LinkTest",
-        lastName: "User",
-        email: "linktest@example.com",
-        memberId: "LNK123",
-        userRole: "player",
-      };
-      await db.insert(users).values(newUser).returning(); // Просто выполняем действие, если testUser не нужен далее
-    });
+  //   beforeEach(async () => {
+  //     // Создаем тестового пользователя для UserAccountLink тестов
+  //     const newUser: NewUser = {
+  //       username: "linktestuser",
+  //       passwordHash: "testhash",
+  //       firstName: "LinkTest",
+  //       lastName: "User",
+  //       email: "linktest@example.com",
+  //       memberId: "LNK123",
+  //       userRole: "player",
+  //     };
+  //     await db.insert(users).values(newUser).returning(); // Просто выполняем действие, если testUser не нужен далее
+  //   });
 
-    it.todo(
-      "должен успешно создавать связь аккаунта для существующего пользователя"
-    );
-    it.todo(
-      "не должен создавать связь, если userId не существует (TODO: проверить FK constraint)"
-    );
-    // it.todo("не должен создавать дублирующуюся связь (platform, platformUserId) - требует UNIQUE constraint");
-    it.todo("должен корректно устанавливать isPrimary по умолчанию в false");
-    it.todo("должен успешно обновлять данные связи (например, isPrimary)");
-    it.todo(
-      "должен каскадно удалять связи при удалении пользователя (если onDelete: cascade настроено)"
-    );
-  });
+  //   it.todo(
+  //     "должен успешно создавать связь аккаунта для существующего пользователя"
+  //   );
+  //   it.todo(
+  //     "не должен создавать связь, если userId не существует (TODO: проверить FK constraint)"
+  //   );
+  //   // it.todo("не должен создавать дублирующуюся связь (platform, platformUserId) - требует UNIQUE constraint");
+  //   it.todo("должен корректно устанавливать isPrimary по умолчанию в false");
+  //   it.todo("должен успешно обновлять данные связи (например, isPrimary)");
+  //   it.todo(
+  //     "должен каскадно удалять связи при удалении пользователя (если onDelete: cascade настроено)"
+  //   );
+  // });
+  */
 });
