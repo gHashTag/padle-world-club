@@ -28,8 +28,7 @@ const db = drizzle(pool, { schema });
 describe("User Model & UserAccountLink Model Integration Tests", () => {
   // Функция для очистки таблиц перед/после тестов
   const cleanupDatabase = async () => {
-    // Очищаем в обратном порядке из-за внешних ключей
-    await db.delete(userAccountLinks);
+    // Очищаем таблицы (userAccountLinks удалены, так как тесты перенесены в отдельный файл)
     await db.delete(users);
   };
 
@@ -95,7 +94,7 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
         userRole: "coach",
         profileImageUrl: "http://example.com/img.png",
         gender: "male",
-        dateOfBirth: new Date("1990-01-01"),
+        dateOfBirth: "1990-01-01",
       };
 
       const [insertedUser] = await db.insert(users).values(newUserInput).returning();
@@ -103,9 +102,7 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
       expect(insertedUser.phone).toBe(newUserInput.phone);
       expect(insertedUser.profileImageUrl).toBe(newUserInput.profileImageUrl);
       expect(insertedUser.gender).toBe(newUserInput.gender);
-      expect(insertedUser.dateOfBirth?.toISOString()).toBe(
-        newUserInput.dateOfBirth!.toISOString(),
-      );
+      expect(insertedUser.dateOfBirth).toBe(newUserInput.dateOfBirth);
     });
 
     it("не должен создавать пользователя с неуникальным username", async () => {
@@ -120,7 +117,9 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
       };
       await db.insert(users).values(baseUser);
 
-      await expect(db.insert(users).values({ ...baseUser, email: "other@example.com", memberId: "MEM004" })).rejects.toThrow();
+      await expect(
+        db.insert(users).values({ ...baseUser, email: "other@example.com", memberId: "MEM004" }).execute()
+      ).rejects.toThrow();
     });
 
     it("не должен создавать пользователя с неуникальным email", async () => {
@@ -135,7 +134,9 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
       };
       await db.insert(users).values(baseUser);
 
-      await expect(db.insert(users).values({ ...baseUser, username: "emailuser2", memberId: "MEM006" })).rejects.toThrow();
+      await expect(
+        db.insert(users).values({ ...baseUser, username: "emailuser2", memberId: "MEM006" }).execute()
+      ).rejects.toThrow();
     });
 
     it("не должен создавать пользователя с неуникальным phone (если указан)", async () => {
@@ -157,7 +158,7 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
           username: "phoneuser2",
           email: "phone2@example.com",
           memberId: "MEM008",
-        }),
+        }).execute()
       ).rejects.toThrow();
     });
 
@@ -178,7 +179,7 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
           ...baseUser,
           username: "memberuser2",
           email: "member2@example.com",
-        }),
+        }).execute()
       ).rejects.toThrow();
     });
 
@@ -296,120 +297,6 @@ describe("User Model & UserAccountLink Model Integration Tests", () => {
     });
   });
 
-  /* Блок describe для UserAccountLink Model удален, так как тесты перенесены 
-     в src/__tests__/integration/db/userAccountLink.test.ts
-  // describe("UserAccountLink Model", () => {
-  //   // let testUser: User; // Закомментировано
-
-  //   beforeEach(async () => {
-  //     // Создаем тестового пользователя для UserAccountLink тестов
-  //     const newUser: NewUser = {
-  //       username: "linktestuser",
-  //       passwordHash: "testhash",
-  //       firstName: "LinkTest",
-  //       lastName: "User",
-  //       email: "linktest@example.com",
-  //       memberId: "LNK123",
-  //       userRole: "player",
-  //     };
-  //     await db.insert(users).values(newUser).returning(); // Просто выполняем действие, если testUser не нужен далее
-  //   });
-
-    it("должен успешно создавать связь аккаунта для существующего пользователя", async () => {
-      const user = (
-        await db
-          .select()
-          .from(users)
-          .where(eq(users.username, "linktestuser"))
-      )[0]!;
-
-      const link: NewUserAccountLink = {
-        userId: user.id,
-        platform: "telegram",
-        platformUserId: "123",
-      };
-
-      const [inserted] = await db
-        .insert(userAccountLinks)
-        .values(link)
-        .returning();
-
-      expect(inserted.userId).toBe(user.id);
-      expect(inserted.isPrimary).toBe(false);
-    });
-
-    it("не должен создавать связь, если userId не существует", async () => {
-      const link: NewUserAccountLink = {
-        userId: "00000000-0000-0000-0000-000000000000",
-        platform: "telegram",
-        platformUserId: "321",
-      };
-      await expect(db.insert(userAccountLinks).values(link)).rejects.toThrow();
-    });
-
-    it("должен корректно устанавливать isPrimary по умолчанию в false", async () => {
-      const user = (
-        await db
-          .select()
-          .from(users)
-          .where(eq(users.username, "linktestuser"))
-      )[0]!;
-
-      const [inserted] = await db
-        .insert(userAccountLinks)
-        .values({
-          userId: user.id,
-          platform: "whatsapp",
-          platformUserId: "w1",
-        })
-        .returning();
-
-      expect(inserted.isPrimary).toBe(false);
-    });
-
-    it("должен успешно обновлять данные связи (например, isPrimary)", async () => {
-      const user = (
-        await db
-          .select()
-          .from(users)
-          .where(eq(users.username, "linktestuser"))
-      )[0]!;
-      const [inserted] = await db
-        .insert(userAccountLinks)
-        .values({
-          userId: user.id,
-          platform: "email",
-          platformUserId: "e1",
-        })
-        .returning();
-
-      const [updated] = await db
-        .update(userAccountLinks)
-        .set({ isPrimary: true })
-        .where(eq(userAccountLinks.id, inserted.id))
-        .returning();
-      expect(updated.isPrimary).toBe(true);
-    });
-
-    it("должен каскадно удалять связи при удалении пользователя", async () => {
-      const user = (
-        await db
-          .select()
-          .from(users)
-          .where(eq(users.username, "linktestuser"))
-      )[0]!;
-      await db.insert(userAccountLinks).values({
-        userId: user.id,
-        platform: "telegram",
-        platformUserId: "del1",
-      });
-
-      await db.delete(users).where(eq(users.id, user.id));
-      const links = await db
-        .select()
-        .from(userAccountLinks)
-        .where(eq(userAccountLinks.userId, user.id));
-      expect(links.length).toBe(0);
-    });
-  });
+  /* Блок describe для UserAccountLink Model удален, так как тесты перенесены
+     в src/__tests__/integration/db/userAccountLink.test.ts */
 });

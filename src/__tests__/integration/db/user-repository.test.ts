@@ -93,7 +93,7 @@ describe("UserRepository", () => {
         userRole: "coach",
         profileImageUrl: "http://example.com/img.png",
         gender: "male",
-        dateOfBirth: new Date("1990-01-01"),
+        dateOfBirth: "1990-01-01",
       };
 
       const user = await userRepository.create(userData);

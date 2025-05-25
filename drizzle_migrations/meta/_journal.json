@@ -15,6 +15,125 @@
       "when": 1748107638595,
       "tag": "0001_far_aaron_stack",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1748152035114,
+      "tag": "0002_curly_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1748153330776,
+      "tag": "0003_fixed_mimic",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1748153964805,
+      "tag": "0004_deep_otto_octavius",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1748155784444,
+      "tag": "0005_true_emma_frost",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1748156673306,
+      "tag": "0006_dear_strong_guy",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1748157590345,
+      "tag": "0007_funny_ultimo",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1748158461056,
+      "tag": "0008_new_dormammu",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1748159824143,
+      "tag": "0009_big_blockbuster",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1748160783506,
+      "tag": "0010_shocking_trauma",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1748161623621,
+      "tag": "0011_busy_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1748162696324,
+      "tag": "0012_demonic_ravenous",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1748163629493,
+      "tag": "0013_bitter_living_lightning",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1748164324235,
+      "tag": "0014_melted_ghost_rider",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1748165592333,
+      "tag": "0015_empty_black_widow",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1748166765569,
+      "tag": "0016_nosy_sebastian_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1748168314355,
+      "tag": "0017_black_jane_foster",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1748171058794,
+      "tag": "0018_glorious_microchip",
+      "breakpoints": true
     }
   ]
 }
