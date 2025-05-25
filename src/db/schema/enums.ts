@@ -27,3 +27,38 @@ export const notificationChannelEnum = pgEnum("notification_channel", [
   "email",
   "app_push",
 ]);
+
+export const courtTypeEnum = pgEnum("court_type", [
+  "paddle",
+  "tennis",
+]);
+
+export const bookingStatusEnum = pgEnum("booking_status", [
+  "confirmed",
+  "pending_payment",
+  "cancelled",
+  "completed",
+]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "success",
+  "failed",
+  "pending",
+  "refunded",
+  "partial",
+]);
+
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "card",
+  "cash",
+  "bank_transfer",
+  "bonus_points",
+]);
+
+export const bookingPurposeEnum = pgEnum("booking_purpose", [
+  "free_play",
+  "group_training",
+  "private_training",
+  "tournament_match",
+  "other",
+]);
