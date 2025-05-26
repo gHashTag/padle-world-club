@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "name": "padel-world-club-api",
+  "builds": [
+    {
+      "src": "dist/server.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "dist/**",
+          "src/api/docs/**",
+          "src/db/migrations/**"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/health",
+      "dest": "/dist/server.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/dist/server.js"
+    },
+    {
+      "src": "/docs",
+      "dest": "/api/docs"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/server.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "dist/server.js": {
+      "maxDuration": 30
+    }
+  },
+  "regions": ["iad1"],
+  "framework": null
+}
