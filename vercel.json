@@ -1,10 +1,14 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node@18.x"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api"
+      "destination": "/api/index"
     }
-  ],
-  "buildCommand": "echo 'No build needed for serverless function'"
+  ]
 }
