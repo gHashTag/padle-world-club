@@ -1,34 +1,65 @@
 /**
  * Vercel Serverless Function Entry Point
- * Этот файл экспортирует Express приложение для Vercel
+ * Простая версия для демонстрации
  */
 
-import { createApp } from '../src/api/app';
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
 
-let app: any = null;
+const app = express();
 
-// Создание приложения с обработкой ошибок
-const getApp = () => {
-  if (!app) {
-    try {
-      console.log('🚀 Создание Express приложения для Vercel...');
-      app = createApp();
-      console.log('✅ Express приложение создано для Vercel');
-    } catch (error) {
-      console.error('💥 Ошибка создания приложения:', error);
-      // Создаем минимальное приложение для отображения ошибки
-      const express = require('express');
-      app = express();
-      app.get('*', (req: any, res: any) => {
-        res.status(500).json({
-          error: 'Application failed to initialize',
-          message: error instanceof Error ? error.message : 'Unknown error'
-        });
-      });
-    }
+// Middleware
+app.use(express.json());
+app.use(express.static('public'));
+
+// Главная страница
+app.get('/', (req: any, res: any) => {
+  try {
+    // Читаем HTML файл
+    const htmlPath = path.join(process.cwd(), 'src/api/views/index-detailed.html');
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    res.send(html);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to load page',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
-  return app;
-};
+});
 
-// Экспорт для Vercel
-export default getApp();
+// Health check
+app.get('/health', (req: any, res: any) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: 'vercel',
+    message: 'Padel World Club API is running'
+  });
+});
+
+// API info
+app.get('/api', (req: any, res: any) => {
+  res.json({
+    name: 'Padel World Club API',
+    version: '1.0.0',
+    description: 'REST API для системы управления падел-клубом',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      docs: '/api/docs'
+    },
+    status: 'demo mode - database not connected'
+  });
+});
+
+// Catch all
+app.get('*', (req: any, res: any) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Route ${req.path} not found`,
+    availableRoutes: ['/', '/health', '/api']
+  });
+});
+
+export default app;
