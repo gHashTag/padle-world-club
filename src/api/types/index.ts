@@ -155,6 +155,34 @@ export interface LogContext {
   userAgent?: string;
   ip: string;
   timestamp: string;
+  // Дополнительные поля для расширенного логирования
+  username?: string;
+  duration?: number;
+  statusCode?: number;
+  query?: any;
+  errors?: any[];
+  event?: string;
+  data?: any;
+  operation?: string;
+  table?: string;
+  url?: string;
+  key?: string;
+  limit?: number;
+  current?: number;
+  resetTime?: Date;
+  resourceOwnerId?: string;
+  message?: string;
+  promise?: string;
+  role?: string;
+  userRole?: string;
+  code?: string;
+  body?: any;
+  skipSuccessful?: boolean;
+  skipFailed?: boolean;
+  requiredPermission?: string;
+  requiredRole?: string;
+  requiredRoles?: string[];
+  userPermissions?: string[];
 }
 
 // Функциональные типы для работы с данными

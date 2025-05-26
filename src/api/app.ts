@@ -12,6 +12,10 @@ import swaggerUi from 'swagger-ui-express';
 import { config } from './config';
 import { ApiResponse } from './utils/response';
 import { FunctionalCompose } from './utils/compose';
+import { createUserRoutes } from './routes/users';
+import { createVenuesRouter } from './routes/venues';
+import { db } from '../db';
+import { UserRepository } from '../repositories/user-repository';
 
 // Функция для создания Express приложения
 export const createApp = (): Application => {
@@ -172,9 +176,13 @@ const createApiRouter = () => {
     }, 'API готов к работе');
   });
 
-  // TODO: Добавить маршруты для различных ресурсов
-  // router.use('/users', usersRouter);
-  // router.use('/venues', venuesRouter);
+  // Подключение маршрутов для различных ресурсов
+  if (!db) {
+    throw new Error('Database connection not available');
+  }
+  const userRepository = new UserRepository(db);
+  router.use('/users', createUserRoutes({ userRepository }));
+  router.use('/venues', createVenuesRouter());
   // router.use('/courts', courtsRouter);
   // router.use('/bookings', bookingsRouter);
   // router.use('/payments', paymentsRouter);

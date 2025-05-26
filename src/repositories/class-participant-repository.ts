@@ -4,14 +4,15 @@
  */
 
 import { eq, and, desc, sql } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import { ClassParticipant, NewClassParticipant, classParticipants } from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class ClassParticipantRepository {
-  private db: PostgresJsDatabase<typeof schema>;
+  private db: DatabaseType;
 
-  constructor(db: PostgresJsDatabase<typeof schema>) {
+  constructor(db: DatabaseType) {
     this.db = db;
   }
 

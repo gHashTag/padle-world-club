@@ -77,14 +77,14 @@ async function runDemo() {
             .join(", ");
           console.log(`   ${idx + 1}. ${fields}`);
         });
-        
+
         if (queryResult.data.length > 3) {
           console.log(`   ... и еще ${queryResult.data.length - 3} записей`);
         }
       }
 
     } catch (error) {
-      console.log(`💥 Неожиданная ошибка: ${error.message}`);
+      console.log(`💥 Неожиданная ошибка: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

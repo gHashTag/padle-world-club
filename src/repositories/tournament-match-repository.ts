@@ -4,12 +4,14 @@
  */
 
 import { eq, and, desc, asc, sql, inArray, count, like, or, gte, lte, isNull, isNotNull } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import { TournamentMatch, NewTournamentMatch, tournamentMatches, UpdateTournamentMatch } from "../db/schema";
+import * as schema from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class TournamentMatchRepository {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  constructor(private db: DatabaseType) {}
 
   /**
    * Создать новый матч турнира
@@ -409,8 +411,9 @@ export class TournamentMatchRepository {
   async delete(id: string): Promise<boolean> {
     const result = await this.db
       .delete(tournamentMatches)
-      .where(eq(tournamentMatches.id, id));
-    return result.rowCount > 0;
+      .where(eq(tournamentMatches.id, id))
+      .returning();
+    return result.length > 0;
   }
 
   /**
@@ -425,8 +428,9 @@ export class TournamentMatchRepository {
       .where(and(
         eq(tournamentMatches.tournamentId, tournamentId),
         eq(tournamentMatches.matchNumber, matchNumber)
-      ));
-    return result.rowCount > 0;
+      ))
+      .returning();
+    return result.length > 0;
   }
 
   /**
@@ -635,8 +639,9 @@ export class TournamentMatchRepository {
   async deleteAllByTournament(tournamentId: string): Promise<number> {
     const result = await this.db
       .delete(tournamentMatches)
-      .where(eq(tournamentMatches.tournamentId, tournamentId));
-    return result.rowCount;
+      .where(eq(tournamentMatches.tournamentId, tournamentId))
+      .returning();
+    return result.length;
   }
 
   /**
@@ -650,8 +655,9 @@ export class TournamentMatchRepository {
       .where(or(
         eq(tournamentMatches.winnerTeamId, teamId),
         eq(tournamentMatches.loserTeamId, teamId)
-      ));
-    return result.rowCount;
+      ))
+      .returning();
+    return result.length;
   }
 
   /**

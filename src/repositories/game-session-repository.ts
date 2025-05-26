@@ -4,14 +4,15 @@
  */
 
 import { eq, and, desc, sql, gte, lte, lt, inArray, isNull, isNotNull } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import { GameSession, NewGameSession, gameSessions } from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class GameSessionRepository {
-  private db: PostgresJsDatabase<typeof schema>;
+  private db: DatabaseType;
 
-  constructor(db: PostgresJsDatabase<typeof schema>) {
+  constructor(db: DatabaseType) {
     this.db = db;
   }
 

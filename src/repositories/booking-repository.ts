@@ -4,14 +4,13 @@
  */
 
 import { eq, and, gte, lte, ne } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
 import { Booking, NewBooking, bookings } from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class BookingRepository {
-  private db: PostgresJsDatabase<typeof schema>;
+  private db: DatabaseType;
 
-  constructor(db: PostgresJsDatabase<typeof schema>) {
+  constructor(db: DatabaseType) {
     this.db = db;
   }
 
@@ -146,42 +145,75 @@ export class BookingRepository {
     return !!deletedBooking;
   }
 
+
+
   /**
-   * Проверяет доступность корта в указанное время
+   * Перегрузка метода isCourtAvailable для работы со строками
    * @param courtId ID корта
-   * @param startTime Начальное время
-   * @param endTime Конечное время
-   * @param excludeBookingId ID бронирования для исключения (при обновлении)
+   * @param date Дата в формате строки (YYYY-MM-DD)
+   * @param startTime Время начала в формате строки (HH:MM)
+   * @param endTime Время окончания в формате строки (HH:MM)
    * @returns true, если корт доступен, иначе false
    */
   async isCourtAvailable(
     courtId: string,
+    date: string,
+    startTime: string,
+    endTime: string
+  ): Promise<boolean>;
+  async isCourtAvailable(
+    courtId: string,
     startTime: Date,
     endTime: Date,
-    excludeBookingId?: string
+    _excludeBookingId?: string
+  ): Promise<boolean>;
+  async isCourtAvailable(
+    courtId: string,
+    dateOrStartTime: string | Date,
+    startTimeOrEndTime: string | Date,
+    endTimeOrExcludeId?: string,
+    _excludeBookingId?: string
   ): Promise<boolean> {
-    let whereConditions = and(
-      eq(bookings.courtId, courtId),
-      // Проверяем пересечение временных интервалов
-      and(
-        lte(bookings.startTime, endTime),
-        gte(bookings.endTime, startTime)
-      )
-    );
+    // Если первый параметр - строка, то это новая сигнатура
+    if (typeof dateOrStartTime === 'string' && typeof startTimeOrEndTime === 'string') {
+      const date = dateOrStartTime;
+      const startTime = startTimeOrEndTime;
+      const endTime = endTimeOrExcludeId!;
 
-    // Исключаем текущее бронирование при обновлении
-    if (excludeBookingId) {
-      whereConditions = and(
-        whereConditions,
-        ne(bookings.id, excludeBookingId)
+      // Преобразуем строки в Date объекты
+      const startDateTime = new Date(`${date}T${startTime}:00`);
+      const endDateTime = new Date(`${date}T${endTime}:00`);
+
+      return this.isCourtAvailable(courtId, startDateTime, endDateTime);
+    } else {
+      // Старая сигнатура с Date объектами
+      const startTime = dateOrStartTime as Date;
+      const endTime = startTimeOrEndTime as Date;
+      const excludeId = endTimeOrExcludeId;
+
+      let whereConditions = and(
+        eq(bookings.courtId, courtId),
+        // Проверяем пересечение временных интервалов
+        and(
+          lte(bookings.startTime, endTime),
+          gte(bookings.endTime, startTime)
+        )
       );
+
+      // Исключаем текущее бронирование при обновлении
+      if (excludeId) {
+        whereConditions = and(
+          whereConditions,
+          ne(bookings.id, excludeId)
+        );
+      }
+
+      const conflictingBookings = await this.db
+        .select()
+        .from(bookings)
+        .where(whereConditions);
+
+      return conflictingBookings.length === 0;
     }
-
-    const conflictingBookings = await this.db
-      .select()
-      .from(bookings)
-      .where(whereConditions);
-
-    return conflictingBookings.length === 0;
   }
 }

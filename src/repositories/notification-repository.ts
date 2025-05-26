@@ -4,8 +4,8 @@
  */
 
 import { eq, and, desc, asc, sql, count, like, gte, lte, inArray } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import {
   Notification,
   NewNotification,
@@ -18,8 +18,10 @@ import {
   NotificationRelatedEntityType
 } from "../db/schema";
 
+import { DatabaseType } from "./types";
+
 export class NotificationRepository {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  constructor(private db: DatabaseType) {}
 
   /**
    * Создать новое уведомление
@@ -360,9 +362,10 @@ export class NotificationRepository {
         readAt: new Date(),
         updatedAt: new Date()
       })
-      .where(and(...conditions));
+      .where(and(...conditions))
+      .returning();
 
-    return result.rowCount;
+    return result.length;
   }
 
   /**
@@ -380,9 +383,10 @@ export class NotificationRepository {
         sentAt: new Date(),
         updatedAt: new Date()
       })
-      .where(inArray(notifications.id, ids));
+      .where(inArray(notifications.id, ids))
+      .returning();
 
-    return result.rowCount;
+    return result.length;
   }
 
   /**
@@ -415,9 +419,10 @@ export class NotificationRepository {
 
     const result = await this.db
       .delete(notifications)
-      .where(and(...conditions));
+      .where(and(...conditions))
+      .returning();
 
-    return result.rowCount;
+    return result.length;
   }
 
   /**

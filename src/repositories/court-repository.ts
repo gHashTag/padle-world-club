@@ -4,14 +4,15 @@
  */
 
 import { eq, and, gte, lte } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import { Court, NewCourt, courts } from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class CourtRepository {
-  private db: PostgresJsDatabase<typeof schema>;
+  private db: DatabaseType;
 
-  constructor(db: PostgresJsDatabase<typeof schema>) {
+  constructor(db: DatabaseType) {
     this.db = db;
   }
 
@@ -35,7 +36,7 @@ export class CourtRepository {
       .select()
       .from(courts)
       .where(eq(courts.id, id));
-    
+
     return result.length > 0 ? result[0] : null;
   }
 
@@ -51,7 +52,7 @@ export class CourtRepository {
         .from(courts)
         .where(eq(courts.isActive, true));
     }
-    
+
     return await this.db.select().from(courts);
   }
 
@@ -63,15 +64,22 @@ export class CourtRepository {
    */
   async getByVenueId(venueId: string, activeOnly: boolean = false): Promise<Court[]> {
     const conditions = [eq(courts.venueId, venueId)];
-    
+
     if (activeOnly) {
       conditions.push(eq(courts.isActive, true));
     }
-    
+
     return await this.db
       .select()
       .from(courts)
       .where(and(...conditions));
+  }
+
+  /**
+   * Алиас для getByVenueId для совместимости с API handlers
+   */
+  async findByVenueId(venueId: string): Promise<Court[]> {
+    return this.getByVenueId(venueId, true); // Возвращаем только активные корты
   }
 
   /**
@@ -82,11 +90,11 @@ export class CourtRepository {
    */
   async getByType(courtType: "paddle" | "tennis", activeOnly: boolean = false): Promise<Court[]> {
     const conditions = [eq(courts.courtType, courtType)];
-    
+
     if (activeOnly) {
       conditions.push(eq(courts.isActive, true));
     }
-    
+
     return await this.db
       .select()
       .from(courts)
@@ -101,19 +109,19 @@ export class CourtRepository {
    * @returns Массив кортов
    */
   async getByVenueAndType(
-    venueId: string, 
-    courtType: "paddle" | "tennis", 
+    venueId: string,
+    courtType: "paddle" | "tennis",
     activeOnly: boolean = false
   ): Promise<Court[]> {
     const conditions = [
       eq(courts.venueId, venueId),
       eq(courts.courtType, courtType)
     ];
-    
+
     if (activeOnly) {
       conditions.push(eq(courts.isActive, true));
     }
-    
+
     return await this.db
       .select()
       .from(courts)
@@ -128,19 +136,19 @@ export class CourtRepository {
    * @returns Массив кортов
    */
   async getByPriceRange(
-    minRate: number, 
-    maxRate: number, 
+    minRate: number,
+    maxRate: number,
     activeOnly: boolean = false
   ): Promise<Court[]> {
     const conditions = [
       gte(courts.hourlyRate, minRate.toString()),
       lte(courts.hourlyRate, maxRate.toString())
     ];
-    
+
     if (activeOnly) {
       conditions.push(eq(courts.isActive, true));
     }
-    
+
     return await this.db
       .select()
       .from(courts)
@@ -159,7 +167,7 @@ export class CourtRepository {
       .set(courtData)
       .where(eq(courts.id, id))
       .returning();
-    
+
     return updatedCourt || null;
   }
 
@@ -174,7 +182,7 @@ export class CourtRepository {
       .set({ isActive: false })
       .where(eq(courts.id, id))
       .returning();
-    
+
     return !!deactivatedCourt;
   }
 
@@ -189,7 +197,7 @@ export class CourtRepository {
       .set({ isActive: true })
       .where(eq(courts.id, id))
       .returning();
-    
+
     return !!activatedCourt;
   }
 
@@ -203,7 +211,7 @@ export class CourtRepository {
       .delete(courts)
       .where(eq(courts.id, id))
       .returning();
-    
+
     return !!deletedCourt;
   }
 }

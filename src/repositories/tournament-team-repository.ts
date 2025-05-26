@@ -4,12 +4,14 @@
  */
 
 import { eq, and, desc, asc, sql, inArray, count, like, or } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import { TournamentTeam, NewTournamentTeam, tournamentTeams } from "../db/schema";
+import * as schema from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class TournamentTeamRepository {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  constructor(private db: DatabaseType) {}
 
   /**
    * Создает новую команду турнира

@@ -3,9 +3,9 @@
  * Выполняет заранее подготовленные SQL запросы
  */
 
-import { drizzle } from "drizzle-orm/postgres-js";
+// import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "../db/schema";
+// import * as schema from "../db/schema";
 
 // Используем тот же URL что и в других скриптах
 const DATABASE_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_z6BWURv1GHbu@ep-dry-base-a1uf8xwo-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
@@ -16,7 +16,7 @@ async function runSimpleDemo() {
 
   // Подключаемся к БД
   const client = postgres(DATABASE_URL);
-  const db = drizzle(client, { schema });
+  // const _db = drizzle(client, { schema });
 
   // Заранее подготовленные запросы
   const queries = [
@@ -98,7 +98,7 @@ async function runSimpleDemo() {
       }
 
     } catch (error) {
-      console.log(`❌ Ошибка: ${error.message}`);
+      console.log(`❌ Ошибка: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     console.log(); // Пустая строка для разделения

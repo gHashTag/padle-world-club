@@ -31,7 +31,7 @@ async function seedDatabase() {
       userCount = Number(existingUsers[0]?.count || 0);
       console.log(`📊 Найдено ${userCount} пользователей в БД`);
     } catch (error) {
-      if (error.message?.includes('relation "user" does not exist')) {
+      if (error instanceof Error && error.message?.includes('relation "user" does not exist')) {
         console.log("⚠️  Таблица 'user' не существует. Нужно применить миграции.");
         console.log("🔧 Запустите: npx drizzle-kit push");
         console.log("   Затем выберите 'Yes, I want to execute all statements'");
@@ -305,7 +305,7 @@ async function createBookingParticipants(db: any, bookings: any[], users: any[])
 }
 
 // Функция создания платежей
-async function createPayments(db: any, bookings: any[], users: any[]) {
+async function createPayments(db: any, bookings: any[], _users: any[]) {
   const payments = [];
 
   for (const booking of bookings) {

@@ -4,14 +4,13 @@
  */
 
 import { eq } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
 import { User, NewUser, users } from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class UserRepository {
-  private db: PostgresJsDatabase<typeof schema>;
+  private db: DatabaseType;
 
-  constructor(db: PostgresJsDatabase<typeof schema>) {
+  constructor(db: DatabaseType) {
     this.db = db;
   }
 
@@ -35,7 +34,7 @@ export class UserRepository {
       .select()
       .from(users)
       .where(eq(users.id, id));
-    
+
     return result.length > 0 ? result[0] : null;
   }
 
@@ -49,7 +48,7 @@ export class UserRepository {
       .select()
       .from(users)
       .where(eq(users.username, username));
-    
+
     return result.length > 0 ? result[0] : null;
   }
 
@@ -63,7 +62,7 @@ export class UserRepository {
       .select()
       .from(users)
       .where(eq(users.email, email));
-    
+
     return result.length > 0 ? result[0] : null;
   }
 
@@ -77,7 +76,7 @@ export class UserRepository {
       .select()
       .from(users)
       .where(eq(users.phone, phone));
-    
+
     return result.length > 0 ? result[0] : null;
   }
 
@@ -91,7 +90,7 @@ export class UserRepository {
       .select()
       .from(users)
       .where(eq(users.memberId, memberId));
-    
+
     return result.length > 0 ? result[0] : null;
   }
 
@@ -115,7 +114,7 @@ export class UserRepository {
       .set(userData)
       .where(eq(users.id, id))
       .returning();
-    
+
     return updatedUser || null;
   }
 
@@ -129,7 +128,7 @@ export class UserRepository {
       .delete(users)
       .where(eq(users.id, id))
       .returning();
-    
+
     return !!deletedUser;
   }
 }

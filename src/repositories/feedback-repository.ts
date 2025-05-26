@@ -4,8 +4,8 @@
  */
 
 import { eq, and, desc, sql, count, like, gte, lte, or } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import {
   Feedback,
   NewFeedback,
@@ -18,9 +18,10 @@ import {
   FeedbackStatus,
   FeedbackRating
 } from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class FeedbackRepository {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  constructor(private db: DatabaseType) {}
 
   /**
    * Создать новый отзыв

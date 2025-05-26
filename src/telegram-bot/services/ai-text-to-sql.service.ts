@@ -295,7 +295,7 @@ ${this.databaseSchema}
 
       // Дополнительная проверка безопасности
       const safetyCheck = this.validateSQLSafety(result.object.sql);
-      
+
       if (!safetyCheck.isValid) {
         return {
           success: false,
@@ -316,7 +316,7 @@ ${this.databaseSchema}
       console.error('AI Text-to-SQL error:', error);
       return {
         success: false,
-        error: `Ошибка AI обработки: ${error.message}`
+        error: `Ошибка AI обработки: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }
@@ -326,7 +326,7 @@ ${this.databaseSchema}
    */
   async executeQuery(sqlQuery: string): Promise<QueryExecutionResult> {
     const startTime = Date.now();
-    
+
     try {
       // Дополнительная проверка безопасности перед выполнением
       const safetyCheck = this.validateSQLSafety(sqlQuery);
@@ -356,10 +356,10 @@ ${this.databaseSchema}
     } catch (error) {
       const executionTime = Date.now() - startTime;
       console.error('SQL execution error:', error);
-      
+
       return {
         success: false,
-        error: `Ошибка выполнения SQL: ${error.message}`,
+        error: `Ошибка выполнения SQL: ${error instanceof Error ? error.message : String(error)}`,
         executionTime
       };
     }
@@ -416,26 +416,26 @@ ${JSON.stringify(data.slice(0, 3), null, 2)}
 
     // Показываем первые 5 записей
     const displayData = data.slice(0, 5);
-    
+
     for (let i = 0; i < displayData.length; i++) {
       const record = displayData[i];
       result += `**${i + 1}.** `;
-      
+
       // Показываем основные поля
       const mainFields = Object.entries(record)
         .slice(0, 3)
         .map(([key, value]) => `${key}: ${value}`)
         .join(' • ');
-      
+
       result += mainFields + '\n';
     }
-    
+
     if (data.length > 5) {
       result += `\n... и еще ${data.length - 5} записей`;
     }
 
     result += `\n\n🔧 **SQL:** \`${sqlQuery}\``;
-    
+
     return result;
   }
 
@@ -444,30 +444,30 @@ ${JSON.stringify(data.slice(0, 3), null, 2)}
    */
   private validateSQLSafety(sqlQuery: string): { isValid: boolean; reason?: string } {
     const lowerQuery = sqlQuery.toLowerCase().trim();
-    
+
     // Проверяем что это SELECT запрос
     if (!lowerQuery.startsWith('select')) {
       return { isValid: false, reason: 'Разрешены только SELECT запросы' };
     }
-    
+
     // Запрещенные операции
     const forbiddenKeywords = [
-      'insert', 'update', 'delete', 'drop', 'create', 'alter', 
+      'insert', 'update', 'delete', 'drop', 'create', 'alter',
       'truncate', 'grant', 'revoke', 'exec', 'execute',
       'sp_', 'xp_', '--', '/*', '*/', ';'
     ];
-    
+
     for (const keyword of forbiddenKeywords) {
       if (lowerQuery.includes(keyword)) {
         return { isValid: false, reason: `Запрещенная операция: ${keyword}` };
       }
     }
-    
+
     // Проверяем наличие LIMIT
     if (!lowerQuery.includes('limit') && !lowerQuery.includes('count(')) {
       // Это будет исправлено автоматически
     }
-    
+
     return { isValid: true };
   }
 }

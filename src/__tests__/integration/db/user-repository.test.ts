@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { sql } from "drizzle-orm";
 import * as schema from "../../../db/schema";
-import { users, NewUser } from "../../../db/schema";
+import { users, NewUser, bookings, gamePlayers, tournamentParticipants, tournamentTeams, ratingChanges, payments, userAccountLinks, userTrainingPackages, classParticipants, bookingParticipants, gameSessions } from "../../../db/schema";
 import { UserRepository } from "../../../repositories/user-repository";
 import dotenv from "dotenv";
 
@@ -31,7 +32,29 @@ const userRepository = new UserRepository(db);
 describe("UserRepository", () => {
   // Функция для очистки таблиц перед/после тестов
   const cleanupDatabase = async () => {
-    await db.delete(users);
+    try {
+      // Используем TRUNCATE CASCADE для очистки всех связанных таблиц
+      await db.execute(sql`TRUNCATE TABLE "user" CASCADE`);
+    } catch (error) {
+      console.error('Error cleaning up database:', error);
+      // Если TRUNCATE не работает, попробуем удалить по одной таблице
+      try {
+        await db.delete(gameSessions);
+        await db.delete(classParticipants);
+        await db.delete(userTrainingPackages);
+        await db.delete(userAccountLinks);
+        await db.delete(payments);
+        await db.delete(ratingChanges);
+        await db.delete(tournamentTeams);
+        await db.delete(tournamentParticipants);
+        await db.delete(gamePlayers);
+        await db.delete(bookingParticipants);
+        await db.delete(bookings);
+        await db.delete(users);
+      } catch (deleteError) {
+        console.error('Error deleting from tables:', deleteError);
+      }
+    }
   };
 
   beforeEach(async () => {

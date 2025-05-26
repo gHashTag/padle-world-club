@@ -4,8 +4,8 @@
  */
 
 import { eq, and, desc, asc, sql, count, like, gte, lte, isNull } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import {
   Task,
   NewTask,
@@ -19,8 +19,10 @@ import {
   RelatedEntityType
 } from "../db/schema";
 
+import { DatabaseType } from "./types";
+
 export class TaskRepository {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  constructor(private db: DatabaseType) {}
 
   /**
    * Создать новую задачу

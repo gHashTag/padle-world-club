@@ -4,12 +4,14 @@
  */
 
 import { eq, and, desc, sql, inArray, count } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import { GamePlayer, NewGamePlayer, gamePlayers } from "../db/schema";
+import * as schema from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class GamePlayerRepository {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  constructor(private db: DatabaseType) {}
 
   /**
    * Создает нового игрока в игровой сессии
