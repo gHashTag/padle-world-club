@@ -7,7 +7,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import swaggerUi from 'swagger-ui-express';
+import { setupSwaggerUI } from './middleware/swagger';
 
 import { config } from './config';
 import { ApiResponse } from './utils/response';
@@ -29,6 +29,7 @@ export const createApp = (): Application => {
     setupSecurity,
     setupParsing,
     setupLogging,
+    setupSwagger,
     setupRoutes,
     setupErrorHandling
   )(app);
@@ -84,6 +85,16 @@ const setupLogging = (app: Application): Application => {
   return app;
 };
 
+// Настройка Swagger UI
+const setupSwagger = (app: Application): Application => {
+  // Настраиваем Swagger UI только если включено в конфигурации
+  if (config.swagger.enabled) {
+    setupSwaggerUI(app);
+  }
+
+  return app;
+};
+
 // Настройка маршрутов
 const setupRoutes = (app: Application): Application => {
   // Health check endpoint
@@ -97,11 +108,7 @@ const setupRoutes = (app: Application): Application => {
     }, 'Сервер работает нормально');
   });
 
-  // API documentation
-  if (config.swagger.enabled) {
-    const swaggerDocument = createSwaggerDocument();
-    app.use(config.swagger.path, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-  }
+  // API documentation теперь настраивается в setupSwagger
 
   // API routes будут добавлены позже
   app.use('/api', createApiRouter());
@@ -198,123 +205,6 @@ const createApiRouter = () => {
   return router;
 };
 
-// Создание Swagger документации
-const createSwaggerDocument = () => ({
-  openapi: '3.0.0',
-  info: {
-    title: config.swagger.title,
-    version: config.swagger.version,
-    description: config.swagger.description,
-    contact: {
-      name: 'Padle World Club API Support',
-      email: 'support@padleworldclub.com',
-    },
-  },
-  servers: [
-    {
-      url: `http://localhost:${config.server.port}`,
-      description: 'Development server',
-    },
-  ],
-  paths: {
-    '/health': {
-      get: {
-        summary: 'Health check',
-        description: 'Проверка состояния сервера',
-        responses: {
-          '200': {
-            description: 'Сервер работает нормально',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    success: { type: 'boolean' },
-                    data: {
-                      type: 'object',
-                      properties: {
-                        status: { type: 'string' },
-                        timestamp: { type: 'string' },
-                        uptime: { type: 'number' },
-                        memory: { type: 'object' },
-                        version: { type: 'string' },
-                      },
-                    },
-                    message: { type: 'string' },
-                    timestamp: { type: 'string' },
-                    path: { type: 'string' },
-                    method: { type: 'string' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    '/api': {
-      get: {
-        summary: 'API information',
-        description: 'Получение информации об API',
-        responses: {
-          '200': {
-            description: 'Информация об API',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    success: { type: 'boolean' },
-                    data: {
-                      type: 'object',
-                      properties: {
-                        name: { type: 'string' },
-                        version: { type: 'string' },
-                        description: { type: 'string' },
-                        endpoints: { type: 'object' },
-                        documentation: { type: 'string' },
-                      },
-                    },
-                    message: { type: 'string' },
-                    timestamp: { type: 'string' },
-                    path: { type: 'string' },
-                    method: { type: 'string' },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-  components: {
-    schemas: {
-      ApiResponse: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          data: { type: 'object' },
-          message: { type: 'string' },
-          error: { type: 'string' },
-          timestamp: { type: 'string' },
-          path: { type: 'string' },
-          method: { type: 'string' },
-        },
-      },
-      Error: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean', example: false },
-          message: { type: 'string' },
-          error: { type: 'string' },
-          timestamp: { type: 'string' },
-          path: { type: 'string' },
-          method: { type: 'string' },
-        },
-      },
-    },
-  },
-});
+// Swagger документация теперь загружается из файлов в middleware/swagger.ts
 
 export default createApp;

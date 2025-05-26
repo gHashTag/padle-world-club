@@ -1,0 +1,689 @@
+paths:
+  /api/venues:
+    get:
+      summary: Get Venues List
+      description: |
+        Retrieve a paginated list of venues with optional filtering and sorting.
+        
+        This endpoint supports:
+        - **Pagination** with page and limit parameters
+        - **Filtering** by city, country, status, and search terms
+        - **Geographic filtering** by location and radius
+        - **Sorting** by various fields (name, createdAt, rating, etc.)
+        - **Field selection** to include only specific fields
+        - **Search** across venue name, description, and address
+        
+        **Access Control:**
+        - Public endpoint (no authentication required for basic venue info)
+        - Authenticated users get additional details
+      tags:
+        - Venues
+      security: []  # Public endpoint
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/PageParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LimitParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortByParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortOrderParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SearchParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/CityParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/CountryParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/VenueStatusParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LatitudeParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LongitudeParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/RadiusParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
+      responses:
+        '200':
+          description: Venues retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './schemas/common.yaml#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          data:
+                            type: array
+                            items:
+                              $ref: './schemas/venue.yaml#/components/schemas/VenueSummary'
+                          meta:
+                            $ref: './schemas/common.yaml#/components/schemas/PaginationMeta'
+              examples:
+                basic_list:
+                  summary: Basic venues list
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          name: "Central Padel Club"
+                          description: "Premium padel facility in downtown"
+                          address:
+                            street: "123 Main Street"
+                            city: "New York"
+                            country: "United States"
+                            coordinates:
+                              latitude: 40.7128
+                              longitude: -74.0060
+                          status: "active"
+                          totalCourts: 8
+                          rating: 4.5
+                          priceRange: "$$"
+                          amenities: ["parking", "locker_rooms", "pro_shop"]
+                          images: ["https://example.com/venue1.jpg"]
+                          createdAt: "2024-01-01T10:00:00Z"
+                      meta:
+                        total: 25
+                        page: 1
+                        limit: 10
+                        totalPages: 3
+                        hasNext: true
+                        hasPrev: false
+                    message: "Venues retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/venues"
+                    method: "GET"
+                location_search:
+                  summary: Location-based search results
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          name: "Central Padel Club"
+                          address:
+                            city: "New York"
+                            country: "United States"
+                            coordinates:
+                              latitude: 40.7128
+                              longitude: -74.0060
+                          distance: 2.3
+                          status: "active"
+                          totalCourts: 8
+                          rating: 4.5
+                      meta:
+                        total: 5
+                        page: 1
+                        limit: 10
+                        totalPages: 1
+                        hasNext: false
+                        hasPrev: false
+                    message: "Venues retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/venues?latitude=40.7128&longitude=-74.0060&radius=5"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    post:
+      summary: Create New Venue
+      description: |
+        Create a new venue in the system.
+        
+        **Access Control:**
+        - Admin: Can create venues anywhere
+        - Manager: Can create venues (becomes the manager of the venue)
+        - Player: Cannot create venues
+        
+        **Required Information:**
+        - Basic venue details (name, description, address)
+        - Contact information
+        - Operating hours
+        - At least one court must be added separately after venue creation
+      tags:
+        - Venues
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/venue.yaml#/components/schemas/CreateVenueRequest'
+            examples:
+              basic_venue:
+                summary: Basic venue creation
+                value:
+                  name: "Downtown Padel Center"
+                  description: "Modern padel facility in the heart of the city"
+                  address:
+                    street: "456 Sports Avenue"
+                    city: "Los Angeles"
+                    state: "CA"
+                    country: "United States"
+                    postalCode: "90210"
+                    coordinates:
+                      latitude: 34.0522
+                      longitude: -118.2437
+                  contactInfo:
+                    phone: "+1234567890"
+                    email: "info@downtownpadel.com"
+                    website: "https://downtownpadel.com"
+                  operatingHours:
+                    monday: { open: "06:00", close: "22:00" }
+                    tuesday: { open: "06:00", close: "22:00" }
+                    wednesday: { open: "06:00", close: "22:00" }
+                    thursday: { open: "06:00", close: "22:00" }
+                    friday: { open: "06:00", close: "23:00" }
+                    saturday: { open: "07:00", close: "23:00" }
+                    sunday: { open: "07:00", close: "21:00" }
+                  amenities: ["parking", "locker_rooms", "pro_shop", "cafe"]
+                  priceRange: "$$"
+              complete_venue:
+                summary: Complete venue with all details
+                value:
+                  name: "Elite Padel Academy"
+                  description: "Professional padel training facility with world-class courts"
+                  address:
+                    street: "789 Championship Drive"
+                    city: "Miami"
+                    state: "FL"
+                    country: "United States"
+                    postalCode: "33101"
+                    coordinates:
+                      latitude: 25.7617
+                      longitude: -80.1918
+                  contactInfo:
+                    phone: "+1305555000"
+                    email: "contact@elitepadel.com"
+                    website: "https://elitepadel.com"
+                    socialMedia:
+                      instagram: "@elitepadel"
+                      facebook: "ElitePadelAcademy"
+                  operatingHours:
+                    monday: { open: "05:00", close: "23:00" }
+                    tuesday: { open: "05:00", close: "23:00" }
+                    wednesday: { open: "05:00", close: "23:00" }
+                    thursday: { open: "05:00", close: "23:00" }
+                    friday: { open: "05:00", close: "24:00" }
+                    saturday: { open: "06:00", close: "24:00" }
+                    sunday: { open: "06:00", close: "22:00" }
+                  amenities: ["parking", "locker_rooms", "pro_shop", "cafe", "fitness_center", "spa"]
+                  priceRange: "$$$"
+                  policies:
+                    cancellationPolicy: "24 hours advance notice required"
+                    dresscode: "Proper athletic attire required"
+                    ageRestrictions: "All ages welcome, children under 12 must be supervised"
+      responses:
+        '201':
+          description: Venue created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/venue.yaml#/components/schemas/Venue'
+                  message:
+                    type: string
+                    example: "Venue created successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/venues"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '409':
+          $ref: './schemas/responses.yaml#/components/responses/Conflict'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/venues/{id}:
+    get:
+      summary: Get Venue by ID
+      description: |
+        Retrieve detailed information about a specific venue.
+        
+        **Access Control:**
+        - Public endpoint for basic venue information
+        - Authenticated users get additional details
+        - Venue managers get management information
+        
+        **Includes:**
+        - Complete venue details
+        - Operating hours and policies
+        - Available courts (if requested)
+        - Recent reviews and ratings
+        - Upcoming availability
+      tags:
+        - Venues
+      security: []  # Public endpoint
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
+      responses:
+        '200':
+          description: Venue retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/venue.yaml#/components/schemas/Venue'
+                  message:
+                    type: string
+                    example: "Venue retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/venues/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    put:
+      summary: Update Venue
+      description: |
+        Update venue information.
+        
+        **Access Control:**
+        - Admin: Can update any venue
+        - Manager: Can update venues they manage
+        - Player: Cannot update venues
+        
+        **Updatable Fields:**
+        - Basic information (name, description, contact)
+        - Operating hours and policies
+        - Amenities and pricing
+        - Status (admin only)
+      tags:
+        - Venues
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/venue.yaml#/components/schemas/UpdateVenueRequest'
+            examples:
+              basic_update:
+                summary: Update basic venue information
+                value:
+                  description: "Updated description with new features"
+                  contactInfo:
+                    phone: "+1234567891"
+                    email: "newemail@venue.com"
+                  amenities: ["parking", "locker_rooms", "pro_shop", "cafe", "wifi"]
+              hours_update:
+                summary: Update operating hours
+                value:
+                  operatingHours:
+                    monday: { open: "05:30", close: "22:30" }
+                    friday: { open: "05:30", close: "23:30" }
+                    saturday: { open: "06:30", close: "23:30" }
+      responses:
+        '200':
+          description: Venue updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/venue.yaml#/components/schemas/Venue'
+                  message:
+                    type: string
+                    example: "Venue updated successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/venues/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "PUT"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete Venue
+      description: |
+        Delete a venue from the system.
+        
+        **Access Control:**
+        - Admin: Can delete any venue
+        - Manager: Cannot delete venues (contact admin)
+        - Player: Cannot delete venues
+        
+        **Note:** This performs a soft delete by setting status to 'closed'.
+        Venue data is retained for historical bookings and audit purposes.
+      tags:
+        - Venues
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Venue deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      status:
+                        type: string
+                        example: "closed"
+                      deletedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-26T10:00:00Z"
+                  message:
+                    type: string
+                    example: "Venue deleted successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/venues/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "DELETE"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/venues/search/location:
+    get:
+      summary: Search Venues by Location
+      description: |
+        Search for venues near a specific geographic location.
+        
+        This endpoint provides:
+        - **Geographic search** within a specified radius
+        - **Distance calculation** from the search point
+        - **Sorting by distance** (closest first)
+        - **Filtering** by venue features and amenities
+        - **Real-time availability** information
+        
+        **Use Cases:**
+        - Find venues near user's current location
+        - Search venues in a specific city or area
+        - Plan trips and find venues along a route
+      tags:
+        - Venues
+      security: []  # Public endpoint
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/LatitudeParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LongitudeParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/RadiusParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/PageParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LimitParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/VenueStatusParam'
+        - name: amenities
+          in: query
+          description: Filter by amenities (comma-separated)
+          required: false
+          schema:
+            type: string
+          example: "parking,locker_rooms"
+        - name: priceRange
+          in: query
+          description: Filter by price range
+          required: false
+          schema:
+            type: string
+            enum: ["$", "$$", "$$$", "$$$$"]
+          example: "$$"
+      responses:
+        '200':
+          description: Venues found successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './schemas/common.yaml#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          data:
+                            type: array
+                            items:
+                              allOf:
+                                - $ref: './schemas/venue.yaml#/components/schemas/VenueSummary'
+                                - type: object
+                                  properties:
+                                    distance:
+                                      type: number
+                                      format: double
+                                      example: 2.3
+                                      description: Distance from search point in kilometers
+                          meta:
+                            allOf:
+                              - $ref: './schemas/common.yaml#/components/schemas/PaginationMeta'
+                              - type: object
+                                properties:
+                                  searchLocation:
+                                    $ref: './schemas/common.yaml#/components/schemas/Coordinates'
+                                  searchRadius:
+                                    type: number
+                                    example: 10.0
+                                    description: Search radius in kilometers
+              examples:
+                location_results:
+                  summary: Venues near location
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          name: "Central Padel Club"
+                          address:
+                            street: "123 Main Street"
+                            city: "New York"
+                            country: "United States"
+                            coordinates:
+                              latitude: 40.7128
+                              longitude: -74.0060
+                          distance: 0.8
+                          status: "active"
+                          totalCourts: 8
+                          rating: 4.5
+                          priceRange: "$$"
+                          amenities: ["parking", "locker_rooms", "pro_shop"]
+                        - id: "123e4567-e89b-12d3-a456-426614174001"
+                          name: "Sports Complex East"
+                          address:
+                            street: "456 Sports Ave"
+                            city: "New York"
+                            country: "United States"
+                            coordinates:
+                              latitude: 40.7589
+                              longitude: -73.9851
+                          distance: 3.2
+                          status: "active"
+                          totalCourts: 12
+                          rating: 4.2
+                          priceRange: "$$$"
+                          amenities: ["parking", "locker_rooms", "cafe", "fitness_center"]
+                      meta:
+                        total: 8
+                        page: 1
+                        limit: 10
+                        totalPages: 1
+                        hasNext: false
+                        hasPrev: false
+                        searchLocation:
+                          latitude: 40.7128
+                          longitude: -74.0060
+                        searchRadius: 10.0
+                    message: "Venues found successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/venues/search/location?latitude=40.7128&longitude=-74.0060&radius=10"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/venues/{id}/status:
+    patch:
+      summary: Update Venue Status
+      description: |
+        Update the operational status of a venue.
+        
+        **Access Control:**
+        - Admin: Can change any venue status
+        - Manager: Can change status of venues they manage (limited options)
+        - Player: Cannot change venue status
+        
+        **Status Options:**
+        - active: Venue is operational and accepting bookings
+        - inactive: Venue is temporarily closed
+        - maintenance: Venue is under maintenance
+        - closed: Venue is permanently closed
+      tags:
+        - Venues
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  $ref: './schemas/common.yaml#/components/schemas/VenueStatus'
+                reason:
+                  type: string
+                  maxLength: 500
+                  example: "Scheduled maintenance for court resurfacing"
+                  description: Reason for status change
+                estimatedReopenDate:
+                  type: string
+                  format: date-time
+                  example: "2024-02-01T09:00:00Z"
+                  description: Estimated reopening date (for maintenance/inactive status)
+            examples:
+              maintenance:
+                summary: Set venue to maintenance
+                value:
+                  status: "maintenance"
+                  reason: "Court resurfacing and facility upgrades"
+                  estimatedReopenDate: "2024-02-01T09:00:00Z"
+              reopen:
+                summary: Reopen venue after maintenance
+                value:
+                  status: "active"
+                  reason: "Maintenance completed successfully"
+      responses:
+        '200':
+          description: Venue status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      status:
+                        $ref: './schemas/common.yaml#/components/schemas/VenueStatus'
+                      reason:
+                        type: string
+                        example: "Scheduled maintenance completed"
+                      statusChangedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-26T10:00:00Z"
+                      estimatedReopenDate:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: null
+                  message:
+                    type: string
+                    example: "Venue status updated successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/venues/123e4567-e89b-12d3-a456-426614174000/status"
+                  method:
+                    type: string
+                    example: "PATCH"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'

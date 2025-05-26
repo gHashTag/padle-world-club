@@ -1,0 +1,727 @@
+paths:
+  /api/payments:
+    get:
+      summary: Get Payments List
+      description: |
+        Retrieve a paginated list of payments with optional filtering and sorting.
+
+        This endpoint supports:
+        - **Pagination** with page and limit parameters
+        - **Filtering** by user, booking, status, payment method, and date range
+        - **Sorting** by various fields (createdAt, amount, status, etc.)
+        - **Field selection** to include only specific fields
+        - **Search** across payment references and transaction IDs
+        - **Date range filtering** for specific time periods
+
+        **Access Control:**
+        - Admin: Can view all payments with full details
+        - Manager: Can view payments for bookings in their venues
+        - Player: Can view their own payments only
+      tags:
+        - Payments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/PageParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LimitParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortByParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortOrderParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SearchParam'
+        - name: userId
+          in: query
+          description: Filter by user ID
+          required: false
+          schema:
+            $ref: './schemas/common.yaml#/components/schemas/UUID'
+        - name: bookingId
+          in: query
+          description: Filter by booking ID
+          required: false
+          schema:
+            $ref: './schemas/common.yaml#/components/schemas/UUID'
+        - name: venueId
+          in: query
+          description: Filter by venue ID
+          required: false
+          schema:
+            $ref: './schemas/common.yaml#/components/schemas/UUID'
+        - $ref: './schemas/parameters.yaml#/components/parameters/PaymentStatusParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/PaymentMethodParam'
+        - name: paymentType
+          in: query
+          description: Filter by payment type
+          required: false
+          schema:
+            type: string
+            enum: [booking, refund, fee, deposit, membership]
+        - name: minAmount
+          in: query
+          description: Minimum payment amount filter
+          required: false
+          schema:
+            type: number
+            format: decimal
+            minimum: 0
+        - name: maxAmount
+          in: query
+          description: Maximum payment amount filter
+          required: false
+          schema:
+            type: number
+            format: decimal
+            minimum: 0
+        - $ref: './schemas/parameters.yaml#/components/parameters/CurrencyParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/StartDateParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/EndDateParam'
+        - name: transactionId
+          in: query
+          description: Filter by transaction ID
+          required: false
+          schema:
+            type: string
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
+      responses:
+        '200':
+          description: Payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './schemas/common.yaml#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          data:
+                            type: array
+                            items:
+                              $ref: './schemas/payment.yaml#/components/schemas/PaymentSummary'
+                          meta:
+                            allOf:
+                              - $ref: './schemas/common.yaml#/components/schemas/PaginationMeta'
+                              - type: object
+                                properties:
+                                  totalAmount:
+                                    type: number
+                                    format: decimal
+                                    example: 2450.75
+                                    description: Total amount of all payments in the result set
+                                  currency:
+                                    $ref: './schemas/common.yaml#/components/schemas/Currency'
+                                  statusBreakdown:
+                                    type: object
+                                    properties:
+                                      completed:
+                                        type: integer
+                                        example: 45
+                                      pending:
+                                        type: integer
+                                        example: 3
+                                      failed:
+                                        type: integer
+                                        example: 2
+                                      refunded:
+                                        type: integer
+                                        example: 1
+              examples:
+                admin_view:
+                  summary: Admin viewing all payments
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          userId: "123e4567-e89b-12d3-a456-426614174001"
+                          user:
+                            username: "john_doe"
+                            firstName: "John"
+                            lastName: "Doe"
+                          bookingId: "123e4567-e89b-12d3-a456-426614174002"
+                          amount: 67.50
+                          currency: "USD"
+                          status: "completed"
+                          paymentMethod: "credit_card"
+                          paymentType: "booking"
+                          transactionId: "txn_1234567890"
+                          processedAt: "2024-01-26T10:00:00Z"
+                          createdAt: "2024-01-26T09:55:00Z"
+                      meta:
+                        total: 150
+                        page: 1
+                        limit: 10
+                        totalPages: 15
+                        hasNext: true
+                        hasPrev: false
+                        totalAmount: 2450.75
+                        currency: "USD"
+                        statusBreakdown:
+                          completed: 45
+                          pending: 3
+                          failed: 2
+                          refunded: 1
+                    message: "Payments retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments"
+                    method: "GET"
+                player_view:
+                  summary: Player viewing their own payments
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          bookingId: "123e4567-e89b-12d3-a456-426614174002"
+                          amount: 67.50
+                          currency: "USD"
+                          status: "completed"
+                          paymentMethod: "credit_card"
+                          paymentType: "booking"
+                          processedAt: "2024-01-26T10:00:00Z"
+                          createdAt: "2024-01-26T09:55:00Z"
+                      meta:
+                        total: 8
+                        page: 1
+                        limit: 10
+                        totalPages: 1
+                        hasNext: false
+                        hasPrev: false
+                        totalAmount: 540.00
+                        currency: "USD"
+                        statusBreakdown:
+                          completed: 7
+                          pending: 1
+                          failed: 0
+                          refunded: 0
+                    message: "Payments retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    post:
+      summary: Create Payment
+      description: |
+        Create a new payment for a booking or other service.
+
+        **Access Control:**
+        - Admin: Can create payments for any user and booking
+        - Manager: Can create payments for bookings in their venues
+        - Player: Can create payments for their own bookings
+
+        **Payment Processing:**
+        - Integrates with configured payment gateways (Stripe, PayPal, etc.)
+        - Supports various payment methods (credit card, bank transfer, digital wallets)
+        - Handles payment validation and fraud detection
+        - Processes payments synchronously or asynchronously based on method
+        - Sends payment confirmations and receipts
+
+        **Payment Types:**
+        - booking: Payment for court booking
+        - deposit: Security deposit or advance payment
+        - fee: Additional fees (equipment, services)
+        - membership: Membership or subscription payment
+      tags:
+        - Payments
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/payment.yaml#/components/schemas/CreatePaymentRequest'
+            examples:
+              booking_payment:
+                summary: Payment for court booking
+                value:
+                  bookingId: "123e4567-e89b-12d3-a456-426614174002"
+                  amount: 67.50
+                  currency: "USD"
+                  paymentMethod: "credit_card"
+                  paymentType: "booking"
+                  paymentMethodDetails:
+                    cardToken: "tok_1234567890"
+                    saveCard: true
+                  description: "Court booking payment"
+              membership_payment:
+                summary: Membership payment
+                value:
+                  amount: 99.00
+                  currency: "USD"
+                  paymentMethod: "credit_card"
+                  paymentType: "membership"
+                  paymentMethodDetails:
+                    cardToken: "tok_1234567890"
+                  description: "Monthly membership fee"
+                  metadata:
+                    membershipType: "premium"
+                    validUntil: "2024-02-26"
+              deposit_payment:
+                summary: Security deposit
+                value:
+                  bookingId: "123e4567-e89b-12d3-a456-426614174002"
+                  amount: 50.00
+                  currency: "USD"
+                  paymentMethod: "bank_transfer"
+                  paymentType: "deposit"
+                  description: "Security deposit for equipment rental"
+      responses:
+        '201':
+          description: Payment created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/payment.yaml#/components/schemas/Payment'
+                  message:
+                    type: string
+                    example: "Payment created successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/payments"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          description: Booking or user not found
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                booking_not_found:
+                  summary: Booking not found
+                  value:
+                    success: false
+                    message: "Booking not found"
+                    error: "Booking with ID '123e4567-e89b-12d3-a456-426614174002' does not exist"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments"
+                    method: "POST"
+        '409':
+          description: Payment conflict
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                already_paid:
+                  summary: Booking already paid
+                  value:
+                    success: false
+                    message: "Payment already exists"
+                    error: "This booking has already been paid for"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments"
+                    method: "POST"
+                insufficient_funds:
+                  summary: Insufficient funds
+                  value:
+                    success: false
+                    message: "Payment failed"
+                    error: "Insufficient funds on the payment method"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments"
+                    method: "POST"
+        '422':
+          $ref: './schemas/responses.yaml#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/payments/{id}:
+    get:
+      summary: Get Payment by ID
+      description: |
+        Retrieve detailed information about a specific payment.
+
+        **Access Control:**
+        - Admin: Can view any payment with full details
+        - Manager: Can view payments for bookings in their venues
+        - Player: Can view their own payments only
+
+        **Includes:**
+        - Complete payment details and transaction information
+        - Associated booking information (if applicable)
+        - Payment method details (masked for security)
+        - Refund information (if applicable)
+        - Payment gateway response details
+      tags:
+        - Payments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
+      responses:
+        '200':
+          description: Payment retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/payment.yaml#/components/schemas/Payment'
+                  message:
+                    type: string
+                    example: "Payment retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/payments/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    put:
+      summary: Update Payment
+      description: |
+        Update payment information and status.
+
+        **Access Control:**
+        - Admin: Can update any payment
+        - Manager: Can update payments for bookings in their venues (limited fields)
+        - Player: Cannot update payments directly
+
+        **Update Restrictions:**
+        - Cannot modify completed payments (except for refunds)
+        - Status changes may trigger additional business logic
+        - Amount changes require special permissions
+        - Some fields are read-only after payment processing
+      tags:
+        - Payments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/payment.yaml#/components/schemas/UpdatePaymentRequest'
+            examples:
+              update_status:
+                summary: Update payment status
+                value:
+                  status: "completed"
+                  notes: "Payment confirmed by bank"
+              add_refund:
+                summary: Process refund
+                value:
+                  status: "refunded"
+                  refundAmount: 50.00
+                  refundReason: "Booking cancelled due to weather"
+              update_metadata:
+                summary: Update payment metadata
+                value:
+                  description: "Updated payment description"
+                  metadata:
+                    updatedBy: "admin"
+                    reason: "Correction"
+      responses:
+        '200':
+          description: Payment updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/payment.yaml#/components/schemas/Payment'
+                  message:
+                    type: string
+                    example: "Payment updated successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/payments/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "PUT"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: Update conflict
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                cannot_modify:
+                  summary: Cannot modify completed payment
+                  value:
+                    success: false
+                    message: "Cannot modify payment"
+                    error: "Completed payments cannot be modified"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments/123e4567-e89b-12d3-a456-426614174000"
+                    method: "PUT"
+                refund_limit:
+                  summary: Refund amount exceeds limit
+                  value:
+                    success: false
+                    message: "Invalid refund amount"
+                    error: "Refund amount cannot exceed original payment amount"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments/123e4567-e89b-12d3-a456-426614174000"
+                    method: "PUT"
+        '422':
+          $ref: './schemas/responses.yaml#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/payments/{id}/refund:
+    post:
+      summary: Process Payment Refund
+      description: |
+        Process a refund for a completed payment.
+
+        **Access Control:**
+        - Admin: Can process refunds for any payment
+        - Manager: Can process refunds for payments in their venues
+        - Player: Can request refunds (may require approval)
+
+        **Refund Processing:**
+        - Validates refund eligibility and amount
+        - Processes refund through original payment gateway
+        - Updates payment status and creates refund record
+        - Handles partial and full refunds
+        - Sends refund confirmation notifications
+
+        **Refund Rules:**
+        - Refund amount cannot exceed original payment
+        - Some payment methods may have refund restrictions
+        - Refund processing time varies by payment gateway
+        - Venue policies may apply additional restrictions
+      tags:
+        - Payments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - reason
+              properties:
+                amount:
+                  type: number
+                  format: decimal
+                  minimum: 0.01
+                  example: 50.00
+                  description: Refund amount (cannot exceed original payment)
+                reason:
+                  type: string
+                  maxLength: 500
+                  example: "Booking cancelled due to weather conditions"
+                  description: Reason for the refund
+                refundMethod:
+                  type: string
+                  enum: [original, bank_transfer, store_credit]
+                  default: original
+                  example: "original"
+                  description: Method for processing the refund
+                notifyUser:
+                  type: boolean
+                  default: true
+                  description: Whether to send refund notification to user
+                metadata:
+                  type: object
+                  additionalProperties: true
+                  example:
+                    processedBy: "admin"
+                    approvalRequired: false
+                  description: Additional refund metadata
+            examples:
+              full_refund:
+                summary: Full refund to original payment method
+                value:
+                  amount: 67.50
+                  reason: "Booking cancelled due to venue maintenance"
+                  refundMethod: "original"
+                  notifyUser: true
+              partial_refund:
+                summary: Partial refund with store credit
+                value:
+                  amount: 30.00
+                  reason: "Late cancellation - partial refund per policy"
+                  refundMethod: "store_credit"
+                  notifyUser: true
+                  metadata:
+                    policyApplied: "24_hour_cancellation"
+      responses:
+        '200':
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      refund:
+                        type: object
+                        properties:
+                          id:
+                            $ref: './schemas/common.yaml#/components/schemas/UUID'
+                          paymentId:
+                            $ref: './schemas/common.yaml#/components/schemas/UUID'
+                          amount:
+                            type: number
+                            format: decimal
+                            example: 50.00
+                          currency:
+                            $ref: './schemas/common.yaml#/components/schemas/Currency'
+                          reason:
+                            type: string
+                            example: "Booking cancelled due to weather conditions"
+                          refundMethod:
+                            type: string
+                            example: "original"
+                          status:
+                            type: string
+                            enum: [pending, processing, completed, failed]
+                            example: "processing"
+                          transactionId:
+                            type: string
+                            example: "rfnd_1234567890"
+                          estimatedArrival:
+                            type: string
+                            format: date-time
+                            example: "2024-01-28T10:00:00Z"
+                          processedAt:
+                            type: string
+                            format: date-time
+                            example: "2024-01-26T10:00:00Z"
+                      payment:
+                        $ref: './schemas/payment.yaml#/components/schemas/Payment'
+                  message:
+                    type: string
+                    example: "Refund processed successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/payments/123e4567-e89b-12d3-a456-426614174000/refund"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          description: Invalid refund request
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                invalid_amount:
+                  summary: Refund amount exceeds payment
+                  value:
+                    success: false
+                    message: "Invalid refund amount"
+                    error: "Refund amount $100.00 exceeds payment amount $67.50"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments/123e4567-e89b-12d3-a456-426614174000/refund"
+                    method: "POST"
+                already_refunded:
+                  summary: Payment already refunded
+                  value:
+                    success: false
+                    message: "Payment already refunded"
+                    error: "This payment has already been fully refunded"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments/123e4567-e89b-12d3-a456-426614174000/refund"
+                    method: "POST"
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: Refund processing conflict
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                gateway_error:
+                  summary: Payment gateway error
+                  value:
+                    success: false
+                    message: "Refund processing failed"
+                    error: "Payment gateway temporarily unavailable"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments/123e4567-e89b-12d3-a456-426614174000/refund"
+                    method: "POST"
+                policy_violation:
+                  summary: Refund policy violation
+                  value:
+                    success: false
+                    message: "Refund not allowed"
+                    error: "Refund deadline has passed according to venue policy"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/payments/123e4567-e89b-12d3-a456-426614174000/refund"
+                    method: "POST"
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'

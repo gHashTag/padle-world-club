@@ -1,0 +1,352 @@
+components:
+  responses:
+    # Success responses
+    Success:
+      description: Operation completed successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ApiResponse'
+              - type: object
+                properties:
+                  success:
+                    example: true
+                  message:
+                    example: "Operation completed successfully"
+
+    Created:
+      description: Resource created successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ApiResponse'
+              - type: object
+                properties:
+                  success:
+                    example: true
+                  message:
+                    example: "Resource created successfully"
+
+    Updated:
+      description: Resource updated successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ApiResponse'
+              - type: object
+                properties:
+                  success:
+                    example: true
+                  message:
+                    example: "Resource updated successfully"
+
+    Deleted:
+      description: Resource deleted successfully
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ApiResponse'
+              - type: object
+                properties:
+                  success:
+                    example: true
+                  message:
+                    example: "Resource deleted successfully"
+
+    # Error responses
+    BadRequest:
+      description: Bad request - Invalid input data
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  success:
+                    example: false
+                  message:
+                    example: "Invalid input data"
+                  error:
+                    example: "Validation failed"
+          examples:
+            validation_error:
+              summary: Validation error example
+              value:
+                success: false
+                message: "Validation failed"
+                error: "Invalid input data"
+                errors:
+                  - field: "email"
+                    message: "Invalid email format"
+                  - field: "password"
+                    message: "Password must be at least 8 characters"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users"
+                method: "POST"
+            missing_field:
+              summary: Missing required field
+              value:
+                success: false
+                message: "Missing required field"
+                error: "Field 'username' is required"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users"
+                method: "POST"
+
+    Unauthorized:
+      description: Unauthorized - Authentication required
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  success:
+                    example: false
+                  message:
+                    example: "Authentication required"
+                  error:
+                    example: "No valid authentication token provided"
+          examples:
+            no_token:
+              summary: No authentication token
+              value:
+                success: false
+                message: "Authentication required"
+                error: "No authentication token provided"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users"
+                method: "GET"
+            invalid_token:
+              summary: Invalid authentication token
+              value:
+                success: false
+                message: "Authentication required"
+                error: "Invalid or expired authentication token"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users"
+                method: "GET"
+
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  success:
+                    example: false
+                  message:
+                    example: "Insufficient permissions"
+                  error:
+                    example: "You don't have permission to access this resource"
+          examples:
+            insufficient_role:
+              summary: Insufficient role permissions
+              value:
+                success: false
+                message: "Insufficient permissions"
+                error: "Admin role required for this operation"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/venues"
+                method: "POST"
+            resource_access:
+              summary: Cannot access specific resource
+              value:
+                success: false
+                message: "Insufficient permissions"
+                error: "You can only access your own profile"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users/123"
+                method: "GET"
+
+    NotFound:
+      description: Not found - Resource does not exist
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  success:
+                    example: false
+                  message:
+                    example: "Resource not found"
+                  error:
+                    example: "The requested resource does not exist"
+          examples:
+            user_not_found:
+              summary: User not found
+              value:
+                success: false
+                message: "User not found"
+                error: "User with ID '123e4567-e89b-12d3-a456-426614174000' does not exist"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users/123e4567-e89b-12d3-a456-426614174000"
+                method: "GET"
+            endpoint_not_found:
+              summary: Endpoint not found
+              value:
+                success: false
+                message: "Endpoint not found"
+                error: "Route GET /api/nonexistent not found"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/nonexistent"
+                method: "GET"
+
+    Conflict:
+      description: Conflict - Resource already exists or constraint violation
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  success:
+                    example: false
+                  message:
+                    example: "Resource conflict"
+                  error:
+                    example: "Resource already exists or constraint violation"
+          examples:
+            duplicate_email:
+              summary: Duplicate email address
+              value:
+                success: false
+                message: "Email already exists"
+                error: "A user with this email address already exists"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users"
+                method: "POST"
+            booking_conflict:
+              summary: Booking time conflict
+              value:
+                success: false
+                message: "Booking conflict"
+                error: "Court is not available at the requested time"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/bookings"
+                method: "POST"
+
+    UnprocessableEntity:
+      description: Unprocessable Entity - Request is well-formed but semantically incorrect
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  success:
+                    example: false
+                  message:
+                    example: "Unprocessable entity"
+                  error:
+                    example: "Request is semantically incorrect"
+          examples:
+            business_rule_violation:
+              summary: Business rule violation
+              value:
+                success: false
+                message: "Business rule violation"
+                error: "Cannot book a court in the past"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/bookings"
+                method: "POST"
+
+    TooManyRequests:
+      description: Too Many Requests - Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  success:
+                    example: false
+                  message:
+                    example: "Rate limit exceeded"
+                  error:
+                    example: "Too many requests, please try again later"
+          examples:
+            rate_limit:
+              summary: Rate limit exceeded
+              value:
+                success: false
+                message: "Rate limit exceeded"
+                error: "Maximum 100 requests per hour exceeded"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users"
+                method: "POST"
+
+    InternalServerError:
+      description: Internal Server Error - Unexpected server error
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  success:
+                    example: false
+                  message:
+                    example: "Internal server error"
+                  error:
+                    example: "An unexpected error occurred"
+          examples:
+            database_error:
+              summary: Database connection error
+              value:
+                success: false
+                message: "Internal server error"
+                error: "Database connection failed"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users"
+                method: "GET"
+            unexpected_error:
+              summary: Unexpected error
+              value:
+                success: false
+                message: "Internal server error"
+                error: "An unexpected error occurred while processing your request"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/bookings"
+                method: "POST"
+
+    ServiceUnavailable:
+      description: Service Unavailable - Server is temporarily unavailable
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: './common.yaml#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  success:
+                    example: false
+                  message:
+                    example: "Service temporarily unavailable"
+                  error:
+                    example: "Server is under maintenance"
+          examples:
+            maintenance:
+              summary: Server maintenance
+              value:
+                success: false
+                message: "Service temporarily unavailable"
+                error: "Server is under maintenance, please try again later"
+                timestamp: "2024-01-26T10:00:00Z"
+                path: "/api/users"
+                method: "GET"

@@ -392,7 +392,7 @@ export const createUserHandlers = (deps: UserHandlerDependencies) => {
       const userResponse = mapUserToResponse(user);
       const authResponse: AuthResponse = {
         user: userResponse,
-        token: 'mock-jwt-token', // TODO: Реализовать JWT
+        token: `mock-jwt-token:${user.id}:${user.userRole}`, // Включаем ID и роль в токен
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 часа
       };
 
@@ -459,7 +459,7 @@ export const createUserHandlers = (deps: UserHandlerDependencies) => {
       const userResponse = mapUserToResponse(newUser);
       const authResponse: AuthResponse = {
         user: userResponse,
-        token: 'mock-jwt-token', // TODO: Реализовать JWT
+        token: `mock-jwt-token:${newUser.id}:${newUser.userRole}`, // Включаем ID и роль в токен
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
 

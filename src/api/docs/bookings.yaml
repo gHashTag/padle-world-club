@@ -1,81 +1,526 @@
-openapi: 3.0.3
-info:
-  title: Bookings API
-  description: API для управления бронированиями кортов
-  version: 1.0.0
-
 paths:
   /api/bookings:
     get:
-      summary: Получить список бронирований
-      description: Возвращает список бронирований с возможностью фильтрации и пагинации
+      summary: Get Bookings List
+      description: |
+        Retrieve a paginated list of bookings with optional filtering and sorting.
+
+        This endpoint supports:
+        - **Pagination** with page and limit parameters
+        - **Filtering** by court, user, status, date range, and purpose
+        - **Sorting** by various fields (startTime, endTime, status, totalAmount, etc.)
+        - **Field selection** to include only specific fields
+        - **Search** across booking notes and related information
+        - **Date range filtering** for specific time periods
+
+        **Access Control:**
+        - Admin: Can view all bookings with full details
+        - Manager: Can view bookings for courts in their venues
+        - Player: Can view their own bookings only
       tags:
         - Bookings
       security:
         - bearerAuth: []
       parameters:
-        - name: page
-          in: query
-          description: Номер страницы
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - name: limit
-          in: query
-          description: Количество записей на странице
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-        - name: sortBy
-          in: query
-          description: Поле для сортировки
-          schema:
-            type: string
-            enum: [startTime, endTime, status, totalAmount, createdAt, updatedAt]
-            default: startTime
-        - name: sortOrder
-          in: query
-          description: Порядок сортировки
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: asc
+        - $ref: './schemas/parameters.yaml#/components/parameters/PageParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LimitParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortByParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortOrderParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SearchParam'
         - name: courtId
           in: query
-          description: ID корта для фильтрации
+          description: Filter by court ID
+          required: false
           schema:
-            type: string
-            format: uuid
+            $ref: './schemas/common.yaml#/components/schemas/UUID'
+        - name: venueId
+          in: query
+          description: Filter by venue ID
+          required: false
+          schema:
+            $ref: './schemas/common.yaml#/components/schemas/UUID'
         - name: bookedByUserId
           in: query
-          description: ID пользователя, создавшего бронирование
+          description: Filter by user who made the booking
+          required: false
           schema:
-            type: string
-            format: uuid
-        - name: status
+            $ref: './schemas/common.yaml#/components/schemas/UUID'
+        - $ref: './schemas/parameters.yaml#/components/parameters/BookingStatusParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/BookingPurposeParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/StartTimeAfterParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/StartTimeBeforeParam'
+        - name: endTimeAfter
           in: query
-          description: Статус бронирования
-          schema:
-            type: string
-            enum: [confirmed, pending_payment, cancelled, completed]
-        - name: startTimeAfter
-          in: query
-          description: Фильтр по времени начала (после указанной даты)
+          description: Filter bookings ending after this time
+          required: false
           schema:
             type: string
             format: date-time
-        - name: startTimeBefore
+        - name: endTimeBefore
           in: query
-          description: Фильтр по времени начала (до указанной даты)
+          description: Filter bookings ending before this time
+          required: false
           schema:
             type: string
             format: date-time
+        - name: minAmount
+          in: query
+          description: Minimum booking amount filter
+          required: false
+          schema:
+            type: number
+            format: decimal
+            minimum: 0
+        - name: maxAmount
+          in: query
+          description: Maximum booking amount filter
+          required: false
+          schema:
+            type: number
+            format: decimal
+            minimum: 0
+        - $ref: './schemas/parameters.yaml#/components/parameters/CurrencyParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
       responses:
         '200':
-          description: Список бронирований успешно получен
+          description: Bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './schemas/common.yaml#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          data:
+                            type: array
+                            items:
+                              $ref: './schemas/booking.yaml#/components/schemas/BookingSummary'
+                          meta:
+                            $ref: './schemas/common.yaml#/components/schemas/PaginationMeta'
+              examples:
+                admin_view:
+                  summary: Admin viewing all bookings
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          courtId: "123e4567-e89b-12d3-a456-426614174001"
+                          courtName: "Court 1"
+                          venueId: "123e4567-e89b-12d3-a456-426614174002"
+                          venueName: "Central Padel Club"
+                          bookedByUserId: "123e4567-e89b-12d3-a456-426614174003"
+                          bookedByUser:
+                            username: "john_doe"
+                            firstName: "John"
+                            lastName: "Doe"
+                          startTime: "2024-01-26T14:00:00Z"
+                          endTime: "2024-01-26T15:30:00Z"
+                          durationMinutes: 90
+                          status: "confirmed"
+                          totalAmount: 67.50
+                          currency: "USD"
+                          bookingPurpose: "free_play"
+                          createdAt: "2024-01-25T10:00:00Z"
+                      meta:
+                        total: 150
+                        page: 1
+                        limit: 10
+                        totalPages: 15
+                        hasNext: true
+                        hasPrev: false
+                    message: "Bookings retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings"
+                    method: "GET"
+                player_view:
+                  summary: Player viewing their own bookings
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          courtId: "123e4567-e89b-12d3-a456-426614174001"
+                          courtName: "Court 1"
+                          venueId: "123e4567-e89b-12d3-a456-426614174002"
+                          venueName: "Central Padel Club"
+                          startTime: "2024-01-26T14:00:00Z"
+                          endTime: "2024-01-26T15:30:00Z"
+                          durationMinutes: 90
+                          status: "confirmed"
+                          totalAmount: 67.50
+                          currency: "USD"
+                          bookingPurpose: "free_play"
+                          createdAt: "2024-01-25T10:00:00Z"
+                      meta:
+                        total: 5
+                        page: 1
+                        limit: 10
+                        totalPages: 1
+                        hasNext: false
+                        hasPrev: false
+                    message: "Bookings retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    post:
+      summary: Create New Booking
+      description: |
+        Create a new court booking.
+
+        **Access Control:**
+        - Admin: Can create bookings for any user and court
+        - Manager: Can create bookings for courts in their venues
+        - Player: Can create bookings for themselves only
+
+        **Booking Rules:**
+        - Court must be available for the requested time slot
+        - Booking duration must be within venue limits (typically 30-240 minutes)
+        - Start time must be in the future
+        - User must have sufficient permissions for the court
+        - Payment may be required immediately or deferred based on venue policy
+
+        **Automatic Calculations:**
+        - End time is calculated from start time + duration
+        - Total amount is calculated based on court hourly rate and duration
+        - Booking reference number is generated automatically
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/booking.yaml#/components/schemas/CreateBookingRequest'
+            examples:
+              basic_booking:
+                summary: Basic court booking
+                value:
+                  courtId: "123e4567-e89b-12d3-a456-426614174001"
+                  startTime: "2024-01-27T14:00:00Z"
+                  durationMinutes: 90
+                  bookingPurpose: "free_play"
+                  notes: "Weekend game with friends"
+              training_booking:
+                summary: Training session booking
+                value:
+                  courtId: "123e4567-e89b-12d3-a456-426614174001"
+                  startTime: "2024-01-27T18:00:00Z"
+                  durationMinutes: 120
+                  bookingPurpose: "private_training"
+                  notes: "Private coaching session"
+                  relatedEntityId: "123e4567-e89b-12d3-a456-426614174004"
+              admin_booking:
+                summary: Admin creating booking for another user
+                value:
+                  courtId: "123e4567-e89b-12d3-a456-426614174001"
+                  bookedByUserId: "123e4567-e89b-12d3-a456-426614174003"
+                  startTime: "2024-01-27T16:00:00Z"
+                  durationMinutes: 90
+                  bookingPurpose: "tournament_match"
+                  notes: "Championship semi-final"
+      responses:
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/booking.yaml#/components/schemas/Booking'
+                  message:
+                    type: string
+                    example: "Booking created successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/bookings"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          description: Court or user not found
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                court_not_found:
+                  summary: Court not found
+                  value:
+                    success: false
+                    message: "Court not found"
+                    error: "Court with ID '123e4567-e89b-12d3-a456-426614174001' does not exist"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings"
+                    method: "POST"
+        '409':
+          description: Booking conflict
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                time_conflict:
+                  summary: Court not available at requested time
+                  value:
+                    success: false
+                    message: "Court not available"
+                    error: "Court is already booked from 14:00 to 15:30 on 2024-01-27"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings"
+                    method: "POST"
+                venue_closed:
+                  summary: Venue closed during requested time
+                  value:
+                    success: false
+                    message: "Venue not available"
+                    error: "Venue is closed on Sundays"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings"
+                    method: "POST"
+        '422':
+          $ref: './schemas/responses.yaml#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/bookings/{id}:
+    get:
+      summary: Get Booking by ID
+      description: |
+        Retrieve detailed information about a specific booking.
+
+        **Access Control:**
+        - Admin: Can view any booking with full details
+        - Manager: Can view bookings for courts in their venues
+        - Player: Can view their own bookings only
+
+        **Includes:**
+        - Complete booking details
+        - Court and venue information
+        - User information (based on permissions)
+        - Payment information (if applicable)
+        - Participant details (if applicable)
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
+      responses:
+        '200':
+          description: Booking retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/booking.yaml#/components/schemas/Booking'
+                  message:
+                    type: string
+                    example: "Booking retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/bookings/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    put:
+      summary: Update Booking
+      description: |
+        Update booking information.
+
+        **Access Control:**
+        - Admin: Can update any booking
+        - Manager: Can update bookings for courts in their venues
+        - Player: Can update their own bookings (limited fields)
+
+        **Update Restrictions:**
+        - Cannot change court or start time if booking is within 24 hours
+        - Cannot update completed or cancelled bookings
+        - Status changes may require additional permissions
+        - Price changes require admin/manager permissions
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/booking.yaml#/components/schemas/UpdateBookingRequest'
+            examples:
+              reschedule:
+                summary: Reschedule booking to different time
+                value:
+                  startTime: "2024-01-27T16:00:00Z"
+                  durationMinutes: 90
+                  notes: "Rescheduled due to weather"
+              change_purpose:
+                summary: Change booking purpose
+                value:
+                  bookingPurpose: "group_training"
+                  notes: "Changed to group training session"
+              admin_status_change:
+                summary: Admin changing booking status
+                value:
+                  status: "completed"
+                  notes: "Match completed successfully"
+      responses:
+        '200':
+          description: Booking updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/booking.yaml#/components/schemas/Booking'
+                  message:
+                    type: string
+                    example: "Booking updated successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/bookings/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "PUT"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: Update conflict
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                time_conflict:
+                  summary: New time slot not available
+                  value:
+                    success: false
+                    message: "Time slot not available"
+                    error: "Court is already booked for the requested time"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000"
+                    method: "PUT"
+                too_late:
+                  summary: Cannot update booking too close to start time
+                  value:
+                    success: false
+                    message: "Cannot update booking"
+                    error: "Booking cannot be modified within 24 hours of start time"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000"
+                    method: "PUT"
+        '422':
+          $ref: './schemas/responses.yaml#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    delete:
+      summary: Cancel Booking
+      description: |
+        Cancel an existing booking.
+
+        **Access Control:**
+        - Admin: Can cancel any booking
+        - Manager: Can cancel bookings for courts in their venues
+        - Player: Can cancel their own bookings
+
+        **Cancellation Rules:**
+        - Cancellation policy depends on venue settings
+        - Refund amount depends on cancellation timing
+        - Cannot cancel completed bookings
+        - Some bookings may require admin approval for cancellation
+
+        **Note:** This performs a soft delete by setting status to 'cancelled'.
+        Booking data is retained for audit and refund purposes.
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - name: reason
+          in: query
+          description: Reason for cancellation
+          required: false
+          schema:
+            type: string
+            maxLength: 500
+          example: "Weather conditions"
+        - name: refundRequested
+          in: query
+          description: Whether to request a refund
+          required: false
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Booking cancelled successfully
           content:
             application/json:
               schema:
@@ -87,230 +532,138 @@ paths:
                   data:
                     type: object
                     properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Booking'
-                      total:
-                        type: integer
-                        example: 50
-                      page:
-                        type: integer
-                        example: 1
-                      limit:
-                        type: integer
-                        example: 10
-                  timestamp:
-                    type: string
-                    format: date-time
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-    post:
-      summary: Создать новое бронирование
-      description: Создает новое бронирование корта
-      tags:
-        - Bookings
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateBookingRequest'
-      responses:
-        '201':
-          description: Бронирование успешно создано
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/Booking'
+                      id:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      status:
+                        type: string
+                        example: "cancelled"
+                      cancelledAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-26T10:00:00Z"
+                      cancellationReason:
+                        type: string
+                        example: "Weather conditions"
+                      refundAmount:
+                        type: number
+                        format: decimal
+                        example: 50.00
+                      refundStatus:
+                        type: string
+                        enum: [pending, processed, denied]
+                        example: "pending"
                   message:
                     type: string
-                    example: "Бронирование успешно создано"
+                    example: "Booking cancelled successfully"
                   timestamp:
                     type: string
                     format: date-time
+                  path:
+                    type: string
+                    example: "/api/bookings/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "DELETE"
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          description: Корт или пользователь не найден
-        '409':
-          description: Корт недоступен в указанное время
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /api/bookings/{id}:
-    get:
-      summary: Получить бронирование по ID
-      description: Возвращает детальную информацию о бронировании
-      tags:
-        - Bookings
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID бронирования
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Бронирование найдено
+          description: Cannot cancel booking
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/Booking'
-                  timestamp:
-                    type: string
-                    format: date-time
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                already_cancelled:
+                  summary: Booking already cancelled
+                  value:
+                    success: false
+                    message: "Booking already cancelled"
+                    error: "This booking has already been cancelled"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000"
+                    method: "DELETE"
+                too_late:
+                  summary: Cancellation deadline passed
+                  value:
+                    success: false
+                    message: "Cancellation not allowed"
+                    error: "Booking cannot be cancelled within 2 hours of start time"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000"
+                    method: "DELETE"
         '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          description: Бронирование не найдено
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-    put:
-      summary: Обновить бронирование
-      description: Обновляет данные существующего бронирования
-      tags:
-        - Bookings
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID бронирования
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateBookingRequest'
-      responses:
-        '200':
-          description: Бронирование успешно обновлено
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/Booking'
-                  message:
-                    type: string
-                    example: "Бронирование успешно обновлено"
-                  timestamp:
-                    type: string
-                    format: date-time
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
         '404':
-          description: Бронирование не найдено
-        '409':
-          description: Корт недоступен в указанное время
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
-
-    delete:
-      summary: Отменить бронирование
-      description: Отменяет существующее бронирование (устанавливает статус cancelled)
-      tags:
-        - Bookings
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID бронирования
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Бронирование успешно отменено
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/Booking'
-                  message:
-                    type: string
-                    example: "Бронирование успешно отменено"
-                  timestamp:
-                    type: string
-                    format: date-time
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Бронирование не найдено
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
 
   /api/bookings/{id}/confirm:
     post:
-      summary: Подтвердить бронирование
-      description: Подтверждает бронирование и устанавливает статус confirmed
+      summary: Confirm Booking
+      description: |
+        Confirm a pending booking and process payment if required.
+
+        **Access Control:**
+        - Admin: Can confirm any booking
+        - Manager: Can confirm bookings for courts in their venues
+        - Player: Can confirm their own bookings
+
+        **Confirmation Process:**
+        - Validates booking details and availability
+        - Processes payment if required
+        - Updates booking status to 'confirmed'
+        - Sends confirmation notifications
+        - May trigger additional business logic (e.g., equipment reservation)
+
+        **Payment Integration:**
+        - If payment is required, processes payment through configured gateway
+        - Supports various payment methods based on venue settings
+        - Handles payment failures gracefully with appropriate error messages
       tags:
         - Bookings
       security:
         - bearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID бронирования
-          schema:
-            type: string
-            format: uuid
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConfirmBookingRequest'
+              type: object
+              properties:
+                paymentMethodId:
+                  type: string
+                  example: "pm_1234567890"
+                  description: Payment method ID for processing payment
+                paymentAmount:
+                  type: number
+                  format: decimal
+                  example: 67.50
+                  description: Payment amount (must match booking total)
+                currency:
+                  $ref: './schemas/common.yaml#/components/schemas/Currency'
+                notes:
+                  type: string
+                  maxLength: 500
+                  example: "Confirmed for weekend tournament"
+                  description: Additional confirmation notes
+            examples:
+              with_payment:
+                summary: Confirm booking with payment
+                value:
+                  paymentMethodId: "pm_1234567890"
+                  paymentAmount: 67.50
+                  currency: "USD"
+                  notes: "Payment processed successfully"
+              without_payment:
+                summary: Confirm booking without payment (pre-paid or free)
+                value:
+                  notes: "Confirmed for training session"
       responses:
         '200':
-          description: Бронирование успешно подтверждено
+          description: Booking confirmed successfully
           content:
             application/json:
               schema:
@@ -320,384 +673,541 @@ paths:
                     type: boolean
                     example: true
                   data:
-                    $ref: '#/components/schemas/Booking'
+                    type: object
+                    properties:
+                      booking:
+                        $ref: './schemas/booking.yaml#/components/schemas/Booking'
+                      payment:
+                        type: object
+                        nullable: true
+                        properties:
+                          id:
+                            $ref: './schemas/common.yaml#/components/schemas/UUID'
+                          status:
+                            $ref: './schemas/common.yaml#/components/schemas/PaymentStatus'
+                          amount:
+                            type: number
+                            format: decimal
+                            example: 67.50
+                          currency:
+                            $ref: './schemas/common.yaml#/components/schemas/Currency'
+                          paymentMethod:
+                            $ref: './schemas/common.yaml#/components/schemas/PaymentMethod'
+                          transactionId:
+                            type: string
+                            example: "txn_1234567890"
+                        description: Payment information (if payment was processed)
+                      confirmationCode:
+                        type: string
+                        example: "PWC-2024-001234"
+                        description: Unique confirmation code for the booking
                   message:
                     type: string
-                    example: "Бронирование успешно подтверждено"
+                    example: "Booking confirmed successfully"
                   timestamp:
                     type: string
                     format: date-time
+                  path:
+                    type: string
+                    example: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/confirm"
+                  method:
+                    type: string
+                    example: "POST"
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Cannot confirm booking
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                already_confirmed:
+                  summary: Booking already confirmed
+                  value:
+                    success: false
+                    message: "Booking already confirmed"
+                    error: "This booking has already been confirmed"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/confirm"
+                    method: "POST"
+                payment_amount_mismatch:
+                  summary: Payment amount doesn't match booking total
+                  value:
+                    success: false
+                    message: "Payment amount mismatch"
+                    error: "Payment amount $50.00 does not match booking total $67.50"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/confirm"
+                    method: "POST"
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
         '404':
-          description: Бронирование не найдено
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: Confirmation conflict
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                court_unavailable:
+                  summary: Court no longer available
+                  value:
+                    success: false
+                    message: "Court no longer available"
+                    error: "Court has been booked by another user"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/confirm"
+                    method: "POST"
+                payment_failed:
+                  summary: Payment processing failed
+                  value:
+                    success: false
+                    message: "Payment failed"
+                    error: "Credit card was declined"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/confirm"
+                    method: "POST"
+        '422':
+          $ref: './schemas/responses.yaml#/components/responses/UnprocessableEntity'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
 
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+  /api/bookings/{id}/participants:
+    get:
+      summary: Get Booking Participants
+      description: |
+        Retrieve the list of participants for a booking.
 
-  schemas:
-    Booking:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174000"
-        courtId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174001"
-        startTime:
-          type: string
-          format: date-time
-          example: "2024-01-26T10:00:00Z"
-        endTime:
-          type: string
-          format: date-time
-          example: "2024-01-26T11:00:00Z"
-        durationMinutes:
-          type: integer
-          minimum: 15
-          maximum: 480
-          example: 60
-        status:
-          type: string
-          enum: [confirmed, pending_payment, cancelled, completed]
-          example: "confirmed"
-        totalAmount:
-          type: number
-          format: decimal
-          minimum: 0
-          example: 100.00
-        currency:
-          type: string
-          example: "USD"
-        bookedByUserId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174002"
-        bookingPurpose:
-          type: string
-          enum: [free_play, group_training, private_training, tournament_match, other]
-          example: "free_play"
-        relatedEntityId:
-          type: string
-          format: uuid
-          nullable: true
-          example: null
-        notes:
-          type: string
-          nullable: true
-          example: "Бронирование для тренировки"
-        createdAt:
-          type: string
-          format: date-time
-          example: "2024-01-26T09:00:00Z"
-        updatedAt:
-          type: string
-          format: date-time
-          example: "2024-01-26T09:00:00Z"
+        **Access Control:**
+        - Admin: Can view participants for any booking
+        - Manager: Can view participants for bookings in their venues
+        - Player: Can view participants for their own bookings
 
-    CreateBookingRequest:
-      type: object
-      required:
-        - courtId
-        - startTime
-        - totalAmount
-        - currency
-        - bookedByUserId
-        - bookingPurpose
-      properties:
-        courtId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174001"
-        startTime:
-          type: string
-          format: date-time
-          example: "2024-01-26T10:00:00Z"
-        endTime:
-          type: string
-          format: date-time
-          example: "2024-01-26T11:00:00Z"
-        durationMinutes:
-          type: integer
-          minimum: 15
-          maximum: 480
-          example: 60
-        totalAmount:
-          type: number
-          format: decimal
-          minimum: 0
-          example: 100.00
-        currency:
-          type: string
-          example: "USD"
-        bookedByUserId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174002"
-        bookingPurpose:
-          type: string
-          enum: [free_play, group_training, private_training, tournament_match, other]
-          example: "free_play"
-        relatedEntityId:
-          type: string
-          format: uuid
-          nullable: true
-          example: null
-        notes:
-          type: string
-          nullable: true
-          example: "Бронирование для тренировки"
-
-    UpdateBookingRequest:
-      type: object
-      properties:
-        courtId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174001"
-        startTime:
-          type: string
-          format: date-time
-          example: "2024-01-26T10:00:00Z"
-        endTime:
-          type: string
-          format: date-time
-          example: "2024-01-26T11:00:00Z"
-        durationMinutes:
-          type: integer
-          minimum: 15
-          maximum: 480
-          example: 60
-        status:
-          type: string
-          enum: [confirmed, pending_payment, cancelled, completed]
-          example: "confirmed"
-        totalAmount:
-          type: number
-          format: decimal
-          minimum: 0
-          example: 100.00
-        currency:
-          type: string
-          example: "USD"
-        bookingPurpose:
-          type: string
-          enum: [free_play, group_training, private_training, tournament_match, other]
-          example: "free_play"
-        relatedEntityId:
-          type: string
-          format: uuid
-          nullable: true
-          example: null
-        notes:
-          type: string
-          nullable: true
-          example: "Обновленные заметки"
-
-    ConfirmBookingRequest:
-      type: object
-      properties:
-        paymentConfirmed:
-          type: boolean
-          default: false
-          example: true
-        notes:
-          type: string
-          example: "Оплата подтверждена"
-
-    BookingParticipant:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174003"
-        bookingId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174000"
-        userId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174004"
-        amountOwed:
-          type: number
-          format: decimal
-          minimum: 0
-          example: 50.00
-        amountPaid:
-          type: number
-          format: decimal
-          minimum: 0
-          example: 50.00
-        paymentStatus:
-          type: string
-          enum: [success, failed, pending, refunded, partial]
-          example: "success"
-        participationStatus:
-          type: string
-          enum: [registered, attended, no_show, cancelled]
-          example: "attended"
-        isHost:
-          type: boolean
-          example: false
-        createdAt:
-          type: string
-          format: date-time
-          example: "2024-01-26T09:00:00Z"
-        updatedAt:
-          type: string
-          format: date-time
-          example: "2024-01-26T09:00:00Z"
-
-    AddBookingParticipantRequest:
-      type: object
-      required:
-        - userId
-        - amountOwed
-      properties:
-        userId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174004"
-        amountOwed:
-          type: number
-          format: decimal
-          minimum: 0
-          example: 50.00
-        amountPaid:
-          type: number
-          format: decimal
-          minimum: 0
-          default: 0
-          example: 0.00
-        paymentStatus:
-          type: string
-          enum: [success, failed, pending, refunded, partial]
-          default: "pending"
-          example: "pending"
-        participationStatus:
-          type: string
-          enum: [registered, attended, no_show, cancelled]
-          default: "registered"
-          example: "registered"
-        isHost:
-          type: boolean
-          default: false
-          example: false
-
-    UpdateBookingParticipantRequest:
-      type: object
-      properties:
-        amountOwed:
-          type: number
-          format: decimal
-          minimum: 0
-          example: 50.00
-        amountPaid:
-          type: number
-          format: decimal
-          minimum: 0
-          example: 50.00
-        paymentStatus:
-          type: string
-          enum: [success, failed, pending, refunded, partial]
-          example: "success"
-        participationStatus:
-          type: string
-          enum: [registered, attended, no_show, cancelled]
-          example: "attended"
-        isHost:
-          type: boolean
-          example: false
-
-  responses:
-    BadRequest:
-      description: Неверный запрос
-      content:
-        application/json:
+        **Participant Information:**
+        - User details (name, skill level, contact info)
+        - Participation status (confirmed, pending, declined)
+        - Role in the booking (organizer, player, substitute)
+        - Join date and any special notes
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - name: status
+          in: query
+          description: Filter participants by status
+          required: false
           schema:
-            type: object
-            properties:
-              success:
-                type: boolean
-                example: false
-              message:
-                type: string
-                example: "Ошибка валидации"
-              errors:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    field:
-                      type: string
-                    message:
-                      type: string
-              timestamp:
-                type: string
-                format: date-time
-
-    Unauthorized:
-      description: Не авторизован
-      content:
-        application/json:
+            type: string
+            enum: [confirmed, pending, declined, cancelled]
+        - name: role
+          in: query
+          description: Filter participants by role
+          required: false
           schema:
-            type: object
-            properties:
-              success:
-                type: boolean
-                example: false
-              message:
-                type: string
-                example: "Требуется авторизация"
-              timestamp:
-                type: string
-                format: date-time
+            type: string
+            enum: [organizer, player, substitute, coach]
+      responses:
+        '200':
+          description: Participants retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      bookingId:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      participants:
+                        type: array
+                        items:
+                          $ref: './schemas/booking.yaml#/components/schemas/BookingParticipant'
+                      totalParticipants:
+                        type: integer
+                        example: 4
+                      maxParticipants:
+                        type: integer
+                        example: 4
+                      availableSlots:
+                        type: integer
+                        example: 0
+                  message:
+                    type: string
+                    example: "Participants retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants"
+                  method:
+                    type: string
+                    example: "GET"
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
 
-    Forbidden:
-      description: Доступ запрещен
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              success:
-                type: boolean
-                example: false
-              message:
-                type: string
-                example: "Недостаточно прав доступа"
-              timestamp:
-                type: string
-                format: date-time
+    post:
+      summary: Add Participant to Booking
+      description: |
+        Add a new participant to an existing booking.
 
-    InternalServerError:
-      description: Внутренняя ошибка сервера
-      content:
-        application/json:
+        **Access Control:**
+        - Admin: Can add participants to any booking
+        - Manager: Can add participants to bookings in their venues
+        - Player: Can add participants to their own bookings (if allowed)
+
+        **Participation Rules:**
+        - Booking must not exceed maximum participant limit
+        - Participant must not have conflicting bookings
+        - Some bookings may require approval for new participants
+        - Payment adjustments may be required for additional participants
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  $ref: './schemas/common.yaml#/components/schemas/UUID'
+                  description: ID of the user to add as participant
+                role:
+                  type: string
+                  enum: [player, substitute, coach]
+                  default: player
+                  example: "player"
+                  description: Role of the participant in the booking
+                notes:
+                  type: string
+                  maxLength: 500
+                  example: "Added as substitute player"
+                  description: Notes about the participant
+                requiresApproval:
+                  type: boolean
+                  default: false
+                  description: Whether the participation requires approval
+            examples:
+              add_player:
+                summary: Add regular player
+                value:
+                  userId: "123e4567-e89b-12d3-a456-426614174004"
+                  role: "player"
+                  notes: "Joining for doubles match"
+              add_substitute:
+                summary: Add substitute player
+                value:
+                  userId: "123e4567-e89b-12d3-a456-426614174005"
+                  role: "substitute"
+                  notes: "Backup player in case someone cancels"
+                  requiresApproval: true
+      responses:
+        '201':
+          description: Participant added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/booking.yaml#/components/schemas/BookingParticipant'
+                  message:
+                    type: string
+                    example: "Participant added successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          description: Cannot add participant
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                max_participants:
+                  summary: Maximum participants reached
+                  value:
+                    success: false
+                    message: "Cannot add participant"
+                    error: "Booking has reached maximum participant limit of 4"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants"
+                    method: "POST"
+                already_participant:
+                  summary: User is already a participant
+                  value:
+                    success: false
+                    message: "User already participating"
+                    error: "User is already a participant in this booking"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants"
+                    method: "POST"
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          description: Booking or user not found
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                user_not_found:
+                  summary: User not found
+                  value:
+                    success: false
+                    message: "User not found"
+                    error: "User with ID '123e4567-e89b-12d3-a456-426614174004' does not exist"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants"
+                    method: "POST"
+        '409':
+          description: Participation conflict
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                time_conflict:
+                  summary: User has conflicting booking
+                  value:
+                    success: false
+                    message: "Participation conflict"
+                    error: "User has another booking at the same time"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants"
+                    method: "POST"
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/bookings/{id}/participants/{participantId}:
+    put:
+      summary: Update Participant
+      description: |
+        Update participant information or status in a booking.
+
+        **Access Control:**
+        - Admin: Can update any participant
+        - Manager: Can update participants in bookings for their venues
+        - Player: Can update their own participation status
+
+        **Updatable Fields:**
+        - Participation status (confirmed, pending, declined)
+        - Role in the booking
+        - Notes and special requirements
+        - Approval status (for managers/admins)
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/ParticipantIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [confirmed, pending, declined, cancelled]
+                  example: "confirmed"
+                role:
+                  type: string
+                  enum: [player, substitute, coach]
+                  example: "player"
+                notes:
+                  type: string
+                  maxLength: 500
+                  example: "Updated participation status"
+                isApproved:
+                  type: boolean
+                  example: true
+                  description: Approval status (managers/admins only)
+            examples:
+              confirm_participation:
+                summary: Confirm participation
+                value:
+                  status: "confirmed"
+                  notes: "Ready to play!"
+              decline_participation:
+                summary: Decline participation
+                value:
+                  status: "declined"
+                  notes: "Cannot make it due to schedule conflict"
+              approve_participant:
+                summary: Manager approving participant
+                value:
+                  status: "confirmed"
+                  isApproved: true
+                  notes: "Approved by venue manager"
+      responses:
+        '200':
+          description: Participant updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/booking.yaml#/components/schemas/BookingParticipant'
+                  message:
+                    type: string
+                    example: "Participant updated successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants/123e4567-e89b-12d3-a456-426614174004"
+                  method:
+                    type: string
+                    example: "PUT"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    delete:
+      summary: Remove Participant from Booking
+      description: |
+        Remove a participant from a booking.
+
+        **Access Control:**
+        - Admin: Can remove any participant
+        - Manager: Can remove participants from bookings in their venues
+        - Player: Can remove themselves from bookings
+
+        **Removal Rules:**
+        - Cannot remove the booking organizer
+        - May trigger payment adjustments
+        - Booking may be cancelled if minimum participants not met
+        - Notifications sent to remaining participants
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/ParticipantIdParam'
+        - name: reason
+          in: query
+          description: Reason for removal
+          required: false
           schema:
-            type: object
-            properties:
-              success:
-                type: boolean
-                example: false
-              message:
-                type: string
-                example: "Внутренняя ошибка сервера"
-              timestamp:
-                type: string
-                format: date-time
+            type: string
+            maxLength: 500
+          example: "Schedule conflict"
+      responses:
+        '200':
+          description: Participant removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      participantId:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      removedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-26T10:00:00Z"
+                      reason:
+                        type: string
+                        example: "Schedule conflict"
+                      remainingParticipants:
+                        type: integer
+                        example: 3
+                  message:
+                    type: string
+                    example: "Participant removed successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants/123e4567-e89b-12d3-a456-426614174004"
+                  method:
+                    type: string
+                    example: "DELETE"
+        '400':
+          description: Cannot remove participant
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                cannot_remove_organizer:
+                  summary: Cannot remove booking organizer
+                  value:
+                    success: false
+                    message: "Cannot remove organizer"
+                    error: "The booking organizer cannot be removed"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants/123e4567-e89b-12d3-a456-426614174003"
+                    method: "DELETE"
+                min_participants:
+                  summary: Would fall below minimum participants
+                  value:
+                    success: false
+                    message: "Cannot remove participant"
+                    error: "Booking requires minimum 2 participants"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/bookings/123e4567-e89b-12d3-a456-426614174000/participants/123e4567-e89b-12d3-a456-426614174004"
+                    method: "DELETE"
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'

@@ -1,0 +1,505 @@
+paths:
+  /api/users:
+    get:
+      summary: Get Users List
+      description: |
+        Retrieve a paginated list of users with optional filtering and sorting.
+        
+        This endpoint supports:
+        - **Pagination** with page and limit parameters
+        - **Filtering** by role, status, skill level, and search terms
+        - **Sorting** by various fields (createdAt, username, rating, etc.)
+        - **Field selection** to include only specific fields
+        - **Search** across username, email, firstName, and lastName
+        
+        **Access Control:**
+        - Admin: Can view all users with full details
+        - Manager: Can view users in their managed venues
+        - Player: Can view basic public profiles only
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/PageParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LimitParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortByParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortOrderParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SearchParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/RoleParam'
+        - name: skillLevel
+          in: query
+          description: Filter by skill level
+          required: false
+          schema:
+            $ref: './schemas/common.yaml#/components/schemas/UserSkillLevel'
+        - name: isActive
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+        - name: city
+          in: query
+          description: Filter by city
+          required: false
+          schema:
+            type: string
+        - name: country
+          in: query
+          description: Filter by country
+          required: false
+          schema:
+            type: string
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './schemas/common.yaml#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          data:
+                            type: array
+                            items:
+                              $ref: './schemas/user.yaml#/components/schemas/UserSummary'
+                          meta:
+                            $ref: './schemas/common.yaml#/components/schemas/PaginationMeta'
+              examples:
+                admin_view:
+                  summary: Admin viewing all users
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          username: "john_doe123"
+                          email: "john.doe@example.com"
+                          firstName: "John"
+                          lastName: "Doe"
+                          fullName: "John Doe"
+                          role: "player"
+                          skillLevel: "intermediate"
+                          rating: 7.5
+                          profileImageUrl: "https://example.com/images/user123.jpg"
+                          isActive: true
+                        - id: "123e4567-e89b-12d3-a456-426614174001"
+                          username: "jane_smith"
+                          email: "jane.smith@example.com"
+                          firstName: "Jane"
+                          lastName: "Smith"
+                          fullName: "Jane Smith"
+                          role: "manager"
+                          skillLevel: "advanced"
+                          rating: 8.2
+                          profileImageUrl: null
+                          isActive: true
+                      meta:
+                        total: 150
+                        page: 1
+                        limit: 10
+                        totalPages: 15
+                        hasNext: true
+                        hasPrev: false
+                    message: "Users retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/users"
+                    method: "GET"
+                player_view:
+                  summary: Player viewing public profiles
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          username: "john_doe123"
+                          firstName: "John"
+                          lastName: "Doe"
+                          fullName: "John Doe"
+                          skillLevel: "intermediate"
+                          rating: 7.5
+                          profileImageUrl: "https://example.com/images/user123.jpg"
+                          isActive: true
+                      meta:
+                        total: 50
+                        page: 1
+                        limit: 10
+                        totalPages: 5
+                        hasNext: true
+                        hasPrev: false
+                    message: "Users retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/users?role=player"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    post:
+      summary: Create New User
+      description: |
+        Create a new user account in the system.
+        
+        **Access Control:**
+        - Admin: Can create users with any role
+        - Manager: Can create player accounts only
+        - Player: Cannot create other users (use /api/auth/register instead)
+        
+        **Note:** This endpoint is for administrative user creation.
+        Regular user registration should use `/api/auth/register`.
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/user.yaml#/components/schemas/CreateUserRequest'
+            examples:
+              admin_creating_manager:
+                summary: Admin creating a manager account
+                value:
+                  username: "venue_manager_1"
+                  email: "manager@venue.com"
+                  password: "SecurePass123!"
+                  firstName: "Alice"
+                  lastName: "Johnson"
+                  phone: "+1234567890"
+                  role: "manager"
+                  skillLevel: "advanced"
+              manager_creating_player:
+                summary: Manager creating a player account
+                value:
+                  username: "new_player"
+                  email: "player@example.com"
+                  password: "PlayerPass456!"
+                  firstName: "Bob"
+                  lastName: "Wilson"
+                  role: "player"
+                  skillLevel: "beginner"
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/user.yaml#/components/schemas/User'
+                  message:
+                    type: string
+                    example: "User created successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/users"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '409':
+          $ref: './schemas/responses.yaml#/components/responses/Conflict'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/users/{id}:
+    get:
+      summary: Get User by ID
+      description: |
+        Retrieve detailed information about a specific user.
+        
+        **Access Control:**
+        - Admin: Can view any user's full profile
+        - Manager: Can view users in their managed venues
+        - Player: Can view their own profile or public profiles of other players
+        
+        **Privacy:** Sensitive information (email, phone) is only visible to:
+        - The user themselves
+        - Admins
+        - Managers (for users in their venues)
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/user.yaml#/components/schemas/User'
+                  message:
+                    type: string
+                    example: "User retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/users/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "GET"
+              examples:
+                own_profile:
+                  summary: User viewing their own profile
+                  value:
+                    success: true
+                    data:
+                      id: "123e4567-e89b-12d3-a456-426614174000"
+                      username: "john_doe123"
+                      email: "john.doe@example.com"
+                      firstName: "John"
+                      lastName: "Doe"
+                      fullName: "John Doe"
+                      phone: "+1234567890"
+                      dateOfBirth: "1990-01-15"
+                      age: 34
+                      gender: "male"
+                      role: "player"
+                      skillLevel: "intermediate"
+                      rating: 7.5
+                      totalGamesPlayed: 42
+                      totalWins: 28
+                      winRate: 0.67
+                      preferredNotificationChannels: ["email", "push"]
+                      isActive: true
+                      isEmailVerified: true
+                      isPhoneVerified: true
+                      lastLoginAt: "2024-01-26T09:30:00Z"
+                      profileImageUrl: "https://example.com/images/user123.jpg"
+                      bio: "Passionate padel player from New York"
+                      location:
+                        city: "New York"
+                        country: "United States"
+                        coordinates:
+                          latitude: 40.7128
+                          longitude: -74.0060
+                      preferences:
+                        language: "en-US"
+                        timezone: "America/New_York"
+                        currency: "USD"
+                        units: "imperial"
+                        theme: "auto"
+                      createdAt: "2024-01-01T10:00:00Z"
+                      updatedAt: "2024-01-26T10:00:00Z"
+                    message: "User retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/users/123e4567-e89b-12d3-a456-426614174000"
+                    method: "GET"
+                public_profile:
+                  summary: Player viewing another player's public profile
+                  value:
+                    success: true
+                    data:
+                      id: "123e4567-e89b-12d3-a456-426614174001"
+                      username: "jane_smith"
+                      firstName: "Jane"
+                      lastName: "Smith"
+                      fullName: "Jane Smith"
+                      role: "player"
+                      skillLevel: "advanced"
+                      rating: 8.2
+                      totalGamesPlayed: 67
+                      totalWins: 52
+                      winRate: 0.78
+                      isActive: true
+                      profileImageUrl: null
+                      bio: "Advanced player looking for challenging matches"
+                      location:
+                        city: "Los Angeles"
+                        country: "United States"
+                      createdAt: "2024-01-01T10:00:00Z"
+                      updatedAt: "2024-01-25T15:30:00Z"
+                    message: "User retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/users/123e4567-e89b-12d3-a456-426614174001"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    put:
+      summary: Update User
+      description: |
+        Update user information.
+        
+        **Access Control:**
+        - Admin: Can update any user
+        - Manager: Can update users in their managed venues (limited fields)
+        - Player: Can only update their own profile
+        
+        **Note:** Some fields like role and membership info can only be updated by admins.
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/user.yaml#/components/schemas/UpdateUserRequest'
+            examples:
+              profile_update:
+                summary: User updating their own profile
+                value:
+                  firstName: "John"
+                  lastName: "Doe"
+                  phone: "+1234567890"
+                  bio: "Updated bio - Advanced padel player"
+                  skillLevel: "advanced"
+                  location:
+                    city: "Los Angeles"
+                    country: "United States"
+                    coordinates:
+                      latitude: 34.0522
+                      longitude: -118.2437
+                  preferences:
+                    timezone: "America/Los_Angeles"
+                    theme: "dark"
+              admin_update:
+                summary: Admin updating user role
+                value:
+                  role: "manager"
+                  skillLevel: "advanced"
+                  isActive: true
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/user.yaml#/components/schemas/User'
+                  message:
+                    type: string
+                    example: "User updated successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/users/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "PUT"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete User
+      description: |
+        Delete a user account from the system.
+        
+        **Access Control:**
+        - Admin: Can delete any user
+        - Manager: Cannot delete users
+        - Player: Can delete their own account (soft delete)
+        
+        **Note:** This performs a soft delete by setting isActive to false.
+        User data is retained for audit purposes but the account becomes inaccessible.
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      deletedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-26T10:00:00Z"
+                  message:
+                    type: string
+                    example: "User deleted successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/users/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "DELETE"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
