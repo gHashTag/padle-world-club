@@ -14,6 +14,9 @@ import { ApiResponse } from './utils/response';
 import { FunctionalCompose } from './utils/compose';
 import { createUserRoutes } from './routes/users';
 import { createVenuesRouter } from './routes/venues';
+import { createBookingRoutes } from './routes/bookings';
+import { createCourtRoutes } from './routes/courts';
+import { createPaymentRoutes } from './routes/payments';
 import { db } from '../db';
 import { UserRepository } from '../repositories/user-repository';
 
@@ -183,6 +186,9 @@ const createApiRouter = () => {
   const userRepository = new UserRepository(db);
   router.use('/users', createUserRoutes({ userRepository }));
   router.use('/venues', createVenuesRouter());
+  router.use('/bookings', createBookingRoutes());
+  router.use('/courts', createCourtRoutes());
+  router.use('/payments', createPaymentRoutes());
   // router.use('/courts', courtsRouter);
   // router.use('/bookings', bookingsRouter);
   // router.use('/payments', paymentsRouter);

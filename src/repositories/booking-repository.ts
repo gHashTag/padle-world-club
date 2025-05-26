@@ -3,7 +3,7 @@
  * Содержит методы CRUD для работы с бронированиями
  */
 
-import { eq, and, gte, lte, ne } from "drizzle-orm";
+import { eq, and, gte, lte, ne, sql } from "drizzle-orm";
 import { Booking, NewBooking, bookings } from "../db/schema";
 import { DatabaseType } from "./types";
 
@@ -215,5 +215,108 @@ export class BookingRepository {
 
       return conflictingBookings.length === 0;
     }
+  }
+
+  /**
+   * Получает список бронирований с пагинацией и фильтрацией
+   * @param options Опции для фильтрации и сортировки
+   * @returns Объект с данными и метаинформацией
+   */
+  async findMany(options: {
+    page: number;
+    limit: number;
+    courtId?: string;
+    bookedByUserId?: string;
+    status?: string;
+    bookingPurpose?: string;
+    startTimeAfter?: string;
+    startTimeBefore?: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+  }): Promise<{ data: Booking[]; total: number; page: number; limit: number }> {
+    const { page, limit, courtId, bookedByUserId, status, bookingPurpose, startTimeAfter, startTimeBefore, sortBy, sortOrder: _sortOrder } = options;
+    const offset = (page - 1) * limit;
+
+    // Строим условия фильтрации
+    const conditions = [];
+    if (courtId) {
+      conditions.push(eq(bookings.courtId, courtId));
+    }
+    if (bookedByUserId) {
+      conditions.push(eq(bookings.bookedByUserId, bookedByUserId));
+    }
+    if (status) {
+      conditions.push(eq(bookings.status, status as any));
+    }
+    if (bookingPurpose) {
+      conditions.push(eq(bookings.bookingPurpose, bookingPurpose as any));
+    }
+    if (startTimeAfter) {
+      conditions.push(gte(bookings.startTime, new Date(startTimeAfter)));
+    }
+    if (startTimeBefore) {
+      conditions.push(lte(bookings.startTime, new Date(startTimeBefore)));
+    }
+
+    // Получаем общее количество записей
+    const totalResult = await this.db
+      .select({ count: bookings.id })
+      .from(bookings)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    const total = totalResult.length;
+
+    // Получаем данные с пагинацией и сортировкой
+    const baseQuery = this.db
+      .select()
+      .from(bookings)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    // Добавляем сортировку
+    let data;
+    if (sortBy === 'startTime') {
+      data = await baseQuery.orderBy(bookings.startTime).limit(limit).offset(offset);
+    } else if (sortBy === 'endTime') {
+      data = await baseQuery.orderBy(bookings.endTime).limit(limit).offset(offset);
+    } else if (sortBy === 'status') {
+      data = await baseQuery.orderBy(bookings.status).limit(limit).offset(offset);
+    } else if (sortBy === 'totalAmount') {
+      data = await baseQuery.orderBy(bookings.totalAmount).limit(limit).offset(offset);
+    } else if (sortBy === 'createdAt') {
+      data = await baseQuery.orderBy(bookings.createdAt).limit(limit).offset(offset);
+    } else if (sortBy === 'updatedAt') {
+      data = await baseQuery.orderBy(bookings.updatedAt).limit(limit).offset(offset);
+    } else {
+      // По умолчанию сортируем по времени начала
+      data = await baseQuery.orderBy(bookings.startTime).limit(limit).offset(offset);
+    }
+
+    return {
+      data,
+      total,
+      page,
+      limit
+    };
+  }
+
+  /**
+   * Получает активные бронирования для корта
+   * @param courtId ID корта
+   * @returns Массив активных бронирований
+   */
+  async findActiveBookingsByCourtId(courtId: string): Promise<Booking[]> {
+    const now = new Date();
+
+    return await this.db
+      .select()
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.courtId, courtId),
+          // Активные статусы
+          sql`${bookings.status} IN ('confirmed', 'pending_payment')`,
+          // Бронирования, которые еще не завершились
+          gte(bookings.endTime, now)
+        )
+      );
   }
 }

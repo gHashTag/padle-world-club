@@ -1,0 +1,703 @@
+openapi: 3.0.3
+info:
+  title: Bookings API
+  description: API для управления бронированиями кортов
+  version: 1.0.0
+
+paths:
+  /api/bookings:
+    get:
+      summary: Получить список бронирований
+      description: Возвращает список бронирований с возможностью фильтрации и пагинации
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Номер страницы
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Количество записей на странице
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: sortBy
+          in: query
+          description: Поле для сортировки
+          schema:
+            type: string
+            enum: [startTime, endTime, status, totalAmount, createdAt, updatedAt]
+            default: startTime
+        - name: sortOrder
+          in: query
+          description: Порядок сортировки
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: courtId
+          in: query
+          description: ID корта для фильтрации
+          schema:
+            type: string
+            format: uuid
+        - name: bookedByUserId
+          in: query
+          description: ID пользователя, создавшего бронирование
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Статус бронирования
+          schema:
+            type: string
+            enum: [confirmed, pending_payment, cancelled, completed]
+        - name: startTimeAfter
+          in: query
+          description: Фильтр по времени начала (после указанной даты)
+          schema:
+            type: string
+            format: date-time
+        - name: startTimeBefore
+          in: query
+          description: Фильтр по времени начала (до указанной даты)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Список бронирований успешно получен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+                      total:
+                        type: integer
+                        example: 50
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+                  timestamp:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Создать новое бронирование
+      description: Создает новое бронирование корта
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+      responses:
+        '201':
+          description: Бронирование успешно создано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+                    example: "Бронирование успешно создано"
+                  timestamp:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Корт или пользователь не найден
+        '409':
+          description: Корт недоступен в указанное время
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/bookings/{id}:
+    get:
+      summary: Получить бронирование по ID
+      description: Возвращает детальную информацию о бронировании
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID бронирования
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Бронирование найдено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Booking'
+                  timestamp:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Бронирование не найдено
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Обновить бронирование
+      description: Обновляет данные существующего бронирования
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID бронирования
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBookingRequest'
+      responses:
+        '200':
+          description: Бронирование успешно обновлено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+                    example: "Бронирование успешно обновлено"
+                  timestamp:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Бронирование не найдено
+        '409':
+          description: Корт недоступен в указанное время
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Отменить бронирование
+      description: Отменяет существующее бронирование (устанавливает статус cancelled)
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID бронирования
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Бронирование успешно отменено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+                    example: "Бронирование успешно отменено"
+                  timestamp:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Бронирование не найдено
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/bookings/{id}/confirm:
+    post:
+      summary: Подтвердить бронирование
+      description: Подтверждает бронирование и устанавливает статус confirmed
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID бронирования
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmBookingRequest'
+      responses:
+        '200':
+          description: Бронирование успешно подтверждено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+                    example: "Бронирование успешно подтверждено"
+                  timestamp:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Бронирование не найдено
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        courtId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T11:00:00Z"
+        durationMinutes:
+          type: integer
+          minimum: 15
+          maximum: 480
+          example: 60
+        status:
+          type: string
+          enum: [confirmed, pending_payment, cancelled, completed]
+          example: "confirmed"
+        totalAmount:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 100.00
+        currency:
+          type: string
+          example: "USD"
+        bookedByUserId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174002"
+        bookingPurpose:
+          type: string
+          enum: [free_play, group_training, private_training, tournament_match, other]
+          example: "free_play"
+        relatedEntityId:
+          type: string
+          format: uuid
+          nullable: true
+          example: null
+        notes:
+          type: string
+          nullable: true
+          example: "Бронирование для тренировки"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T09:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T09:00:00Z"
+
+    CreateBookingRequest:
+      type: object
+      required:
+        - courtId
+        - startTime
+        - totalAmount
+        - currency
+        - bookedByUserId
+        - bookingPurpose
+      properties:
+        courtId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T11:00:00Z"
+        durationMinutes:
+          type: integer
+          minimum: 15
+          maximum: 480
+          example: 60
+        totalAmount:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 100.00
+        currency:
+          type: string
+          example: "USD"
+        bookedByUserId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174002"
+        bookingPurpose:
+          type: string
+          enum: [free_play, group_training, private_training, tournament_match, other]
+          example: "free_play"
+        relatedEntityId:
+          type: string
+          format: uuid
+          nullable: true
+          example: null
+        notes:
+          type: string
+          nullable: true
+          example: "Бронирование для тренировки"
+
+    UpdateBookingRequest:
+      type: object
+      properties:
+        courtId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T11:00:00Z"
+        durationMinutes:
+          type: integer
+          minimum: 15
+          maximum: 480
+          example: 60
+        status:
+          type: string
+          enum: [confirmed, pending_payment, cancelled, completed]
+          example: "confirmed"
+        totalAmount:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 100.00
+        currency:
+          type: string
+          example: "USD"
+        bookingPurpose:
+          type: string
+          enum: [free_play, group_training, private_training, tournament_match, other]
+          example: "free_play"
+        relatedEntityId:
+          type: string
+          format: uuid
+          nullable: true
+          example: null
+        notes:
+          type: string
+          nullable: true
+          example: "Обновленные заметки"
+
+    ConfirmBookingRequest:
+      type: object
+      properties:
+        paymentConfirmed:
+          type: boolean
+          default: false
+          example: true
+        notes:
+          type: string
+          example: "Оплата подтверждена"
+
+    BookingParticipant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174003"
+        bookingId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        userId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174004"
+        amountOwed:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 50.00
+        amountPaid:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 50.00
+        paymentStatus:
+          type: string
+          enum: [success, failed, pending, refunded, partial]
+          example: "success"
+        participationStatus:
+          type: string
+          enum: [registered, attended, no_show, cancelled]
+          example: "attended"
+        isHost:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T09:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T09:00:00Z"
+
+    AddBookingParticipantRequest:
+      type: object
+      required:
+        - userId
+        - amountOwed
+      properties:
+        userId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174004"
+        amountOwed:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 50.00
+        amountPaid:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+          example: 0.00
+        paymentStatus:
+          type: string
+          enum: [success, failed, pending, refunded, partial]
+          default: "pending"
+          example: "pending"
+        participationStatus:
+          type: string
+          enum: [registered, attended, no_show, cancelled]
+          default: "registered"
+          example: "registered"
+        isHost:
+          type: boolean
+          default: false
+          example: false
+
+    UpdateBookingParticipantRequest:
+      type: object
+      properties:
+        amountOwed:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 50.00
+        amountPaid:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 50.00
+        paymentStatus:
+          type: string
+          enum: [success, failed, pending, refunded, partial]
+          example: "success"
+        participationStatus:
+          type: string
+          enum: [registered, attended, no_show, cancelled]
+          example: "attended"
+        isHost:
+          type: boolean
+          example: false
+
+  responses:
+    BadRequest:
+      description: Неверный запрос
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "Ошибка валидации"
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                    message:
+                      type: string
+              timestamp:
+                type: string
+                format: date-time
+
+    Unauthorized:
+      description: Не авторизован
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "Требуется авторизация"
+              timestamp:
+                type: string
+                format: date-time
+
+    Forbidden:
+      description: Доступ запрещен
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "Недостаточно прав доступа"
+              timestamp:
+                type: string
+                format: date-time
+
+    InternalServerError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "Внутренняя ошибка сервера"
+              timestamp:
+                type: string
+                format: date-time

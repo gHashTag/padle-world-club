@@ -332,4 +332,108 @@ export class PaymentRepository {
       averagePayment: averagePayment.toFixed(2),
     };
   }
+
+  /**
+   * Получает список платежей с пагинацией и фильтрацией
+   * @param options Опции для фильтрации и сортировки
+   * @returns Объект с данными и метаинформацией
+   */
+  async findMany(options: {
+    page: number;
+    limit: number;
+    userId?: string;
+    status?: string;
+    paymentMethod?: string;
+    currency?: string;
+    relatedBookingParticipantId?: string;
+    relatedOrderId?: string;
+    relatedUserTrainingPackageId?: string;
+    minAmount?: number;
+    maxAmount?: number;
+    createdAfter?: string;
+    createdBefore?: string;
+    gatewayTransactionId?: string;
+    search?: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+  }): Promise<{ data: Payment[]; total: number; page: number; limit: number }> {
+    const { page, limit, userId, status, paymentMethod, currency, relatedBookingParticipantId, relatedOrderId, relatedUserTrainingPackageId, minAmount, maxAmount, createdAfter, createdBefore, gatewayTransactionId, sortBy, sortOrder: _sortOrder } = options;
+    const offset = (page - 1) * limit;
+
+    // Строим условия фильтрации
+    const conditions = [];
+    if (userId) {
+      conditions.push(eq(payments.userId, userId));
+    }
+    if (status) {
+      conditions.push(eq(payments.status, status as any));
+    }
+    if (paymentMethod) {
+      conditions.push(eq(payments.paymentMethod, paymentMethod as any));
+    }
+    if (currency) {
+      conditions.push(eq(payments.currency, currency));
+    }
+    if (relatedBookingParticipantId) {
+      conditions.push(eq(payments.relatedBookingParticipantId, relatedBookingParticipantId));
+    }
+    if (relatedOrderId) {
+      conditions.push(eq(payments.relatedOrderId, relatedOrderId));
+    }
+    if (relatedUserTrainingPackageId) {
+      conditions.push(eq(payments.relatedUserTrainingPackageId, relatedUserTrainingPackageId));
+    }
+    if (minAmount !== undefined) {
+      conditions.push(gte(payments.amount, minAmount.toString()));
+    }
+    if (maxAmount !== undefined) {
+      conditions.push(lte(payments.amount, maxAmount.toString()));
+    }
+    if (createdAfter) {
+      conditions.push(gte(payments.createdAt, new Date(createdAfter)));
+    }
+    if (createdBefore) {
+      conditions.push(lte(payments.createdAt, new Date(createdBefore)));
+    }
+    if (gatewayTransactionId) {
+      conditions.push(eq(payments.gatewayTransactionId, gatewayTransactionId));
+    }
+
+    // Получаем общее количество записей
+    const totalResult = await this.db
+      .select({ count: payments.id })
+      .from(payments)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    const total = totalResult.length;
+
+    // Получаем данные с пагинацией
+    const baseQuery = this.db
+      .select()
+      .from(payments)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    // Добавляем сортировку
+    let data;
+    if (sortBy === 'amount') {
+      data = await baseQuery.orderBy(payments.amount).limit(limit).offset(offset);
+    } else if (sortBy === 'status') {
+      data = await baseQuery.orderBy(payments.status).limit(limit).offset(offset);
+    } else if (sortBy === 'paymentMethod') {
+      data = await baseQuery.orderBy(payments.paymentMethod).limit(limit).offset(offset);
+    } else if (sortBy === 'createdAt') {
+      data = await baseQuery.orderBy(payments.createdAt).limit(limit).offset(offset);
+    } else if (sortBy === 'updatedAt') {
+      data = await baseQuery.orderBy(payments.updatedAt).limit(limit).offset(offset);
+    } else {
+      // По умолчанию сортируем по дате создания
+      data = await baseQuery.orderBy(desc(payments.createdAt)).limit(limit).offset(offset);
+    }
+
+    return {
+      data,
+      total,
+      page,
+      limit
+    };
+  }
 }

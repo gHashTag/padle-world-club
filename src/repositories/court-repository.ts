@@ -214,4 +214,115 @@ export class CourtRepository {
 
     return !!deletedCourt;
   }
+
+  /**
+   * Получает список кортов с пагинацией и фильтрацией
+   * @param options Опции для фильтрации и сортировки
+   * @returns Объект с данными и метаинформацией
+   */
+  async findMany(options: {
+    page: number;
+    limit: number;
+    venueId?: string;
+    courtType?: string;
+    isActive?: boolean;
+    minHourlyRate?: number;
+    maxHourlyRate?: number;
+    createdAfter?: string;
+    createdBefore?: string;
+    search?: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+  }): Promise<{ data: Court[]; total: number; page: number; limit: number }> {
+    const { page, limit, venueId, courtType, isActive, minHourlyRate, maxHourlyRate, createdAfter, createdBefore, sortBy, sortOrder: _sortOrder } = options;
+    const offset = (page - 1) * limit;
+
+    // Строим условия фильтрации
+    const conditions = [];
+    if (venueId) {
+      conditions.push(eq(courts.venueId, venueId));
+    }
+    if (courtType) {
+      conditions.push(eq(courts.courtType, courtType as any));
+    }
+    if (isActive !== undefined) {
+      conditions.push(eq(courts.isActive, isActive));
+    }
+    if (minHourlyRate !== undefined) {
+      conditions.push(gte(courts.hourlyRate, minHourlyRate.toString()));
+    }
+    if (maxHourlyRate !== undefined) {
+      conditions.push(lte(courts.hourlyRate, maxHourlyRate.toString()));
+    }
+    if (createdAfter) {
+      conditions.push(gte(courts.createdAt, new Date(createdAfter)));
+    }
+    if (createdBefore) {
+      conditions.push(lte(courts.createdAt, new Date(createdBefore)));
+    }
+
+    // Получаем общее количество записей
+    const totalResult = await this.db
+      .select({ count: courts.id })
+      .from(courts)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    const total = totalResult.length;
+
+    // Получаем данные с пагинацией и сортировкой
+    const baseQuery = this.db
+      .select()
+      .from(courts)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    // Добавляем сортировку
+    let data;
+    if (sortBy === 'name') {
+      data = await baseQuery.orderBy(courts.name).limit(limit).offset(offset);
+    } else if (sortBy === 'courtType') {
+      data = await baseQuery.orderBy(courts.courtType).limit(limit).offset(offset);
+    } else if (sortBy === 'hourlyRate') {
+      data = await baseQuery.orderBy(courts.hourlyRate).limit(limit).offset(offset);
+    } else if (sortBy === 'createdAt') {
+      data = await baseQuery.orderBy(courts.createdAt).limit(limit).offset(offset);
+    } else if (sortBy === 'updatedAt') {
+      data = await baseQuery.orderBy(courts.updatedAt).limit(limit).offset(offset);
+    } else {
+      // По умолчанию сортируем по имени
+      data = await baseQuery.orderBy(courts.name).limit(limit).offset(offset);
+    }
+
+    return {
+      data,
+      total,
+      page,
+      limit
+    };
+  }
+
+  /**
+   * Получает статистику использования корта
+   * @param courtId ID корта
+   * @returns Объект со статистикой
+   */
+  async getCourtStats(_courtId: string): Promise<{
+    totalBookings: number;
+    upcomingBookings: number;
+    completedBookings: number;
+    cancelledBookings: number;
+    totalRevenue: string;
+    averageBookingDuration: number;
+    utilizationRate: string;
+  }> {
+    // Базовая статистика - возвращаем заглушку
+    // В реальном проекте здесь были бы сложные запросы к таблице bookings
+    return {
+      totalBookings: 0,
+      upcomingBookings: 0,
+      completedBookings: 0,
+      cancelledBookings: 0,
+      totalRevenue: '0.00',
+      averageBookingDuration: 0,
+      utilizationRate: '0.00'
+    };
+  }
 }

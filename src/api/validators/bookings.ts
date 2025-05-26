@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import { commonSchemas, paginationSchemas, sortingSchemas, searchSchemas } from './common';
+import { commonSchemas } from './common';
 
 // Enum валидаторы на основе схемы базы данных
 export const bookingEnums = {
@@ -121,13 +121,13 @@ export const updateBookingSchema = updateBookingBaseSchema.refine(
   }
 );
 
-// Схема для поиска бронирований
+// Схема для поиска бронирований (query parameters)
 export const searchBookingsSchema = z.object({
-  ...paginationSchemas.basic.shape,
-  ...sortingSchemas.withFields([
-    'startTime', 'endTime', 'status', 'totalAmount', 'createdAt', 'updatedAt'
-  ]).shape,
-  ...searchSchemas.basic.shape,
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  sortBy: z.enum(['startTime', 'endTime', 'status', 'totalAmount', 'createdAt', 'updatedAt']).default('startTime'),
+  sortOrder: z.enum(['asc', 'desc']).default('asc'),
+  search: z.string().optional(),
 
   // Фильтры
   courtId: commonSchemas.uuid.optional(),
@@ -142,8 +142,8 @@ export const searchBookingsSchema = z.object({
   endTimeBefore: commonSchemas.dateString.optional(),
 
   // Диапазон сумм
-  minAmount: z.number().min(0).optional(),
-  maxAmount: z.number().min(0).optional(),
+  minAmount: z.coerce.number().min(0).optional(),
+  maxAmount: z.coerce.number().min(0).optional(),
 
   // Диапазон дат создания
   createdAfter: commonSchemas.dateString.optional(),
@@ -248,23 +248,23 @@ export const updateBookingParticipantSchema = updateBookingParticipantBaseSchema
 
 // Схема для поиска участников бронирований
 export const searchBookingParticipantsSchema = z.object({
-  ...paginationSchemas.basic.shape,
-  ...sortingSchemas.withFields([
-    'amountOwed', 'amountPaid', 'paymentStatus', 'participationStatus', 'isHost', 'createdAt'
-  ]).shape,
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10),
+  sortBy: z.enum(['amountOwed', 'amountPaid', 'paymentStatus', 'participationStatus', 'isHost', 'createdAt']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('asc'),
 
   // Фильтры
   bookingId: commonSchemas.uuid.optional(),
   userId: commonSchemas.uuid.optional(),
   paymentStatus: bookingEnums.paymentStatus.optional(),
   participationStatus: bookingEnums.participationStatus.optional(),
-  isHost: z.boolean().optional(),
+  isHost: z.coerce.boolean().optional(),
 
   // Диапазон сумм
-  minAmountOwed: z.number().min(0).optional(),
-  maxAmountOwed: z.number().min(0).optional(),
-  minAmountPaid: z.number().min(0).optional(),
-  maxAmountPaid: z.number().min(0).optional(),
+  minAmountOwed: z.coerce.number().min(0).optional(),
+  maxAmountOwed: z.coerce.number().min(0).optional(),
+  minAmountPaid: z.coerce.number().min(0).optional(),
+  maxAmountPaid: z.coerce.number().min(0).optional(),
 });
 
 // Схема для массового обновления статуса участников
