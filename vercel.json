@@ -8,6 +8,7 @@
         "includeFiles": [
           "dist/**",
           "src/api/docs/**",
+          "src/api/views/**",
           "src/db/migrations/**"
         ],
         "maxLambdaSize": "50mb"

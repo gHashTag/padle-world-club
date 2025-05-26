@@ -7,6 +7,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+import path from 'path';
 import { setupSwaggerUI } from './middleware/swagger';
 
 import { config } from './config';
@@ -97,6 +98,11 @@ const setupSwagger = (app: Application): Application => {
 
 // Настройка маршрутов
 const setupRoutes = (app: Application): Application => {
+  // Landing page - главная страница
+  app.get('/', (_req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, 'views', 'index.html'));
+  });
+
   // Health check endpoint
   app.get('/health', (req: Request, res: Response) => {
     ApiResponse.success(res, req, {

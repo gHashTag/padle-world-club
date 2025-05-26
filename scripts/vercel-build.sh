@@ -20,6 +20,9 @@ echo "📁 Copying necessary files..."
 mkdir -p dist/api/docs
 cp -r src/api/docs/* dist/api/docs/ 2>/dev/null || echo "No docs to copy"
 
+mkdir -p dist/api/views
+cp -r src/api/views/* dist/api/views/ 2>/dev/null || echo "No views to copy"
+
 mkdir -p dist/db/migrations
 cp -r src/db/migrations/* dist/db/migrations/ 2>/dev/null || echo "No migrations to copy"
 
