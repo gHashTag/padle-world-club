@@ -9,6 +9,11 @@ const fs = require('fs');
 
 const app = express();
 
+// Для локальной разработки
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(3000, () => console.log("Server ready on port 3000."));
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
@@ -123,4 +128,4 @@ app.get('*', (req: any, res: any) => {
   });
 });
 
-export default app;
+module.exports = app;
