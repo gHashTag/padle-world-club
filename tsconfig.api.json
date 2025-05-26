@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": [
+    "src/api/**/*",
+    "src/db/**/*",
+    "src/repositories/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/telegram-bot/**/*",
+    "src/bot.ts",
+    "src/commands.ts",
+    "src/graphql/**/*",
+    "src/middlewares/**/*",
+    "src/templates/**/*",
+    "src/types.ts",
+    "src/utils/**/*",
+    "src/__tests__/**/*",
+    "index.ts"
+  ]
+}
