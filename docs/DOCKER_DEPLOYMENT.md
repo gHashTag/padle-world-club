@@ -272,7 +272,7 @@ docker-compose up -d --scale api=1
    ```bash
    # Check port usage
    netstat -tulpn | grep :3000
-   
+
    # Use different ports
    PORT=3001 docker-compose up -d
    ```
@@ -281,7 +281,7 @@ docker-compose up -d --scale api=1
    ```bash
    # Check database logs
    docker-compose logs postgres
-   
+
    # Test connection
    docker-compose exec api bun run db:test-connection
    ```
@@ -290,7 +290,7 @@ docker-compose up -d --scale api=1
    ```bash
    # Clean build
    docker-compose build --no-cache
-   
+
    # Remove all containers and volumes
    docker-compose down -v
    docker system prune -a
@@ -355,6 +355,34 @@ docker-compose exec -T postgres psql -U padel_user padel_db < backup.sql
 # Backup volumes
 docker run --rm -v padel_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz /data
 ```
+
+## 🔄 CI/CD Integration
+
+### GitHub Actions Integration
+
+The Docker configuration integrates seamlessly with our CI/CD pipeline:
+
+```bash
+# Build and test in CI
+docker build --target builder -t padel-api:test .
+docker run --rm padel-api:test bun run test
+
+# Build production image
+docker build --target runtime -t padel-api:latest .
+
+# Push to registry
+docker tag padel-api:latest ghcr.io/ghashtag/padle-world-club:latest
+docker push ghcr.io/ghashtag/padle-world-club:latest
+```
+
+### Automated Deployment
+
+The CI/CD pipeline automatically:
+1. Builds and tests the Docker image
+2. Pushes to GitHub Container Registry
+3. Deploys to staging environment
+4. Runs smoke tests
+5. Deploys to production (on tags)
 
 ---
 
