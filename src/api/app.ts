@@ -100,7 +100,7 @@ const setupSwagger = (app: Application): Application => {
 const setupRoutes = (app: Application): Application => {
   // Landing page - главная страница
   app.get('/', (_req: Request, res: Response) => {
-    res.sendFile(path.join(__dirname, 'views', 'index.html'));
+    res.sendFile(path.join(__dirname, 'views', 'index-detailed.html'));
   });
 
   // Health check endpoint
