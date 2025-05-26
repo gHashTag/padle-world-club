@@ -3,7 +3,7 @@
  * Простая версия для демонстрации
  */
 
-const express = require('express');
+import express from 'express';
 const app = express();
 
 // Middleware
@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Главная страница
-app.get('/', (req: any, res: any) => {
+app.get('/', (_req: any, res: any) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="ru">
@@ -51,7 +51,7 @@ app.get('/', (req: any, res: any) => {
 });
 
 // Health check
-app.get('/health', (req: any, res: any) => {
+app.get('/health', (_req: any, res: any) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -61,7 +61,7 @@ app.get('/health', (req: any, res: any) => {
 });
 
 // API info
-app.get('/api', (req: any, res: any) => {
+app.get('/api', (_req: any, res: any) => {
   res.json({
     name: 'Padel World Club API',
     version: '1.0.0',
@@ -76,7 +76,7 @@ app.get('/api', (req: any, res: any) => {
 });
 
 // Docs endpoint
-app.get('/docs', (req: any, res: any) => {
+app.get('/docs', (_req: any, res: any) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="ru">
@@ -140,4 +140,4 @@ app.get('*', (req: any, res: any) => {
   });
 });
 
-module.exports = app;
+export default app;

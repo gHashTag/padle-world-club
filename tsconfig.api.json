@@ -8,6 +8,7 @@
     "sourceMap": true
   },
   "include": [
+    "api/**/*",
     "src/api/**/*",
     "src/db/**/*",
     "src/repositories/**/*"
