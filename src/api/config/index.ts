@@ -5,13 +5,13 @@
 import { ApiConfig } from '../types';
 
 // Получение переменных окружения с значениями по умолчанию
-const getEnv = (key: string, defaultValue: string): string => 
+const getEnv = (key: string, defaultValue: string): string =>
   process.env[key] || defaultValue;
 
-const getEnvNumber = (key: string, defaultValue: number): number => 
+const getEnvNumber = (key: string, defaultValue: number): number =>
   parseInt(process.env[key] || String(defaultValue), 10);
 
-const getEnvBoolean = (key: string, defaultValue: boolean): boolean => 
+const getEnvBoolean = (key: string, defaultValue: boolean): boolean =>
   process.env[key] === 'true' || (process.env[key] === undefined && defaultValue);
 
 // Основная конфигурация API
@@ -52,7 +52,7 @@ export const config: ApiConfig = {
 // Валидация конфигурации
 export const validateConfig = (): void => {
   const requiredEnvVars = ['DATABASE_URL'];
-  
+
   for (const envVar of requiredEnvVars) {
     if (!process.env[envVar]) {
       throw new Error(`Обязательная переменная окружения ${envVar} не установлена`);
