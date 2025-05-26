@@ -47,3 +47,4 @@ drizzle/migrations/*
 !drizzle/migrations/_journal.json
 drizzle/meta/*
 !drizzle/meta/_journal.json
+.vercel
