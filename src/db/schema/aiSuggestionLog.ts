@@ -1,14 +1,15 @@
-import { pgTable, uuid, timestamp, text, jsonb, boolean, numeric, pgEnum } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  timestamp,
+  text,
+  jsonb,
+  boolean,
+  numeric,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { users } from "./user";
-
-// Локальное определение enum для избежания проблем с импортом
-const aiSuggestionTypeEnum = pgEnum("ai_suggestion_type", [
-  "game_matching",
-  "court_fill_optimization",
-  "demand_prediction",
-  "rating_update"
-]);
+import { aiSuggestionTypeEnum } from "./enums";
 
 export const aiSuggestionLogs = pgTable("ai_suggestion_log", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -22,17 +23,24 @@ export const aiSuggestionLogs = pgTable("ai_suggestion_log", {
   executionTimeMs: numeric("execution_time_ms", { precision: 10, scale: 2 }), // Время выполнения в миллисекундах
   modelVersion: text("model_version"), // Версия модели AI
   contextData: jsonb("context_data"), // Дополнительный контекст
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // Отношения
-export const aiSuggestionLogsRelations = relations(aiSuggestionLogs, ({ one }) => ({
-  user: one(users, {
-    fields: [aiSuggestionLogs.userId],
-    references: [users.id],
-  }),
-}));
+export const aiSuggestionLogsRelations = relations(
+  aiSuggestionLogs,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [aiSuggestionLogs.userId],
+      references: [users.id],
+    }),
+  })
+);
 
 // Типы для TypeScript
 export type AISuggestionLog = typeof aiSuggestionLogs.$inferSelect;
