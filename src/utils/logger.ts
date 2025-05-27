@@ -31,6 +31,7 @@ export enum LogType {
   WARNING = "warning",
   INFO = "info",
   DEBUG = "debug",
+  AI_OPERATION = "ai_operation",
 }
 
 // Интерфейс для записи лога
