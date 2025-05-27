@@ -148,6 +148,13 @@
       "when": 1748331549640,
       "tag": "0020_hard_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1748342898738,
+      "tag": "0021_sturdy_black_panther",
+      "breakpoints": true
     }
   ]
 }

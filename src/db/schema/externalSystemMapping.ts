@@ -1,41 +1,42 @@
-import { pgTable, uuid, timestamp, text, jsonb, boolean, pgEnum } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  varchar,
+  timestamp,
+  text,
+  boolean,
+} from "drizzle-orm/pg-core";
+import { externalSystemEnum, externalEntityMappingTypeEnum } from "./enums";
 
-// Локальные определения enum для избежания проблем с импортом
-const externalSystemEnum = pgEnum("external_system", [
-  "exporta",
-  "google_calendar",
-  "whatsapp_api",
-  "telegram_api",
-  "payment_gateway_api",
-  "other"
-]);
-
-const externalEntityMappingTypeEnum = pgEnum("external_entity_mapping_type", [
-  "user",
-  "booking",
-  "court",
-  "class",
-  "venue",
-  "class_schedule",
-  "product",
-  "training_package_definition"
-]);
-
-export const externalSystemMappings = pgTable("external_system_mapping", {
+export const externalSystemMapping = pgTable("external_system_mapping", {
   id: uuid("id").primaryKey().defaultRandom(),
+
+  // Внешняя система
   externalSystem: externalSystemEnum("external_system").notNull(),
-  entityType: externalEntityMappingTypeEnum("entity_type").notNull(),
-  internalEntityId: uuid("internal_entity_id").notNull(), // ID сущности в нашей системе
-  externalEntityId: text("external_entity_id").notNull(), // ID сущности во внешней системе
-  externalEntityData: jsonb("external_entity_data"), // Дополнительные данные из внешней системы
-  syncDirection: text("sync_direction").notNull().default("bidirectional"), // "to_external", "from_external", "bidirectional"
-  isActive: boolean("is_active").notNull().default(true),
-  lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
-  syncErrors: text("sync_errors"), // Последние ошибки синхронизации
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  externalId: varchar("external_id", { length: 255 }).notNull(),
+
+  // Внутренняя сущность
+  internalEntityType: externalEntityMappingTypeEnum(
+    "internal_entity_type"
+  ).notNull(),
+  internalEntityId: uuid("internal_entity_id").notNull(),
+
+  // Метаданные синхронизации
+  isActive: boolean("is_active").default(true).notNull(),
+  lastSyncAt: timestamp("last_sync_at"),
+  syncData: text("sync_data"), // JSON данные для синхронизации
+
+  // Конфликты и ошибки
+  hasConflict: boolean("has_conflict").default(false).notNull(),
+  conflictData: text("conflict_data"), // JSON данные о конфликтах
+  lastError: text("last_error"),
+
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Типы для TypeScript
-export type ExternalSystemMapping = typeof externalSystemMappings.$inferSelect;
-export type NewExternalSystemMapping = typeof externalSystemMappings.$inferInsert;
+export type ExternalSystemMapping = typeof externalSystemMapping.$inferSelect;
+export type NewExternalSystemMapping =
+  typeof externalSystemMapping.$inferInsert;

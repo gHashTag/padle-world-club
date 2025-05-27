@@ -2,11 +2,19 @@
  * Базовые типы для Express API в функциональном стиле
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
 
 // Базовые типы для функционального программирования
-export type AsyncHandler<T = any> = (req: Request, res: Response, next: NextFunction) => Promise<T>;
-export type SyncHandler<T = any> = (req: Request, res: Response, next: NextFunction) => T;
+export type AsyncHandler<T = any> = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<T>;
+export type SyncHandler<T = any> = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => T;
 export type Handler<T = any> = AsyncHandler<T> | SyncHandler<T>;
 
 // Типы для композиции функций
@@ -58,7 +66,7 @@ export interface PaginationQuery {
 
 export interface SortQuery {
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
 export interface FilterQuery {
@@ -70,7 +78,10 @@ export interface SearchQuery {
   searchFields?: string[];
 }
 
-export type QueryParams = PaginationQuery & SortQuery & FilterQuery & SearchQuery;
+export type QueryParams = PaginationQuery &
+  SortQuery &
+  FilterQuery &
+  SearchQuery;
 
 // Типы для валидации
 export interface ValidationError {
@@ -86,7 +97,11 @@ export interface ValidationResult {
 }
 
 // Типы для middleware
-export type MiddlewareFunction = (req: Request, res: Response, next: NextFunction) => void | Promise<void>;
+export type MiddlewareFunction = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => void | Promise<void>;
 
 // Типы для конфигурации
 export interface ServerConfig {
@@ -122,21 +137,21 @@ export interface ApiConfig {
     description: string;
   };
   logging: {
-    level: 'error' | 'warn' | 'info' | 'debug';
-    format: 'json' | 'simple';
+    level: "error" | "warn" | "info" | "debug";
+    format: "json" | "simple";
   };
 }
 
 // Типы для ошибок
 export enum ErrorCode {
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  NOT_FOUND = 'NOT_FOUND',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  FORBIDDEN = 'FORBIDDEN',
-  CONFLICT = 'CONFLICT',
-  INTERNAL_ERROR = 'INTERNAL_ERROR',
-  BAD_REQUEST = 'BAD_REQUEST',
-  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
+  VALIDATION_ERROR = "VALIDATION_ERROR",
+  NOT_FOUND = "NOT_FOUND",
+  UNAUTHORIZED = "UNAUTHORIZED",
+  FORBIDDEN = "FORBIDDEN",
+  CONFLICT = "CONFLICT",
+  INTERNAL_ERROR = "INTERNAL_ERROR",
+  BAD_REQUEST = "BAD_REQUEST",
+  RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED",
 }
 
 export interface ApiError {
@@ -183,6 +198,42 @@ export interface LogContext {
   requiredRole?: string;
   requiredRoles?: string[];
   userPermissions?: string[];
+  // Дополнительные поля для ExternalSystemMapping
+  mappingId?: string;
+  externalSystem?: string;
+  internalEntityType?: string;
+  updates?: string[];
+  updatedCount?: number;
+  totalIds?: number;
+  cleanedCount?: number;
+  // Поля для external sync
+  externalId?: string;
+  entityType?: string;
+  action?: string;
+  hasData?: boolean;
+  eventsCount?: number;
+  stats?: any;
+  systems?: any;
+  overallHealth?: boolean;
+  daysOld?: number;
+  resolved?: boolean;
+  alertId?: string;
+  type?: string;
+  system?: string;
+  config?: any;
+  removedCount?: number;
+  options?: any;
+  result?: any;
+  internalEntityId?: string;
+  total?: number;
+  lastSync?: Date;
+  // Поля для уведомлений
+  notificationId?: string;
+  channel?: string;
+  resultCount?: number;
+  count?: number;
+  toDeleteCount?: number;
+  deletedCount?: number;
 }
 
 // Функциональные типы для работы с данными
@@ -200,11 +251,11 @@ export interface RepositoryOptions {
 
 export interface FindOptions extends RepositoryOptions {
   where?: Record<string, any>;
-  orderBy?: Record<string, 'asc' | 'desc'>;
+  orderBy?: Record<string, "asc" | "desc">;
   limit?: number;
   offset?: number;
 }
 
 // Экспорт всех типов
-export * from './api-types';
-export * from './functional-types';
+export * from "./api-types";
+export * from "./functional-types";
