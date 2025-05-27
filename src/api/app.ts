@@ -18,6 +18,7 @@ import { createVenuesRouter } from './routes/venues';
 import { createBookingRoutes } from './routes/bookings';
 import { createCourtRoutes } from './routes/courts';
 import { createPaymentRoutes } from './routes/payments';
+import bonusTransactionsRouter from './routes/bonus-transactions';
 import { db } from '../db';
 import { UserRepository } from '../repositories/user-repository';
 
@@ -185,6 +186,7 @@ const createApiRouter = () => {
         courts: '/api/courts',
         bookings: '/api/bookings',
         payments: '/api/payments',
+        bonusTransactions: '/api/bonus-transactions',
         tournaments: '/api/tournaments',
         gameSessions: '/api/game-sessions',
       },
@@ -202,6 +204,7 @@ const createApiRouter = () => {
   router.use('/bookings', createBookingRoutes());
   router.use('/courts', createCourtRoutes());
   router.use('/payments', createPaymentRoutes());
+  router.use('/bonus-transactions', bonusTransactionsRouter);
   // router.use('/courts', courtsRouter);
   // router.use('/bookings', bookingsRouter);
   // router.use('/payments', paymentsRouter);

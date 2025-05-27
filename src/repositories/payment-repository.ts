@@ -5,15 +5,17 @@
 
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 
-
-import { Payment, NewPayment, payments } from "../db/schema";
+import { Payment, NewPayment, payments, bonusTransactions } from "../db/schema";
 import { DatabaseType } from "./types";
+import { BonusTransactionRepository } from "./bonus-transaction-repository";
 
 export class PaymentRepository {
   private db: DatabaseType;
+  private bonusTransactionRepository: BonusTransactionRepository;
 
   constructor(db: DatabaseType) {
     this.db = db;
+    this.bonusTransactionRepository = new BonusTransactionRepository(db);
   }
 
   /**
@@ -22,7 +24,10 @@ export class PaymentRepository {
    * @returns Созданный платеж
    */
   async create(paymentData: NewPayment): Promise<Payment> {
-    const [payment] = await this.db.insert(payments).values(paymentData).returning();
+    const [payment] = await this.db
+      .insert(payments)
+      .values(paymentData)
+      .returning();
     return payment;
   }
 
@@ -58,7 +63,9 @@ export class PaymentRepository {
    * @param status Статус платежа
    * @returns Массив платежей
    */
-  async getByStatus(status: "success" | "failed" | "pending" | "refunded" | "partial"): Promise<Payment[]> {
+  async getByStatus(
+    status: "success" | "failed" | "pending" | "refunded" | "partial"
+  ): Promise<Payment[]> {
     return await this.db
       .select()
       .from(payments)
@@ -71,7 +78,9 @@ export class PaymentRepository {
    * @param paymentMethod Метод оплаты
    * @returns Массив платежей
    */
-  async getByPaymentMethod(paymentMethod: "card" | "cash" | "bank_transfer" | "bonus_points"): Promise<Payment[]> {
+  async getByPaymentMethod(
+    paymentMethod: "card" | "cash" | "bank_transfer" | "bonus_points"
+  ): Promise<Payment[]> {
     return await this.db
       .select()
       .from(payments)
@@ -92,12 +101,7 @@ export class PaymentRepository {
     return await this.db
       .select()
       .from(payments)
-      .where(
-        and(
-          eq(payments.userId, userId),
-          eq(payments.status, status)
-        )
-      )
+      .where(and(eq(payments.userId, userId), eq(payments.status, status)))
       .orderBy(desc(payments.createdAt));
   }
 
@@ -108,17 +112,18 @@ export class PaymentRepository {
    * @param currency Валюта (опционально)
    * @returns Массив платежей
    */
-  async getByAmountRange(minAmount: string, maxAmount: string, currency?: string): Promise<Payment[]> {
+  async getByAmountRange(
+    minAmount: string,
+    maxAmount: string,
+    currency?: string
+  ): Promise<Payment[]> {
     let whereConditions = and(
       gte(payments.amount, minAmount),
       lte(payments.amount, maxAmount)
     );
 
     if (currency) {
-      whereConditions = and(
-        whereConditions,
-        eq(payments.currency, currency)
-      );
+      whereConditions = and(whereConditions, eq(payments.currency, currency));
     }
 
     return await this.db
@@ -152,7 +157,9 @@ export class PaymentRepository {
    * @param bookingParticipantId ID участника бронирования
    * @returns Массив платежей
    */
-  async getByBookingParticipantId(bookingParticipantId: string): Promise<Payment[]> {
+  async getByBookingParticipantId(
+    bookingParticipantId: string
+  ): Promise<Payment[]> {
     return await this.db
       .select()
       .from(payments)
@@ -178,7 +185,9 @@ export class PaymentRepository {
    * @param userTrainingPackageId ID пакета тренировок пользователя
    * @returns Массив платежей
    */
-  async getByUserTrainingPackageId(userTrainingPackageId: string): Promise<Payment[]> {
+  async getByUserTrainingPackageId(
+    userTrainingPackageId: string
+  ): Promise<Payment[]> {
     return await this.db
       .select()
       .from(payments)
@@ -191,7 +200,9 @@ export class PaymentRepository {
    * @param gatewayTransactionId ID транзакции в платежной системе
    * @returns Платеж или null, если платеж не найден
    */
-  async getByGatewayTransactionId(gatewayTransactionId: string): Promise<Payment | null> {
+  async getByGatewayTransactionId(
+    gatewayTransactionId: string
+  ): Promise<Payment | null> {
     const result = await this.db
       .select()
       .from(payments)
@@ -217,7 +228,10 @@ export class PaymentRepository {
    * @param paymentData Данные для обновления
    * @returns Обновленный платеж или null, если платеж не найден
    */
-  async update(id: string, paymentData: Partial<NewPayment>): Promise<Payment | null> {
+  async update(
+    id: string,
+    paymentData: Partial<NewPayment>
+  ): Promise<Payment | null> {
     const [updatedPayment] = await this.db
       .update(payments)
       .set(paymentData)
@@ -246,7 +260,10 @@ export class PaymentRepository {
    * @param gatewayTransactionId ID транзакции в платежной системе
    * @returns Обновленный платеж или null, если платеж не найден
    */
-  async updateGatewayTransactionId(id: string, gatewayTransactionId: string): Promise<Payment | null> {
+  async updateGatewayTransactionId(
+    id: string,
+    gatewayTransactionId: string
+  ): Promise<Payment | null> {
     return await this.update(id, { gatewayTransactionId });
   }
 
@@ -279,12 +296,18 @@ export class PaymentRepository {
     const userPayments = await this.getByUserId(userId);
 
     const totalAmount = userPayments
-      .filter(p => p.status === "success")
+      .filter((p) => p.status === "success")
       .reduce((sum, p) => sum + parseFloat(p.amount), 0);
 
-    const successfulPayments = userPayments.filter(p => p.status === "success").length;
-    const failedPayments = userPayments.filter(p => p.status === "failed").length;
-    const pendingPayments = userPayments.filter(p => p.status === "pending").length;
+    const successfulPayments = userPayments.filter(
+      (p) => p.status === "success"
+    ).length;
+    const failedPayments = userPayments.filter(
+      (p) => p.status === "failed"
+    ).length;
+    const pendingPayments = userPayments.filter(
+      (p) => p.status === "pending"
+    ).length;
     const totalPayments = userPayments.length;
 
     return {
@@ -312,15 +335,27 @@ export class PaymentRepository {
     let allPayments = await this.getAll();
 
     if (currency) {
-      allPayments = allPayments.filter(p => p.currency === currency);
+      allPayments = allPayments.filter((p) => p.currency === currency);
     }
 
-    const successfulPayments = allPayments.filter(p => p.status === "success");
-    const totalAmount = successfulPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-    const averagePayment = successfulPayments.length > 0 ? totalAmount / successfulPayments.length : 0;
+    const successfulPayments = allPayments.filter(
+      (p) => p.status === "success"
+    );
+    const totalAmount = successfulPayments.reduce(
+      (sum, p) => sum + parseFloat(p.amount),
+      0
+    );
+    const averagePayment =
+      successfulPayments.length > 0
+        ? totalAmount / successfulPayments.length
+        : 0;
 
-    const failedPayments = allPayments.filter(p => p.status === "failed").length;
-    const pendingPayments = allPayments.filter(p => p.status === "pending").length;
+    const failedPayments = allPayments.filter(
+      (p) => p.status === "failed"
+    ).length;
+    const pendingPayments = allPayments.filter(
+      (p) => p.status === "pending"
+    ).length;
     const totalPayments = allPayments.length;
 
     return {
@@ -355,9 +390,26 @@ export class PaymentRepository {
     gatewayTransactionId?: string;
     search?: string;
     sortBy: string;
-    sortOrder: 'asc' | 'desc';
+    sortOrder: "asc" | "desc";
   }): Promise<{ data: Payment[]; total: number; page: number; limit: number }> {
-    const { page, limit, userId, status, paymentMethod, currency, relatedBookingParticipantId, relatedOrderId, relatedUserTrainingPackageId, minAmount, maxAmount, createdAfter, createdBefore, gatewayTransactionId, sortBy, sortOrder: _sortOrder } = options;
+    const {
+      page,
+      limit,
+      userId,
+      status,
+      paymentMethod,
+      currency,
+      relatedBookingParticipantId,
+      relatedOrderId,
+      relatedUserTrainingPackageId,
+      minAmount,
+      maxAmount,
+      createdAfter,
+      createdBefore,
+      gatewayTransactionId,
+      sortBy,
+      sortOrder: _sortOrder,
+    } = options;
     const offset = (page - 1) * limit;
 
     // Строим условия фильтрации
@@ -375,13 +427,17 @@ export class PaymentRepository {
       conditions.push(eq(payments.currency, currency));
     }
     if (relatedBookingParticipantId) {
-      conditions.push(eq(payments.relatedBookingParticipantId, relatedBookingParticipantId));
+      conditions.push(
+        eq(payments.relatedBookingParticipantId, relatedBookingParticipantId)
+      );
     }
     if (relatedOrderId) {
       conditions.push(eq(payments.relatedOrderId, relatedOrderId));
     }
     if (relatedUserTrainingPackageId) {
-      conditions.push(eq(payments.relatedUserTrainingPackageId, relatedUserTrainingPackageId));
+      conditions.push(
+        eq(payments.relatedUserTrainingPackageId, relatedUserTrainingPackageId)
+      );
     }
     if (minAmount !== undefined) {
       conditions.push(gte(payments.amount, minAmount.toString()));
@@ -414,26 +470,243 @@ export class PaymentRepository {
 
     // Добавляем сортировку
     let data;
-    if (sortBy === 'amount') {
-      data = await baseQuery.orderBy(payments.amount).limit(limit).offset(offset);
-    } else if (sortBy === 'status') {
-      data = await baseQuery.orderBy(payments.status).limit(limit).offset(offset);
-    } else if (sortBy === 'paymentMethod') {
-      data = await baseQuery.orderBy(payments.paymentMethod).limit(limit).offset(offset);
-    } else if (sortBy === 'createdAt') {
-      data = await baseQuery.orderBy(payments.createdAt).limit(limit).offset(offset);
-    } else if (sortBy === 'updatedAt') {
-      data = await baseQuery.orderBy(payments.updatedAt).limit(limit).offset(offset);
+    if (sortBy === "amount") {
+      data = await baseQuery
+        .orderBy(payments.amount)
+        .limit(limit)
+        .offset(offset);
+    } else if (sortBy === "status") {
+      data = await baseQuery
+        .orderBy(payments.status)
+        .limit(limit)
+        .offset(offset);
+    } else if (sortBy === "paymentMethod") {
+      data = await baseQuery
+        .orderBy(payments.paymentMethod)
+        .limit(limit)
+        .offset(offset);
+    } else if (sortBy === "createdAt") {
+      data = await baseQuery
+        .orderBy(payments.createdAt)
+        .limit(limit)
+        .offset(offset);
+    } else if (sortBy === "updatedAt") {
+      data = await baseQuery
+        .orderBy(payments.updatedAt)
+        .limit(limit)
+        .offset(offset);
     } else {
       // По умолчанию сортируем по дате создания
-      data = await baseQuery.orderBy(desc(payments.createdAt)).limit(limit).offset(offset);
+      data = await baseQuery
+        .orderBy(desc(payments.createdAt))
+        .limit(limit)
+        .offset(offset);
     }
 
     return {
       data,
       total,
       page,
-      limit
+      limit,
     };
+  }
+
+  /**
+   * Создает платеж с автоматическим начислением бонусов
+   * @param paymentData Данные платежа
+   * @param bonusPercentage Процент от суммы для начисления бонусов (по умолчанию 5%)
+   * @returns Созданный платеж
+   */
+  async createWithBonusEarning(
+    paymentData: NewPayment,
+    bonusPercentage: number = 5
+  ): Promise<Payment> {
+    // Создаем платеж
+    const payment = await this.create(paymentData);
+
+    // Если платеж успешный, начисляем бонусы
+    if (
+      payment.status === "success" &&
+      payment.paymentMethod !== "bonus_points"
+    ) {
+      const bonusAmount = Math.floor(
+        (parseFloat(payment.amount) * bonusPercentage) / 100
+      );
+
+      if (bonusAmount > 0) {
+        await this.bonusTransactionRepository.create({
+          userId: payment.userId,
+          transactionType: "earned",
+          pointsChange: bonusAmount,
+          currentBalanceAfter:
+            (await this.bonusTransactionRepository.getCurrentBalance(
+              payment.userId
+            )) + bonusAmount,
+          description: `Бонусы за платеж #${payment.id}`,
+          relatedOrderId: payment.relatedOrderId,
+          relatedBookingId: payment.relatedBookingParticipantId,
+        });
+      }
+    }
+
+    return payment;
+  }
+
+  /**
+   * Создает платеж с использованием бонусных баллов
+   * @param paymentData Данные платежа
+   * @param bonusPointsToUse Количество бонусных баллов для использования
+   * @returns Созданный платеж или null, если недостаточно бонусов
+   */
+  async createWithBonusSpending(
+    paymentData: NewPayment,
+    bonusPointsToUse: number
+  ): Promise<Payment | null> {
+    // Проверяем баланс бонусов пользователя
+    const currentBalance =
+      await this.bonusTransactionRepository.getCurrentBalance(
+        paymentData.userId
+      );
+
+    if (currentBalance < bonusPointsToUse) {
+      return null; // Недостаточно бонусов
+    }
+
+    // Рассчитываем новую сумму платежа (1 бонус = 1 рубль)
+    const originalAmount = parseFloat(paymentData.amount);
+    const discountAmount = Math.min(bonusPointsToUse, originalAmount);
+    const newAmount = originalAmount - discountAmount;
+
+    // Создаем платеж с обновленной суммой
+    const updatedPaymentData = {
+      ...paymentData,
+      amount: newAmount.toString(),
+      paymentMethod:
+        newAmount === 0 ? ("bonus_points" as const) : paymentData.paymentMethod,
+    };
+
+    const payment = await this.create(updatedPaymentData);
+
+    // Если платеж успешный, списываем бонусы
+    if (payment.status === "success" && discountAmount > 0) {
+      await this.bonusTransactionRepository.create({
+        userId: payment.userId,
+        transactionType: "spent",
+        pointsChange: discountAmount,
+        currentBalanceAfter: currentBalance - discountAmount,
+        description: `Оплата бонусами для платежа #${payment.id}`,
+        relatedOrderId: payment.relatedOrderId,
+        relatedBookingId: payment.relatedBookingParticipantId,
+      });
+    }
+
+    return payment;
+  }
+
+  /**
+   * Обновляет статус платежа с автоматическим начислением/возвратом бонусов
+   * @param id ID платежа
+   * @param status Новый статус
+   * @param bonusPercentage Процент для начисления бонусов (по умолчанию 5%)
+   * @returns Обновленный платеж или null
+   */
+  async updateStatusWithBonusHandling(
+    id: string,
+    status: "success" | "failed" | "pending" | "refunded" | "partial",
+    bonusPercentage: number = 5
+  ): Promise<Payment | null> {
+    const payment = await this.getById(id);
+    if (!payment) return null;
+
+    const oldStatus = payment.status;
+    const updatedPayment = await this.updateStatus(id, status);
+    if (!updatedPayment) return null;
+
+    // Логика начисления/возврата бонусов при изменении статуса
+    if (
+      oldStatus !== "success" &&
+      status === "success" &&
+      payment.paymentMethod !== "bonus_points"
+    ) {
+      // Платеж стал успешным - начисляем бонусы
+      const bonusAmount = Math.floor(
+        (parseFloat(payment.amount) * bonusPercentage) / 100
+      );
+
+      if (bonusAmount > 0) {
+        await this.bonusTransactionRepository.create({
+          userId: payment.userId,
+          transactionType: "earned",
+          pointsChange: bonusAmount,
+          currentBalanceAfter:
+            (await this.bonusTransactionRepository.getCurrentBalance(
+              payment.userId
+            )) + bonusAmount,
+          description: `Бонусы за успешный платеж #${payment.id}`,
+          relatedOrderId: payment.relatedOrderId,
+          relatedBookingId: payment.relatedBookingParticipantId,
+        });
+      }
+    } else if (oldStatus === "success" && status === "refunded") {
+      // Платеж возвращен - возвращаем потраченные бонусы или списываем начисленные
+      const bonusAmount = Math.floor(
+        (parseFloat(payment.amount) * bonusPercentage) / 100
+      );
+
+      if (bonusAmount > 0 && payment.paymentMethod !== "bonus_points") {
+        // Списываем ранее начисленные бонусы
+        await this.bonusTransactionRepository.create({
+          userId: payment.userId,
+          transactionType: "spent",
+          pointsChange: bonusAmount,
+          currentBalanceAfter:
+            (await this.bonusTransactionRepository.getCurrentBalance(
+              payment.userId
+            )) - bonusAmount,
+          description: `Списание бонусов за возврат платежа #${payment.id}`,
+          relatedOrderId: payment.relatedOrderId,
+          relatedBookingId: payment.relatedBookingParticipantId,
+        });
+      }
+    }
+
+    return updatedPayment;
+  }
+
+  /**
+   * Получает информацию о бонусах, связанных с платежом
+   * @param paymentId ID платежа
+   * @returns Массив бонусных транзакций
+   */
+  async getPaymentBonusTransactions(paymentId: string): Promise<any[]> {
+    // Получаем платеж для получения связанных ID
+    const payment = await this.getById(paymentId);
+    if (!payment) return [];
+
+    // Ищем бонусные транзакции по связанным ID
+    const relatedBonusTransactions = [];
+
+    if (payment.relatedOrderId) {
+      const orderBonuses = await this.db
+        .select()
+        .from(bonusTransactions)
+        .where(eq(bonusTransactions.relatedOrderId, payment.relatedOrderId));
+      relatedBonusTransactions.push(...orderBonuses);
+    }
+
+    if (payment.relatedBookingParticipantId) {
+      const bookingBonuses = await this.db
+        .select()
+        .from(bonusTransactions)
+        .where(
+          eq(
+            bonusTransactions.relatedBookingId,
+            payment.relatedBookingParticipantId
+          )
+        );
+      relatedBonusTransactions.push(...bookingBonuses);
+    }
+
+    return relatedBonusTransactions;
   }
 }
