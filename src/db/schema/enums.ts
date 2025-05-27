@@ -133,3 +133,42 @@ export const tournamentParticipantStatusEnum = pgEnum("tournament_participant_st
   "checked_in",
   "withdrawn",
 ]);
+
+export const stockTransactionTypeEnum = pgEnum("stock_transaction_type", [
+  "sale",        // Продажа клиенту
+  "purchase",    // Закупка (пополнение склада)
+  "adjustment",  // Корректировка (инвентаризация, брак)
+  "return"       // Возврат товара от клиента
+]);
+
+export const bonusTransactionTypeEnum = pgEnum("bonus_transaction_type", [
+  "earned",      // Начислено
+  "spent"        // Потрачено
+]);
+
+export const externalSystemEnum = pgEnum("external_system", [
+  "exporta",
+  "google_calendar",
+  "whatsapp_api",
+  "telegram_api",
+  "payment_gateway_api",
+  "other"
+]);
+
+export const externalEntityMappingTypeEnum = pgEnum("external_entity_mapping_type", [
+  "user",
+  "booking",
+  "court",
+  "class",
+  "venue",
+  "class_schedule",
+  "product",
+  "training_package_definition"
+]);
+
+export const aiSuggestionTypeEnum = pgEnum("ai_suggestion_type", [
+  "game_matching",
+  "court_fill_optimization",
+  "demand_prediction",
+  "rating_update"
+]);

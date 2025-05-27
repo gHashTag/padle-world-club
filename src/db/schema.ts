@@ -30,6 +30,10 @@ export * from "./schema/order";
 export * from "./schema/task";
 export * from "./schema/notification";
 export * from "./schema/feedback";
+export * from "./schema/stockTransaction";
+export * from "./schema/bonusTransaction";
+export * from "./schema/externalSystemMapping";
+export * from "./schema/aiSuggestionLog";
 
 // TODO: Импортировать остальные схемы по мере их создания
 // ... и так далее
@@ -57,6 +61,16 @@ import * as tournamentSchema from "./schema/tournament";
 import * as tournamentParticipantSchema from "./schema/tournamentParticipant";
 import * as tournamentTeamSchema from "./schema/tournamentTeam";
 import * as tournamentMatchSchema from "./schema/tournamentMatch";
+import * as productCategorySchema from "./schema/productCategory";
+import * as productSchema from "./schema/product";
+import * as orderSchema from "./schema/order";
+import * as taskSchema from "./schema/task";
+import * as notificationSchema from "./schema/notification";
+import * as feedbackSchema from "./schema/feedback";
+import * as stockTransactionSchema from "./schema/stockTransaction";
+import * as bonusTransactionSchema from "./schema/bonusTransaction";
+import * as externalSystemMappingSchema from "./schema/externalSystemMapping";
+import * as aiSuggestionLogSchema from "./schema/aiSuggestionLog";
 
 const allSchema = {
   ...enums,
@@ -79,6 +93,16 @@ const allSchema = {
   ...tournamentParticipantSchema,
   ...tournamentTeamSchema,
   ...tournamentMatchSchema,
+  ...productCategorySchema,
+  ...productSchema,
+  ...orderSchema,
+  ...taskSchema,
+  ...notificationSchema,
+  ...feedbackSchema,
+  ...stockTransactionSchema,
+  ...bonusTransactionSchema,
+  ...externalSystemMappingSchema,
+  ...aiSuggestionLogSchema,
   // TODO: Добавить остальные схемы по мере создания
 };
 export default allSchema;
