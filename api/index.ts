@@ -17,32 +17,36 @@ const getHomePage = () => `
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #f8fffe 0%, #e8f5e8 100%);
       min-height: 100vh;
       padding: 20px;
+      color: #2d3748;
     }
     .container {
       max-width: 1200px;
       margin: 0 auto;
       background: white;
-      border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(76, 175, 80, 0.1);
       overflow: hidden;
+      border: 1px solid rgba(76, 175, 80, 0.1);
     }
     .header {
-      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-      padding: 40px;
+      background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
+      padding: 50px 40px;
       text-align: center;
-      color: #2c3e50;
+      color: white;
     }
     .header h1 {
-      font-size: 3em;
-      margin-bottom: 10px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+      font-size: 3.5em;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      font-weight: 300;
     }
     .header p {
-      font-size: 1.2em;
-      opacity: 0.8;
+      font-size: 1.3em;
+      opacity: 0.95;
+      font-weight: 300;
     }
     .content { padding: 40px; }
     .status-grid {
@@ -52,159 +56,218 @@ const getHomePage = () => `
       margin-bottom: 40px;
     }
     .status-card {
-      background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
-      padding: 25px;
-      border-radius: 15px;
-      border-left: 5px solid #28a745;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
+      padding: 30px;
+      border-radius: 20px;
+      border-left: 6px solid #66BB6A;
+      box-shadow: 0 8px 25px rgba(76, 175, 80, 0.15);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .status-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 35px rgba(76, 175, 80, 0.2);
     }
     .status-card h3 {
-      color: #155724;
-      margin-bottom: 15px;
-      font-size: 1.3em;
+      color: #2e7d32;
+      margin-bottom: 18px;
+      font-size: 1.4em;
+      font-weight: 500;
     }
     .status-card p {
-      color: #155724;
-      line-height: 1.6;
+      color: #388e3c;
+      line-height: 1.7;
+      font-size: 1.05em;
     }
     .tech-stack {
-      background: #f8f9fa;
-      padding: 30px;
-      border-radius: 15px;
-      margin: 30px 0;
+      background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
+      padding: 40px;
+      border-radius: 20px;
+      margin: 40px 0;
+      border: 1px solid rgba(76, 175, 80, 0.1);
     }
     .tech-stack h3 {
-      color: #2c3e50;
-      margin-bottom: 20px;
+      color: #2e7d32;
+      margin-bottom: 30px;
       text-align: center;
-      font-size: 1.5em;
+      font-size: 2em;
+      font-weight: 400;
     }
     .tech-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
     }
     .tech-item {
       background: white;
-      padding: 15px;
-      border-radius: 10px;
+      padding: 20px;
+      border-radius: 16px;
       text-align: center;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-      transition: transform 0.3s ease;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.1);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(76, 175, 80, 0.1);
     }
     .tech-item:hover {
-      transform: translateY(-5px);
+      transform: translateY(-8px);
+      box-shadow: 0 8px 25px rgba(76, 175, 80, 0.2);
+      border-color: #66BB6A;
+    }
+    .tech-item strong {
+      color: #2e7d32;
+      font-size: 1.1em;
     }
     .endpoints {
-      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-      padding: 30px;
-      border-radius: 15px;
-      margin: 30px 0;
+      background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
+      padding: 40px;
+      border-radius: 20px;
+      margin: 40px 0;
+      border: 1px solid rgba(76, 175, 80, 0.1);
     }
     .endpoints h3 {
-      color: #1565c0;
-      margin-bottom: 20px;
+      color: #2e7d32;
+      margin-bottom: 30px;
       text-align: center;
-      font-size: 1.5em;
+      font-size: 2em;
+      font-weight: 400;
     }
     .endpoint {
       background: white;
-      margin: 15px 0;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-      transition: transform 0.3s ease;
+      margin: 20px 0;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.1);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(76, 175, 80, 0.1);
     }
     .endpoint:hover {
-      transform: translateX(10px);
+      transform: translateX(15px);
+      box-shadow: 0 8px 25px rgba(76, 175, 80, 0.2);
+      border-color: #66BB6A;
     }
     .endpoint a {
-      color: #1565c0;
+      color: #2e7d32;
       text-decoration: none;
-      font-weight: bold;
-      font-size: 1.1em;
+      font-weight: 600;
+      font-size: 1.2em;
     }
     .endpoint a:hover {
-      text-decoration: underline;
+      color: #1b5e20;
     }
     .endpoint p {
-      color: #666;
-      margin-top: 8px;
-      line-height: 1.5;
+      color: #4a5568;
+      margin-top: 12px;
+      line-height: 1.6;
+      font-size: 1.05em;
     }
     .roadmap {
-      background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-      padding: 30px;
-      border-radius: 15px;
-      margin: 30px 0;
+      background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
+      padding: 40px;
+      border-radius: 20px;
+      margin: 40px 0;
+      border: 1px solid rgba(76, 175, 80, 0.1);
     }
     .roadmap h3 {
-      color: #e65100;
-      margin-bottom: 20px;
+      color: #2e7d32;
+      margin-bottom: 30px;
       text-align: center;
-      font-size: 1.5em;
+      font-size: 2em;
+      font-weight: 400;
     }
     .roadmap-phase {
       background: white;
-      margin: 15px 0;
-      padding: 20px;
-      border-radius: 10px;
-      border-left: 5px solid #ff9800;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      margin: 20px 0;
+      padding: 25px;
+      border-radius: 16px;
+      border-left: 6px solid #66BB6A;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.1);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(76, 175, 80, 0.1);
+    }
+    .roadmap-phase:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(76, 175, 80, 0.2);
     }
     .roadmap-phase h4 {
-      color: #e65100;
-      margin-bottom: 10px;
+      color: #2e7d32;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+      font-weight: 600;
     }
     .roadmap-phase ul {
-      margin-left: 20px;
-      color: #666;
+      margin-left: 25px;
+      color: #4a5568;
     }
     .roadmap-phase li {
-      margin: 5px 0;
-      line-height: 1.5;
+      margin: 8px 0;
+      line-height: 1.6;
+      font-size: 1.05em;
     }
     .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 20px;
-      margin: 30px 0;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 25px;
+      margin: 40px 0;
     }
     .stat-card {
-      background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
-      padding: 20px;
-      border-radius: 15px;
+      background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
+      padding: 25px;
+      border-radius: 20px;
       text-align: center;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.15);
+      border: 1px solid rgba(76, 175, 80, 0.1);
+      transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 10px 30px rgba(76, 175, 80, 0.2);
     }
     .stat-number {
-      font-size: 2.5em;
-      font-weight: bold;
-      color: #7b1fa2;
+      font-size: 2.8em;
+      font-weight: 600;
+      color: #2e7d32;
       display: block;
     }
     .stat-label {
-      color: #4a148c;
-      font-size: 0.9em;
-      margin-top: 5px;
+      color: #388e3c;
+      font-size: 1em;
+      margin-top: 8px;
+      font-weight: 500;
     }
     .footer {
-      background: #2c3e50;
+      background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
       color: white;
-      padding: 30px;
+      padding: 40px;
       text-align: center;
     }
     .footer p {
-      opacity: 0.8;
-      line-height: 1.6;
+      opacity: 0.95;
+      line-height: 1.7;
+      font-size: 1.1em;
+      margin: 8px 0;
+    }
+
+    /* Крупные эмодзи */
+    h1, h3, h4 {
+      font-size: 1.2em;
+    }
+    h1 {
+      font-size: 3.5em;
+    }
+    h3 {
+      font-size: 2em;
+    }
+    h4 {
+      font-size: 1.3em;
+    }
+    .endpoint a {
+      font-size: 1.2em;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🏓 Padel World Club</h1>
-      <p>Система управления падел-клубом нового поколения</p>
+      <h1>🎾 Padel World Club</h1>
+      <p>🚀 Система управления падел-клубом нового поколения</p>
     </div>
 
     <div class="content">
