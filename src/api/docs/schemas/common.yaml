@@ -1,0 +1,395 @@
+components:
+  schemas:
+    # Base response schema
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        data:
+          type: object
+          description: Response data (varies by endpoint)
+        message:
+          type: string
+          description: Human-readable message about the operation
+          example: "Operation completed successfully"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of the response
+          example: "2024-01-26T10:00:00Z"
+        path:
+          type: string
+          description: API endpoint path
+          example: "/api/users"
+        method:
+          type: string
+          description: HTTP method used
+          example: "GET"
+      required:
+        - success
+        - timestamp
+        - path
+        - method
+
+    # Error response schema
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          description: Error message
+          example: "An error occurred"
+        error:
+          type: string
+          description: Detailed error information
+          example: "Validation failed"
+        errors:
+          type: array
+          description: Array of validation errors (for 400 responses)
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: Field that failed validation
+                example: "email"
+              message:
+                type: string
+                description: Validation error message
+                example: "Invalid email format"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+        path:
+          type: string
+          example: "/api/users"
+        method:
+          type: string
+          example: "POST"
+      required:
+        - success
+        - message
+        - timestamp
+        - path
+        - method
+
+    # Pagination metadata
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of items
+          example: 150
+        page:
+          type: integer
+          description: Current page number (1-based)
+          example: 1
+        limit:
+          type: integer
+          description: Number of items per page
+          example: 10
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 15
+        hasNext:
+          type: boolean
+          description: Whether there are more pages
+          example: true
+        hasPrev:
+          type: boolean
+          description: Whether there are previous pages
+          example: false
+      required:
+        - total
+        - page
+        - limit
+        - totalPages
+        - hasNext
+        - hasPrev
+
+    # Paginated response wrapper
+    PaginatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              description: Array of items (type varies by endpoint)
+              items:
+                type: object
+            meta:
+              $ref: '#/components/schemas/PaginationMeta'
+        message:
+          type: string
+          example: "Data retrieved successfully"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+        path:
+          type: string
+          example: "/api/users"
+        method:
+          type: string
+          example: "GET"
+
+    # Common ID parameter
+    UUID:
+      type: string
+      format: uuid
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      example: "123e4567-e89b-12d3-a456-426614174000"
+      description: UUID v4 identifier
+
+    # Common timestamp fields
+    Timestamps:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the record was created
+          example: "2024-01-26T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the record was last updated
+          example: "2024-01-26T10:00:00Z"
+      required:
+        - createdAt
+        - updatedAt
+
+    # Common enums
+    UserRole:
+      type: string
+      enum:
+        - admin
+        - manager
+        - player
+        - guest
+      description: User role in the system
+      example: "player"
+
+    UserSkillLevel:
+      type: string
+      enum:
+        - beginner
+        - intermediate
+        - advanced
+        - professional
+      description: User's skill level in padel
+      example: "intermediate"
+
+    Gender:
+      type: string
+      enum:
+        - male
+        - female
+        - other
+        - prefer_not_to_say
+      description: User's gender
+      example: "male"
+
+    NotificationChannel:
+      type: string
+      enum:
+        - email
+        - sms
+        - push
+        - telegram
+        - whatsapp
+      description: Notification delivery channel
+      example: "email"
+
+    VenueStatus:
+      type: string
+      enum:
+        - active
+        - inactive
+        - maintenance
+        - closed
+      description: Current status of the venue
+      example: "active"
+
+    CourtType:
+      type: string
+      enum:
+        - paddle
+        - tennis
+      description: Type of court
+      example: "paddle"
+
+    CourtSurface:
+      type: string
+      enum:
+        - artificial_grass
+        - concrete
+        - clay
+        - hard_court
+      description: Court surface material
+      example: "artificial_grass"
+
+    BookingStatus:
+      type: string
+      enum:
+        - confirmed
+        - pending_payment
+        - cancelled
+        - completed
+      description: Current status of the booking
+      example: "confirmed"
+
+    BookingPurpose:
+      type: string
+      enum:
+        - free_play
+        - group_training
+        - private_training
+        - tournament_match
+        - other
+      description: Purpose of the booking
+      example: "free_play"
+
+    PaymentStatus:
+      type: string
+      enum:
+        - success
+        - failed
+        - pending
+        - refunded
+        - partial
+      description: Payment transaction status
+      example: "success"
+
+    PaymentMethod:
+      type: string
+      enum:
+        - credit_card
+        - debit_card
+        - bank_transfer
+        - cash
+        - digital_wallet
+        - cryptocurrency
+      description: Payment method used
+      example: "credit_card"
+
+    Currency:
+      type: string
+      pattern: '^[A-Z]{3}$'
+      description: ISO 4217 currency code
+      example: "USD"
+      enum:
+        - USD
+        - EUR
+        - GBP
+        - ARS
+        - BRL
+        - MXN
+
+    # Common validation patterns
+    Email:
+      type: string
+      format: email
+      pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
+      example: "user@example.com"
+      description: Valid email address
+
+    Phone:
+      type: string
+      pattern: '^\+?[1-9]\d{1,14}$'
+      example: "+1234567890"
+      description: International phone number format
+
+    Username:
+      type: string
+      pattern: '^[a-zA-Z0-9_]{3,30}$'
+      minLength: 3
+      maxLength: 30
+      example: "john_doe123"
+      description: Username (3-30 characters, alphanumeric and underscore only)
+
+    Password:
+      type: string
+      minLength: 8
+      maxLength: 128
+      pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
+      example: "SecurePass123!"
+      description: |
+        Strong password requirements:
+        - At least 8 characters
+        - At least one lowercase letter
+        - At least one uppercase letter
+        - At least one digit
+        - At least one special character (@$!%*?&)
+
+    # Geographic coordinates
+    Coordinates:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: 40.7128
+          description: Latitude coordinate
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: -74.0060
+          description: Longitude coordinate
+      required:
+        - latitude
+        - longitude
+
+    # Address schema
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+          maxLength: 255
+          example: "123 Main Street"
+          description: Street address
+        city:
+          type: string
+          maxLength: 100
+          example: "New York"
+          description: City name
+        state:
+          type: string
+          maxLength: 100
+          example: "NY"
+          description: State or province
+        country:
+          type: string
+          maxLength: 100
+          example: "United States"
+          description: Country name
+        postalCode:
+          type: string
+          maxLength: 20
+          example: "10001"
+          description: Postal or ZIP code
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+      required:
+        - street
+        - city
+        - country

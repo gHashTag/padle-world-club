@@ -1,0 +1,462 @@
+paths:
+  /api/auth/register:
+    post:
+      summary: Register New User
+      description: |
+        Register a new user account in the system.
+        
+        This endpoint creates a new user with the provided information and returns
+        an authentication token that can be used for subsequent API calls.
+        
+        **Password Requirements:**
+        - At least 8 characters long
+        - Must contain at least one uppercase letter
+        - Must contain at least one lowercase letter
+        - Must contain at least one digit
+        - Must contain at least one special character (@$!%*?&)
+        
+        **Username Requirements:**
+        - 3-30 characters long
+        - Only alphanumeric characters and underscores allowed
+        - Must be unique across the system
+      tags:
+        - Authentication
+      security: []  # No authentication required for registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+                - firstName
+                - lastName
+              properties:
+                username:
+                  $ref: './schemas/common.yaml#/components/schemas/Username'
+                email:
+                  $ref: './schemas/common.yaml#/components/schemas/Email'
+                password:
+                  $ref: './schemas/common.yaml#/components/schemas/Password'
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "John"
+                  description: User's first name
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Doe"
+                  description: User's last name
+                phone:
+                  $ref: './schemas/common.yaml#/components/schemas/Phone'
+                dateOfBirth:
+                  type: string
+                  format: date
+                  example: "1990-01-15"
+                  description: User's date of birth (YYYY-MM-DD)
+                gender:
+                  $ref: './schemas/common.yaml#/components/schemas/Gender'
+                skillLevel:
+                  $ref: './schemas/common.yaml#/components/schemas/UserSkillLevel'
+                preferredNotificationChannels:
+                  type: array
+                  items:
+                    $ref: './schemas/common.yaml#/components/schemas/NotificationChannel'
+                  example: ["email", "push"]
+                  description: Preferred notification channels
+            examples:
+              basic_registration:
+                summary: Basic user registration
+                value:
+                  username: "john_doe123"
+                  email: "john.doe@example.com"
+                  password: "SecurePass123!"
+                  firstName: "John"
+                  lastName: "Doe"
+              complete_registration:
+                summary: Complete user registration with optional fields
+                value:
+                  username: "jane_smith"
+                  email: "jane.smith@example.com"
+                  password: "MySecurePassword456!"
+                  firstName: "Jane"
+                  lastName: "Smith"
+                  phone: "+1234567890"
+                  dateOfBirth: "1985-03-22"
+                  gender: "female"
+                  skillLevel: "intermediate"
+                  preferredNotificationChannels: ["email", "push", "sms"]
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: './schemas/user.yaml#/components/schemas/User'
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        description: JWT authentication token
+                      expiresIn:
+                        type: string
+                        example: "24h"
+                        description: Token expiration time
+                  message:
+                    type: string
+                    example: "User registered successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/auth/register"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '409':
+          $ref: './schemas/responses.yaml#/components/responses/Conflict'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/auth/login:
+    post:
+      summary: User Login
+      description: |
+        Authenticate a user and receive an access token.
+        
+        Users can log in using either their username or email address along with their password.
+        Upon successful authentication, a JWT token is returned that must be included
+        in the Authorization header for subsequent API calls.
+        
+        **Token Usage:**
+        Include the token in the Authorization header as: `Bearer <token>`
+      tags:
+        - Authentication
+      security: []  # No authentication required for login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - login
+                - password
+              properties:
+                login:
+                  type: string
+                  example: "john_doe123"
+                  description: Username or email address
+                password:
+                  type: string
+                  example: "SecurePass123!"
+                  description: User's password
+                rememberMe:
+                  type: boolean
+                  default: false
+                  example: false
+                  description: Whether to extend token expiration time
+            examples:
+              username_login:
+                summary: Login with username
+                value:
+                  login: "john_doe123"
+                  password: "SecurePass123!"
+                  rememberMe: false
+              email_login:
+                summary: Login with email
+                value:
+                  login: "john.doe@example.com"
+                  password: "SecurePass123!"
+                  rememberMe: true
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: './schemas/user.yaml#/components/schemas/User'
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        description: JWT authentication token
+                      expiresIn:
+                        type: string
+                        example: "24h"
+                        description: Token expiration time
+                      refreshToken:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        description: Refresh token for obtaining new access tokens
+                  message:
+                    type: string
+                    example: "Login successful"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/auth/login"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                invalid_credentials:
+                  summary: Invalid username/email or password
+                  value:
+                    success: false
+                    message: "Invalid credentials"
+                    error: "Username/email or password is incorrect"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/auth/login"
+                    method: "POST"
+        '429':
+          $ref: './schemas/responses.yaml#/components/responses/TooManyRequests'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/auth/logout:
+    post:
+      summary: User Logout
+      description: |
+        Log out the current user and invalidate their authentication token.
+        
+        This endpoint invalidates the current JWT token, preventing its further use.
+        The client should remove the token from storage after calling this endpoint.
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Token invalidated successfully"
+                  message:
+                    type: string
+                    example: "Logout successful"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/auth/logout"
+                  method:
+                    type: string
+                    example: "POST"
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/auth/me:
+    get:
+      summary: Get Current User Profile
+      description: |
+        Retrieve the profile information of the currently authenticated user.
+        
+        This endpoint returns the user's profile data based on the JWT token
+        provided in the Authorization header.
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/user.yaml#/components/schemas/User'
+                  message:
+                    type: string
+                    example: "User profile retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/auth/me"
+                  method:
+                    type: string
+                    example: "GET"
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/auth/change-password:
+    post:
+      summary: Change User Password
+      description: |
+        Change the password for the currently authenticated user.
+        
+        This endpoint requires the user's current password for verification
+        before setting the new password.
+        
+        **New Password Requirements:**
+        - At least 8 characters long
+        - Must contain at least one uppercase letter
+        - Must contain at least one lowercase letter
+        - Must contain at least one digit
+        - Must contain at least one special character (@$!%*?&)
+        - Must be different from the current password
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  example: "OldSecurePass123!"
+                  description: User's current password
+                newPassword:
+                  $ref: './schemas/common.yaml#/components/schemas/Password'
+                confirmPassword:
+                  type: string
+                  example: "NewSecurePass456!"
+                  description: Confirmation of the new password (must match newPassword)
+            examples:
+              change_password:
+                summary: Change password request
+                value:
+                  currentPassword: "OldSecurePass123!"
+                  newPassword: "NewSecurePass456!"
+                  confirmPassword: "NewSecurePass456!"
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Password updated successfully"
+                      passwordChangedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-26T10:00:00Z"
+                  message:
+                    type: string
+                    example: "Password changed successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/auth/change-password"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          description: Invalid password or validation error
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                password_mismatch:
+                  summary: New password confirmation doesn't match
+                  value:
+                    success: false
+                    message: "Password confirmation doesn't match"
+                    error: "newPassword and confirmPassword must be identical"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/auth/change-password"
+                    method: "POST"
+                weak_password:
+                  summary: New password doesn't meet requirements
+                  value:
+                    success: false
+                    message: "Password doesn't meet security requirements"
+                    error: "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/auth/change-password"
+                    method: "POST"
+        '401':
+          description: Current password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                incorrect_current_password:
+                  summary: Current password is incorrect
+                  value:
+                    success: false
+                    message: "Current password is incorrect"
+                    error: "The provided current password does not match our records"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/auth/change-password"
+                    method: "POST"
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'

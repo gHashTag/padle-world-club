@@ -1,268 +1,529 @@
-# Telegram Bot Starter Kit
+# 🏓 Padel World Club API
 
-Универсальный стартовый набор для разработки Telegram ботов на TypeScript с использованием функционального подхода и лучших практик.
+**Modern REST API for Padel Venue Management Platform**
 
-## 🌟 Ключевые возможности
+A comprehensive, production-ready API for managing padel venues, courts, bookings, and payments. Built with TypeScript, Express.js, and functional programming principles.
 
-- 🧩 **Функциональный подход**: Чистый, модульный и легко тестируемый код.
-- 📋 **Строгая типизация**: Полная поддержка TypeScript для безопасной и предсказуемой разработки.
-- 🔄 **Wizard-сцены**: Готовые шаблоны для создания многошаговых диалогов (`src/templates/wizard-scene-template.ts`).
-- 💾 **Адаптеры хранилища**: Универсальный интерфейс `StorageAdapter` (`src/adapters/storage-adapter.ts`) с реализацией `MemoryAdapter` (`src/adapters/memory-adapter.ts`) для быстрого старта и тестирования. Легко расширяется для других БД.
-- 🗄️ **Drizzle ORM и Neon**: Готовая интеграция с Drizzle ORM (`src/db/`) для работы с PostgreSQL, оптимизированная для Neon serverless баз данных. Включает пример схемы (`src/db/schema.ts`) и конфигурацию миграций (`drizzle.config.ts`).
-- 🚀 **Apollo Client**: Настроенный Apollo Client (`src/graphql/client.ts`) для взаимодействия с GraphQL API.
-- 🧪 **Комплексное тестирование**: Инфраструктура для unit, integration и e2e тестов с использованием Vitest (`vitest.config.ts`). Примеры и моки в `src/__tests__/`.
-- 📝 **Продвинутое логирование**: Настраиваемая система логирования (`src/utils/logger.ts`) с различными уровнями и типами логов.
-- 🌐 **Middleware**: Готовые middleware для обработки ошибок (`src/middlewares/error-handler.ts`) и управления сессиями.
-- 🔍 **Валидация данных**: Встроенная поддержка валидации с помощью Zod (примеры можно найти в схемах и шаблонах).
-- 🚀 **Быстрый старт**: Минимум конфигурации для начала работы. `.env` файл создается автоматически.
-- 🛠️ **Bun & Node.js**: Поддержка как Bun, так и Node.js для разработки и запуска.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-4.18+-lightgrey.svg)](https://expressjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)](https://www.postgresql.org/)
+[![API Documentation](https://img.shields.io/badge/API-Documented-brightgreen.svg)](/api/docs)
 
-## 🚀 Быстрый старт
+## 🌟 Key Features
 
-1.  **Клонируйте репозиторий:**
+### 🏗️ **Enterprise Architecture**
+- **Functional Programming**: Clean, composable, and testable code architecture
+- **Type Safety**: Full TypeScript coverage with strict type checking
+- **Modular Design**: Domain-driven structure with clear separation of concerns
+- **Scalable Infrastructure**: Built for high-performance and horizontal scaling
 
-    ```bash
-    git clone https://github.com/yourusername/telegram-bot-starter-kit.git
-    cd telegram-bot-starter-kit
-    ```
+### 🎾 **Padel Management**
+- **Venue Management**: Complete venue lifecycle with geographic search
+- **Court Management**: Real-time availability, specifications, and scheduling
+- **Booking System**: Advanced booking with participants and confirmations
+- **Payment Processing**: Secure payments with multiple gateways and refunds
 
-2.  **Установите зависимости:**
+### 🔐 **Security & Authentication**
+- **JWT Authentication**: Secure token-based authentication
+- **Role-based Access Control**: Admin, Manager, and Player roles
+- **Data Validation**: Comprehensive input validation with Zod
+- **Rate Limiting**: API protection against abuse
 
-    ```bash
-    bun install
-    # или
-    npm install
-    ```
+### 📊 **Data & Analytics**
+- **PostgreSQL Database**: Robust relational database with migrations
+- **Real-time Features**: Live court availability and booking updates
+- **Geographic Search**: Location-based venue discovery
+- **Statistics & Reporting**: Usage analytics and performance metrics
 
-    _Во время установки будет автоматически создан `.env` файл из `example.env`._
+### 🧪 **Quality Assurance**
+- **Comprehensive Testing**: Unit, Integration, and E2E tests (85%+ coverage)
+- **API Documentation**: Complete OpenAPI 3.0 specification with Swagger UI
+- **Type Checking**: Strict TypeScript compilation
+- **Code Quality**: ESLint, Prettier, and automated quality checks
 
-3.  **Настройте `.env` файл:**
-    Откройте созданный `.env` файл и укажите как минимум ваш `BOT_TOKEN`:
+## 🚀 Quick Start
 
-    ```env
-    BOT_TOKEN="ваш_токен_бота_от_BotFather"
-    # При необходимости настройте DATABASE_URL для Neon и GRAPHQL_ENDPOINT
-    ```
+### Prerequisites
 
-4.  **Запустите бота в режиме разработки:**
+- **Node.js** 18+ or **Bun** 1.0+
+- **PostgreSQL** 15+ (or use Neon serverless)
+- **Git** for version control
 
-    ```bash
-    bun run dev
-    ```
+### Installation
 
-    _Этот скрипт использует `bun run --watch index.ts` для автоматической перезагрузки при изменениях._
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/gHashTag/padle-world-club.git
+   cd padle-world-club
+   ```
 
-    Для более быстрого запуска без автоматической перезагрузки:
+2. **Install dependencies:**
+   ```bash
+   bun install
+   # or
+   npm install
+   ```
 
-    ```bash
-    bun run dev:fast
-    ```
+3. **Environment setup:**
+   ```bash
+   cp .env.example .env
+   ```
 
-## 🤖 Для автономных агентов
+   Configure your `.env` file:
+   ```env
+   # Database
+   DATABASE_URL="postgresql://user:password@localhost:5432/padel_db"
 
-Этот стартер-кит спроектирован для быстрой адаптации и разработки автономными AI-агентами.
+   # JWT
+   JWT_SECRET="your-super-secret-jwt-key"
+   JWT_EXPIRES_IN="7d"
 
-**Основные инструкции и правила для агентов находятся в директории `.cursor/rules/`.
-Разработчикам и AI-агентам: Для понимания архитектуры, принципов разработки, настройки и контрибьюции в этот стартер-кит, ваш основной ресурс — `.cursor/rules/README.md`. Он служит картой по всем внутренним правилам и соглашениям. Начните отсюда!**
+   # Server
+   PORT=3000
+   NODE_ENV="development"
 
-- **`.cursor/rules/README.md`**: Главный документ с описанием архитектуры, стека технологий, принципов разработки и полезных команд. **Начните отсюда!**
-- **`.cursor/rules/AGENT_Coder.mdc`**: Специализированные инструкции для агента, отвечающего за написание кода.
-- **`.cursor/rules/AGENT_Tester.mdc`**: Специализированные инструкции для агента, отвечающего за написание тестов.
-- **`.cursor/rules/current_task.mdc`**: Пример файла для отслеживания текущей задачи и прогресса (детальнее о его роли см. в `.cursor/rules/README.md`).
+   # API Configuration
+   API_VERSION="v1"
+   API_PREFIX="/api"
+   ```
 
-**Ключевые моменты для агентов (краткий обзор, детали в `.cursor/rules/README.md`):**
+4. **Database setup:**
+   ```bash
+   # Generate and run migrations
+   bun run db:generate
+   bun run db:migrate
 
-1.  **Конфигурация**: Все настройки проекта находятся в `src/config.ts` и загружаются из `.env` файла.
-2.  **Точка входа**: Основная логика запуска бота находится в `index.ts`.
-3.  **База данных**:
-    - Схема: `src/db/schema.ts`
-    - Подключение и утилиты: `src/db/index.ts`
-    - Миграции: `drizzle_migrations/` (управляются через `drizzle-kit`)
-4.  **GraphQL**:
-    - Клиент: `src/graphql/client.ts`
-5.  **Команды и сцены**:
-    - Регистрация команд: `src/commands.ts`
-    - Шаблоны для Wizard-сцен: `src/templates/wizard-scene-template.ts`
-6.  **Тестирование**:
-    - Все тесты находятся в `src/__tests__/`
-    - Используйте `bun run test` для запуска всех тестов.
-    - Используйте `bun run tdd <путь_к_тесту>` для TDD-цикла.
-7.  **Проверка типов**: Обязательно выполняйте `bun run typecheck` после внесения изменений в код.
+   # Optional: Seed with sample data
+   bun run db:seed
+   ```
 
-## 📁 Структура проекта
+5. **Start development server:**
+   ```bash
+   bun run dev
+   ```
+
+6. **Access the API:**
+   - **API Base URL**: http://localhost:3000/api
+   - **API Documentation**: http://localhost:3000/api/docs
+   - **Health Check**: http://localhost:3000/health
+
+## 📚 API Overview
+
+### Core Endpoints
+
+The API provides comprehensive functionality across 5 main domains:
+
+#### 🔐 **Authentication** (`/api/auth`)
+```bash
+POST /api/auth/register     # User registration
+POST /api/auth/login        # User login
+POST /api/auth/logout       # User logout
+POST /api/auth/refresh      # Token refresh
+GET  /api/auth/me          # Current user info
+```
+
+#### 👥 **Users** (`/api/users`)
+```bash
+GET    /api/users           # List users (admin/manager)
+POST   /api/users           # Create user (admin)
+GET    /api/users/{id}      # Get user details
+PUT    /api/users/{id}      # Update user
+DELETE /api/users/{id}      # Delete user (admin)
+```
+
+#### 🏢 **Venues** (`/api/venues`)
+```bash
+GET    /api/venues                    # List venues
+POST   /api/venues                    # Create venue
+GET    /api/venues/{id}               # Get venue details
+PUT    /api/venues/{id}               # Update venue
+DELETE /api/venues/{id}               # Delete venue
+GET    /api/venues/search/location    # Geographic search
+PATCH  /api/venues/{id}/status        # Update status
+```
+
+#### 🎾 **Courts** (`/api/courts`)
+```bash
+GET    /api/courts                     # List courts
+POST   /api/courts                     # Create court
+GET    /api/courts/{id}                # Get court details
+PUT    /api/courts/{id}                # Update court
+DELETE /api/courts/{id}                # Delete court
+GET    /api/courts/venue/{venueId}     # Courts by venue
+GET    /api/courts/{id}/availability   # Check availability
+GET    /api/courts/{id}/stats          # Court statistics
+```
+
+#### 📅 **Bookings** (`/api/bookings`)
+```bash
+GET    /api/bookings                           # List bookings
+POST   /api/bookings                           # Create booking
+GET    /api/bookings/{id}                      # Get booking details
+PUT    /api/bookings/{id}                      # Update booking
+DELETE /api/bookings/{id}                      # Cancel booking
+POST   /api/bookings/{id}/confirm              # Confirm booking
+GET    /api/bookings/{id}/participants         # Manage participants
+```
+
+#### 💳 **Payments** (`/api/payments`)
+```bash
+GET    /api/payments                    # List payments
+POST   /api/payments                    # Create payment
+GET    /api/payments/{id}               # Get payment details
+PUT    /api/payments/{id}               # Update payment
+POST   /api/payments/{id}/refund        # Process refund
+GET    /api/payments/methods            # Available payment methods
+```
+
+### Authentication
+
+The API uses **JWT Bearer Token** authentication:
+
+```bash
+# Login to get token
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "password"}'
+
+# Use token in subsequent requests
+curl -X GET http://localhost:3000/api/users/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Response Format
+
+All API responses follow a consistent structure:
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operation completed successfully",
+  "timestamp": "2024-01-26T10:00:00Z",
+  "path": "/api/endpoint",
+  "method": "GET"
+}
+```
+
+## 📁 Project Structure
 
 ```
-telegram-bot-starter-kit/
-├── .cursor/rules/         # Правила и инструкции для AI-агентов
-├── docs/                  # Дополнительная документация (TESTING.md, PATTERNS.md, MIGRATION.md)
-├── drizzle_migrations/    # Сгенерированные миграции Drizzle
-├── example.env            # Пример файла переменных окружения
-├── scripts/               # Скрипты для автоматизации (генерация сцен, TDD-цикл)
+padle-world-club/
+├── .cursor/rules/              # AI agent rules and guidelines
 ├── src/
-│   ├── adapters/          # Адаптеры хранилища (Storage Adapters)
-│   ├── db/                # Drizzle ORM: схемы, подключение
-│   ├── graphql/           # Apollo Client: подключение, запросы (если есть)
-│   ├── middlewares/       # Middleware для Telegraf (обработчик ошибок)
-│   ├── scenes/            # Логика сцен (если вынесены из шаблонов)
-│   ├── templates/         # Шаблоны (например, wizard-scene-template.ts)
-│   ├── utils/             # Утилиты (logger, validation, etc.)
-│   ├── __tests__/         # Тесты (unit, integration, e2e)
-│   ├── commands.ts        # Регистрация команд бота
-│   ├── config.ts          # Конфигурация приложения
-│   └── types.ts           # Основные типы TypeScript
-├── .gitignore
-├── README.md              # Этот файл
-├── bun.lockb
-├── drizzle.config.ts      # Конфигурация Drizzle Kit для миграций
-├── index.ts               # Главная точка входа приложения и экспорты для библиотеки
-├── package.json           # Зависимости и скрипты
-├── tsconfig.json          # Настройки TypeScript
-└── vitest.config.ts       # Настройки Vitest для тестирования
+│   ├── api/                    # Express.js API layer
+│   │   ├── docs/              # OpenAPI 3.0 documentation
+│   │   │   ├── schemas/       # API schemas (User, Venue, Court, etc.)
+│   │   │   ├── auth.yaml      # Authentication endpoints
+│   │   │   ├── users.yaml     # User management endpoints
+│   │   │   ├── venues.yaml    # Venue management endpoints
+│   │   │   ├── courts.yaml    # Court management endpoints
+│   │   │   ├── bookings.yaml  # Booking management endpoints
+│   │   │   ├── payments.yaml  # Payment processing endpoints
+│   │   │   └── openapi.yaml   # Main OpenAPI specification
+│   │   ├── handlers/          # Request handlers (functional approach)
+│   │   ├── middleware/        # Express middleware (auth, validation, etc.)
+│   │   ├── routes/            # Route definitions
+│   │   ├── validators/        # Request/response validation schemas
+│   │   ├── __tests__/         # API integration tests
+│   │   └── app.ts             # Express application setup
+│   ├── db/                     # Database layer
+│   │   ├── migrations/        # Database migration files
+│   │   ├── repositories/      # Data access layer (Repository pattern)
+│   │   ├── schemas/           # Database schemas (Drizzle ORM)
+│   │   ├── seeds/             # Database seed data
+│   │   ├── __tests__/         # Database tests
+│   │   └── index.ts           # Database connection and setup
+│   ├── shared/                 # Shared utilities and types
+│   │   ├── types/             # TypeScript type definitions
+│   │   ├── utils/             # Utility functions
+│   │   ├── constants/         # Application constants
+│   │   └── config/            # Configuration management
+│   └── __tests__/              # End-to-end tests
+├── scripts/                    # Build and development scripts
+├── docs/                       # Additional documentation
+├── .env.example               # Environment variables template
+├── drizzle.config.ts          # Drizzle ORM configuration
+├── package.json               # Dependencies and scripts
+├── tsconfig.json              # TypeScript configuration
+└── vitest.config.ts           # Test configuration
 ```
 
-## 🛠️ Основные команды
+## 🛠️ Development Commands
 
-- `bun run dev`: Запуск в режиме разработки с `--watch`.
-- `bun run dev:fast`: Быстрый запуск в режиме разработки без `--watch`.
-- `bun run build`: Сборка проекта (JavaScript бандлы).
-- `bun run build:types`: Генерация деклараций типов (`.d.ts`).
-- `bun run build:full`: Полная сборка (JavaScript + типы).
-- `bun run start`: Запуск собранного проекта (production).
-- `bun run typecheck`: Проверка типов TypeScript.
-- `bun run lint`: Проверка кода ESLint.
-- `bun run test`: Запуск всех тестов Vitest.
-- `bun run test:watch`: Запуск тестов в режиме наблюдения.
-- `bun run test:coverage`: Запуск тестов с генерацией отчета о покрытии.
-- `bun run test:ui`: Запуск тестов с UI Vitest.
-- `bun run generate:scene`: Генерация новой wizard-сцены на основе шаблона.
-- `bun run tdd <путь_к_файлу_теста>`: Запуск TDD-цикла для указанного теста.
-- `bun prepare`: Скрипт, выполняемый перед публикацией пакета (обычно полная сборка).
+### Core Commands
+```bash
+# Development
+bun run dev              # Start development server with hot reload
+bun run build            # Build for production
+bun run start            # Start production server
+bun run preview          # Preview production build locally
 
-### Drizzle ORM команды
-
-- `bunx drizzle-kit generate`: Генерация SQL миграций на основе изменений в `src/db/schema.ts`.
-- `bunx drizzle-kit migrate`: Применение сгенерированных миграций к базе данных.
-- `bunx drizzle-kit studio`: Запуск Drizzle Studio для просмотра и управления базой данных. (Убедитесь, что `DATABASE_URL` доступен)
-
-## 💡 Примеры использования
-
-### Минимальный бот
-
-```typescript
-// index.ts (если используется как точка входа)
-import { Telegraf } from "telegraf";
-import { config } from "./src/config";
-import { logger, LogType } from "./src/utils/logger";
-
-// Этот блок выполняется, только если index.ts запущен напрямую
-if (import.meta.main || process.argv[1]?.endsWith("index.ts")) {
-  const bot = new Telegraf(config.BOT_TOKEN);
-
-  bot.start((ctx) =>
-    ctx.reply("Привет! Я бот на основе Telegram Bot Starter Kit.")
-  );
-
-  bot.help((ctx) => ctx.reply("Справка о командах бота."));
-
-  bot
-    .launch()
-    .then(() => logger.info("Бот успешно запущен", { type: LogType.SYSTEM }))
-    .catch((err) =>
-      logger.error("Ошибка при запуске бота", {
-        error: err instanceof Error ? err : new Error(String(err)),
-        type: LogType.ERROR,
-      })
-    );
-
-  process.once("SIGINT", () => bot.stop("SIGINT"));
-  process.once("SIGTERM", () => bot.stop("SIGTERM"));
-}
+# Code Quality
+bun run typecheck        # TypeScript type checking
+bun run lint             # ESLint code analysis
+bun run format           # Prettier code formatting
+bun run test             # Run all tests
+bun run test:watch       # Run tests in watch mode
+bun run test:coverage    # Generate test coverage report
 ```
 
-### Бот с Wizard-сценой и хранилищем
+### Database Commands
+```bash
+# Schema & Migrations
+bun run db:generate      # Generate new migration from schema changes
+bun run db:migrate       # Apply pending migrations
+bun run db:rollback      # Rollback last migration
+bun run db:reset         # Reset database (drop all tables)
+bun run db:seed          # Seed database with sample data
+bun run db:studio        # Open Drizzle Studio (database GUI)
 
-См. полную реализацию в `index.ts`, который включает:
-
-- Инициализацию `MemoryAdapter`.
-- Регистрацию `errorHandler`.
-- Создание и регистрацию `exampleScene` из `wizard-scene-template.ts`.
-- Регистрацию команд через `setupCommands`.
-
-## 🗄️ Работа с базой данных (Drizzle + Neon)
-
-Starter Kit предоставляет интеграцию с Drizzle ORM и Neon PostgreSQL.
-
-**1. Настройка схемы:**
-Определите ваши таблицы в `src/db/schema.ts`.
-
-**2. Подключение:**
-Файл `src/db/index.ts` инициализирует подключение к базе данных, используя `DATABASE_URL` из `.env`.
-
-**3. Генерация и применение миграций:**
-
-- Измените `src/db/schema.ts`.
-- Сгенерируйте миграцию: `bunx drizzle-kit generate`
-- Примените миграцию: `bunx drizzle-kit migrate`
-
-**Пример использования в коде:**
-
-```typescript
-import { db } from "./src/db"; // Drizzle инстанс
-import { users } from "./src/db/schema"; // Ваша таблица
-import { eq } from "drizzle-orm";
-
-async function getUser(telegramId: string) {
-  if (!db) {
-    console.warn("DB not initialized, returning null");
-    return null;
-  }
-  return await db.query.users.findFirst({
-    where: eq(users.telegram_id, telegramId),
-  });
-}
+# Development Helpers
+bun run db:push          # Push schema changes directly (dev only)
+bun run db:pull          # Pull schema from existing database
 ```
 
-## 🔗 Работа с GraphQL (Apollo Client)
+### Testing Commands
+```bash
+# Unit Tests
+bun run test:unit        # Run unit tests only
+bun run test:integration # Run integration tests only
+bun run test:e2e         # Run end-to-end tests only
 
-Для взаимодействия с GraphQL API используется Apollo Client.
+# Specific Test Suites
+bun run test:db          # Database layer tests
+bun run test:api         # API layer tests
+bun run test:auth        # Authentication tests
 
-**1. Настройка клиента:**
-Файл `src/graphql/client.ts` инициализирует Apollo Client, используя `GRAPHQL_ENDPOINT` из `.env`.
+# TDD Workflow
+bun run tdd <test-file>  # TDD cycle for specific test file
+```
 
-**Пример использования в коде:**
+## 💡 Usage Examples
 
-```typescript
-import { gql } from "@apollo/client";
-import { apolloClient } from "./src/graphql/client"; // Apollo Client инстанс
+### Authentication Flow
 
-const GET_SOME_DATA = gql`
-  query GetSomeData($id: ID!) {
-    someData(id: $id) {
-      id
-      field
+```bash
+# Register a new user
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "player@example.com",
+    "password": "securePassword123",
+    "firstName": "John",
+    "lastName": "Doe",
+    "username": "johndoe"
+  }'
+
+# Login to get JWT token
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "player@example.com",
+    "password": "securePassword123"
+  }'
+
+# Use token for authenticated requests
+curl -X GET http://localhost:3000/api/auth/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Venue Management
+
+```bash
+# Create a new venue (Manager/Admin only)
+curl -X POST http://localhost:3000/api/venues \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Downtown Padel Center",
+    "description": "Modern padel facility in the city center",
+    "address": {
+      "street": "123 Main Street",
+      "city": "New York",
+      "state": "NY",
+      "country": "United States",
+      "postalCode": "10001",
+      "coordinates": {
+        "latitude": 40.7128,
+        "longitude": -74.0060
+      }
+    },
+    "contactInfo": {
+      "phone": "+1234567890",
+      "email": "info@downtownpadel.com"
+    },
+    "operatingHours": {
+      "monday": {"open": "09:00", "close": "22:00"},
+      "tuesday": {"open": "09:00", "close": "22:00"}
     }
-  }
-`;
+  }'
 
-async function fetchData(id: string) {
-  if (!apolloClient) {
-    console.warn("Apollo Client not initialized, returning null");
-    return null;
-  }
-  const { data } = await apolloClient.query({
-    query: GET_SOME_DATA,
-    variables: { id },
-  });
-  return data;
-}
+# Search venues by location
+curl -X GET "http://localhost:3000/api/venues/search/location?latitude=40.7128&longitude=-74.0060&radius=10" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-## 📖 Дополнительная документация
+### Booking Flow
 
-- **`/docs/TESTING.md`**: Подробное руководство по тестированию (unit, integration, e2e) с примерами.
-- **`/docs/PATTERNS.md`**: Описание используемых паттернов проектирования и лучших практик.
-- **`/docs/MIGRATION.md`**: Руководство по миграции с предыдущих версий (если применимо).
+```bash
+# Create a booking
+curl -X POST http://localhost:3000/api/bookings \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "courtId": "123e4567-e89b-12d3-a456-426614174001",
+    "startTime": "2024-01-27T14:00:00Z",
+    "durationMinutes": 90,
+    "bookingPurpose": "free_play",
+    "notes": "Weekend game with friends"
+  }'
 
-## 📄 Лицензия
+# Check court availability
+curl -X GET "http://localhost:3000/api/courts/123e4567-e89b-12d3-a456-426614174001/availability?startDate=2024-01-27T09:00:00Z&endDate=2024-01-27T18:00:00Z" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
-MIT
+# Confirm booking with payment
+curl -X POST http://localhost:3000/api/bookings/123e4567-e89b-12d3-a456-426614174000/confirm \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "paymentMethodId": "pm_1234567890",
+    "paymentAmount": 67.50,
+    "currency": "USD"
+  }'
+```
+
+## 🏗️ Architecture
+
+### Database Schema
+
+The application uses a robust PostgreSQL schema with the following main entities:
+
+- **Users**: Authentication and user management
+- **Venues**: Padel facility information and management
+- **Courts**: Individual court specifications and availability
+- **Bookings**: Reservation system with participants
+- **Payments**: Secure payment processing and refunds
+
+### API Architecture
+
+Built with functional programming principles:
+
+```typescript
+// Example: Functional composition for request handling
+import { FunctionalCompose } from './shared/utils/functional-compose';
+
+const handleCreateBooking = FunctionalCompose.pipe(
+  validateRequest,
+  checkAuthentication,
+  checkCourtAvailability,
+  createBooking,
+  processPayment,
+  sendConfirmation,
+  formatResponse
+);
+```
+
+### Security Features
+
+- **JWT Authentication**: Secure token-based auth
+- **Role-based Access Control**: Admin, Manager, Player roles
+- **Input Validation**: Comprehensive Zod validation
+- **Rate Limiting**: API protection
+- **CORS Configuration**: Secure cross-origin requests
+
+## 🧪 Testing
+
+The project maintains high test coverage across all layers:
+
+```bash
+# Run all tests
+bun run test
+
+# Test coverage report
+bun run test:coverage
+
+# Specific test suites
+bun run test:unit        # Unit tests (85%+ coverage)
+bun run test:integration # Integration tests
+bun run test:e2e         # End-to-end tests
+```
+
+### Test Structure
+
+- **Unit Tests**: Individual function and component testing
+- **Integration Tests**: Database and API integration
+- **E2E Tests**: Complete user workflow testing
+
+## 📚 Documentation
+
+- **API Documentation**: Available at `/api/docs` (Swagger UI)
+- **OpenAPI Specification**: Complete API specification
+- **Database Schema**: Documented in code and migrations
+- **Architecture Diagrams**: Available in `/docs` directory
+
+## 🚀 Deployment
+
+### Production Setup
+
+1. **Environment Configuration**:
+   ```env
+   NODE_ENV=production
+   DATABASE_URL=your_production_db_url
+   JWT_SECRET=your_production_secret
+   ```
+
+2. **Build and Start**:
+   ```bash
+   bun run build
+   bun run start
+   ```
+
+3. **Database Migration**:
+   ```bash
+   bun run db:migrate
+   ```
+
+### Docker Support
+
+```dockerfile
+# Dockerfile included for containerized deployment
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and add tests
+4. Ensure all tests pass: `bun run test`
+5. Check code quality: `bun run lint && bun run typecheck`
+6. Commit your changes: `git commit -m 'Add amazing feature'`
+7. Push to the branch: `git push origin feature/amazing-feature`
+8. Open a Pull Request
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [Express.js](https://expressjs.com/) and [TypeScript](https://www.typescriptlang.org/)
+- Database powered by [Drizzle ORM](https://orm.drizzle.team/) and [PostgreSQL](https://www.postgresql.org/)
+- API documentation with [Swagger UI](https://swagger.io/tools/swagger-ui/)
+- Testing with [Vitest](https://vitest.dev/)
+
+---
+
+**Ready to build the future of padel management? 🏓**
+
+For questions, issues, or contributions, please visit our [GitHub repository](https://github.com/gHashTag/padle-world-club) or contact the development team.

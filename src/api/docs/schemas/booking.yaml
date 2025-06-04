@@ -1,0 +1,473 @@
+components:
+  schemas:
+    Booking:
+      type: object
+      properties:
+        id:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: Unique booking identifier
+        courtId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the booked court
+        court:
+          $ref: './court.yaml#/components/schemas/CourtSummary'
+          description: Court information
+          readOnly: true
+        venueId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the venue (derived from court)
+          readOnly: true
+        venue:
+          $ref: './venue.yaml#/components/schemas/VenueSummary'
+          description: Venue information
+          readOnly: true
+        bookedByUserId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the user who made the booking
+        bookedByUser:
+          $ref: './user.yaml#/components/schemas/UserSummary'
+          description: User who made the booking
+          readOnly: true
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T14:00:00Z"
+          description: Booking start time
+        endTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T15:30:00Z"
+          description: Booking end time
+        durationMinutes:
+          type: integer
+          minimum: 15
+          maximum: 480
+          example: 90
+          description: Booking duration in minutes
+        status:
+          $ref: './common.yaml#/components/schemas/BookingStatus'
+          description: Current booking status
+        totalAmount:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 67.50
+          description: Total booking amount
+        currency:
+          $ref: './common.yaml#/components/schemas/Currency'
+          description: Currency for the booking amount
+        bookingPurpose:
+          $ref: './common.yaml#/components/schemas/BookingPurpose'
+          description: Purpose of the booking
+        relatedEntityId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          nullable: true
+          description: ID of related entity (tournament, training session, etc.)
+        notes:
+          type: string
+          maxLength: 1000
+          nullable: true
+          example: "Weekend doubles match with friends"
+          description: Additional booking notes
+        confirmationCode:
+          type: string
+          nullable: true
+          example: "PWC-2024-001234"
+          description: Unique confirmation code
+          readOnly: true
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingParticipant'
+          description: List of booking participants
+          readOnly: true
+        participantCount:
+          type: integer
+          minimum: 1
+          example: 4
+          description: Number of participants
+          readOnly: true
+        maxParticipants:
+          type: integer
+          minimum: 1
+          example: 4
+          description: Maximum allowed participants
+          readOnly: true
+        payment:
+          type: object
+          nullable: true
+          properties:
+            id:
+              $ref: './common.yaml#/components/schemas/UUID'
+            status:
+              $ref: './common.yaml#/components/schemas/PaymentStatus'
+            amount:
+              type: number
+              format: decimal
+              example: 67.50
+            currency:
+              $ref: './common.yaml#/components/schemas/Currency'
+            paymentMethod:
+              $ref: './common.yaml#/components/schemas/PaymentMethod'
+            transactionId:
+              type: string
+              example: "txn_1234567890"
+            processedAt:
+              type: string
+              format: date-time
+              example: "2024-01-26T10:00:00Z"
+          description: Payment information
+          readOnly: true
+        cancellation:
+          type: object
+          nullable: true
+          properties:
+            cancelledAt:
+              type: string
+              format: date-time
+              example: "2024-01-26T10:00:00Z"
+            cancelledByUserId:
+              $ref: './common.yaml#/components/schemas/UUID'
+            reason:
+              type: string
+              example: "Weather conditions"
+            refundAmount:
+              type: number
+              format: decimal
+              example: 50.00
+            refundStatus:
+              type: string
+              enum: [pending, processed, denied]
+              example: "pending"
+          description: Cancellation information
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-25T10:00:00Z"
+          description: Booking creation timestamp
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+          description: Last update timestamp
+          readOnly: true
+      required:
+        - id
+        - courtId
+        - bookedByUserId
+        - startTime
+        - endTime
+        - durationMinutes
+        - status
+        - totalAmount
+        - currency
+        - bookingPurpose
+        - participantCount
+        - maxParticipants
+        - createdAt
+        - updatedAt
+      example:
+        id: "123e4567-e89b-12d3-a456-426614174000"
+        courtId: "123e4567-e89b-12d3-a456-426614174001"
+        court:
+          id: "123e4567-e89b-12d3-a456-426614174001"
+          name: "Court 1"
+          courtType: "paddle"
+          surface: "artificial_grass"
+          hourlyRate: 45.00
+          currency: "USD"
+          venueName: "Central Padel Club"
+        venueId: "123e4567-e89b-12d3-a456-426614174002"
+        venue:
+          id: "123e4567-e89b-12d3-a456-426614174002"
+          name: "Central Padel Club"
+          address:
+            city: "New York"
+            country: "United States"
+        bookedByUserId: "123e4567-e89b-12d3-a456-426614174003"
+        bookedByUser:
+          id: "123e4567-e89b-12d3-a456-426614174003"
+          username: "john_doe"
+          firstName: "John"
+          lastName: "Doe"
+          fullName: "John Doe"
+        startTime: "2024-01-26T14:00:00Z"
+        endTime: "2024-01-26T15:30:00Z"
+        durationMinutes: 90
+        status: "confirmed"
+        totalAmount: 67.50
+        currency: "USD"
+        bookingPurpose: "free_play"
+        relatedEntityId: null
+        notes: "Weekend doubles match with friends"
+        confirmationCode: "PWC-2024-001234"
+        participants:
+          - id: "123e4567-e89b-12d3-a456-426614174004"
+            userId: "123e4567-e89b-12d3-a456-426614174003"
+            user:
+              username: "john_doe"
+              firstName: "John"
+              lastName: "Doe"
+            role: "organizer"
+            status: "confirmed"
+            joinedAt: "2024-01-25T10:00:00Z"
+        participantCount: 4
+        maxParticipants: 4
+        payment:
+          id: "123e4567-e89b-12d3-a456-426614174005"
+          status: "completed"
+          amount: 67.50
+          currency: "USD"
+          paymentMethod: "credit_card"
+          transactionId: "txn_1234567890"
+          processedAt: "2024-01-25T10:05:00Z"
+        cancellation: null
+        createdAt: "2024-01-25T10:00:00Z"
+        updatedAt: "2024-01-26T10:00:00Z"
+
+    BookingSummary:
+      type: object
+      description: Simplified booking information for lists and references
+      properties:
+        id:
+          $ref: './common.yaml#/components/schemas/UUID'
+        courtId:
+          $ref: './common.yaml#/components/schemas/UUID'
+        courtName:
+          type: string
+          example: "Court 1"
+        venueId:
+          $ref: './common.yaml#/components/schemas/UUID'
+        venueName:
+          type: string
+          example: "Central Padel Club"
+        bookedByUserId:
+          $ref: './common.yaml#/components/schemas/UUID'
+        bookedByUser:
+          type: object
+          properties:
+            username:
+              type: string
+              example: "john_doe"
+            firstName:
+              type: string
+              example: "John"
+            lastName:
+              type: string
+              example: "Doe"
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T14:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2024-01-26T15:30:00Z"
+        durationMinutes:
+          type: integer
+          example: 90
+        status:
+          $ref: './common.yaml#/components/schemas/BookingStatus'
+        totalAmount:
+          type: number
+          format: decimal
+          example: 67.50
+        currency:
+          $ref: './common.yaml#/components/schemas/Currency'
+        bookingPurpose:
+          $ref: './common.yaml#/components/schemas/BookingPurpose'
+        participantCount:
+          type: integer
+          example: 4
+        confirmationCode:
+          type: string
+          nullable: true
+          example: "PWC-2024-001234"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-25T10:00:00Z"
+      required:
+        - id
+        - courtId
+        - courtName
+        - venueId
+        - venueName
+        - bookedByUserId
+        - startTime
+        - endTime
+        - durationMinutes
+        - status
+        - totalAmount
+        - currency
+        - bookingPurpose
+        - participantCount
+        - createdAt
+
+    BookingParticipant:
+      type: object
+      properties:
+        id:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: Unique participant record identifier
+        bookingId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the booking
+        userId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the participating user
+        user:
+          $ref: './user.yaml#/components/schemas/UserSummary'
+          description: User information
+          readOnly: true
+        role:
+          type: string
+          enum: [organizer, player, substitute, coach]
+          example: "player"
+          description: Role of the participant in the booking
+        status:
+          type: string
+          enum: [confirmed, pending, declined, cancelled]
+          example: "confirmed"
+          description: Participation status
+        notes:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: "Bringing own equipment"
+          description: Participant-specific notes
+        isApproved:
+          type: boolean
+          example: true
+          description: Whether participation is approved (for venues requiring approval)
+        joinedAt:
+          type: string
+          format: date-time
+          example: "2024-01-25T10:00:00Z"
+          description: When the participant joined the booking
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+          description: Last update timestamp
+          readOnly: true
+      required:
+        - id
+        - bookingId
+        - userId
+        - role
+        - status
+        - isApproved
+        - joinedAt
+        - updatedAt
+      example:
+        id: "123e4567-e89b-12d3-a456-426614174004"
+        bookingId: "123e4567-e89b-12d3-a456-426614174000"
+        userId: "123e4567-e89b-12d3-a456-426614174003"
+        user:
+          id: "123e4567-e89b-12d3-a456-426614174003"
+          username: "john_doe"
+          firstName: "John"
+          lastName: "Doe"
+          fullName: "John Doe"
+        role: "organizer"
+        status: "confirmed"
+        notes: "Organizing weekend tournament"
+        isApproved: true
+        joinedAt: "2024-01-25T10:00:00Z"
+        updatedAt: "2024-01-26T10:00:00Z"
+
+    CreateBookingRequest:
+      type: object
+      required:
+        - courtId
+        - startTime
+        - durationMinutes
+        - bookingPurpose
+      properties:
+        courtId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the court to book
+        bookedByUserId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the user making the booking (admin/manager only)
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-27T14:00:00Z"
+          description: Booking start time
+        durationMinutes:
+          type: integer
+          minimum: 30
+          maximum: 240
+          example: 90
+          description: Booking duration in minutes
+        bookingPurpose:
+          $ref: './common.yaml#/components/schemas/BookingPurpose'
+          description: Purpose of the booking
+        relatedEntityId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          nullable: true
+          description: ID of related entity (tournament, training session, etc.)
+        notes:
+          type: string
+          maxLength: 1000
+          example: "Weekend doubles match with friends"
+          description: Additional booking notes
+        participants:
+          type: array
+          items:
+            type: object
+            required:
+              - userId
+            properties:
+              userId:
+                $ref: './common.yaml#/components/schemas/UUID'
+              role:
+                type: string
+                enum: [player, substitute, coach]
+                default: player
+              notes:
+                type: string
+                maxLength: 500
+          description: Initial participants (optional)
+        autoConfirm:
+          type: boolean
+          default: false
+          description: Whether to automatically confirm the booking (if payment not required)
+
+    UpdateBookingRequest:
+      type: object
+      properties:
+        courtId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the court (admin/manager only)
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-27T16:00:00Z"
+          description: New booking start time
+        durationMinutes:
+          type: integer
+          minimum: 30
+          maximum: 240
+          example: 120
+          description: New booking duration in minutes
+        status:
+          $ref: './common.yaml#/components/schemas/BookingStatus'
+          description: New booking status (admin/manager only)
+        bookingPurpose:
+          $ref: './common.yaml#/components/schemas/BookingPurpose'
+          description: Updated purpose of the booking
+        relatedEntityId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          nullable: true
+          description: ID of related entity
+        notes:
+          type: string
+          maxLength: 1000
+          example: "Updated booking notes"
+          description: Updated booking notes

@@ -1,0 +1,377 @@
+paths:
+  /api:
+    get:
+      summary: API Information
+      description: |
+        Get comprehensive information about the Padle World Club API.
+        
+        This endpoint provides:
+        - API metadata (name, version, description)
+        - Available endpoints and their purposes
+        - Documentation links
+        - API capabilities and features
+        - Rate limiting information
+        - Supported authentication methods
+        
+        This endpoint does not require authentication and serves as a discovery endpoint
+        for API consumers to understand available functionality.
+      tags:
+        - API Info
+      security: []  # No authentication required
+      responses:
+        '200':
+          description: API information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: "Padle World Club API"
+                        description: API name
+                      version:
+                        type: string
+                        example: "1.0.0"
+                        description: API version
+                      description:
+                        type: string
+                        example: "REST API for Padle World Club management system"
+                        description: API description
+                      environment:
+                        type: string
+                        example: "production"
+                        description: Current environment
+                      baseUrl:
+                        type: string
+                        example: "https://api.padleworldclub.com"
+                        description: API base URL
+                      endpoints:
+                        type: object
+                        properties:
+                          authentication:
+                            type: object
+                            properties:
+                              register:
+                                type: string
+                                example: "/api/auth/register"
+                              login:
+                                type: string
+                                example: "/api/auth/login"
+                              logout:
+                                type: string
+                                example: "/api/auth/logout"
+                              profile:
+                                type: string
+                                example: "/api/auth/me"
+                              changePassword:
+                                type: string
+                                example: "/api/auth/change-password"
+                            description: Authentication endpoints
+                          users:
+                            type: string
+                            example: "/api/users"
+                            description: User management endpoints
+                          venues:
+                            type: string
+                            example: "/api/venues"
+                            description: Venue management endpoints
+                          courts:
+                            type: string
+                            example: "/api/courts"
+                            description: Court management endpoints
+                          bookings:
+                            type: string
+                            example: "/api/bookings"
+                            description: Booking management endpoints
+                          payments:
+                            type: string
+                            example: "/api/payments"
+                            description: Payment processing endpoints
+                        description: Available API endpoints grouped by functionality
+                      features:
+                        type: array
+                        items:
+                          type: string
+                        example:
+                          - "JWT Authentication"
+                          - "Role-based Access Control"
+                          - "Pagination Support"
+                          - "Advanced Filtering"
+                          - "Geographic Search"
+                          - "Real-time Booking"
+                          - "Payment Processing"
+                          - "Multi-language Support"
+                        description: API features and capabilities
+                      authentication:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                            example: "Bearer Token (JWT)"
+                            description: Authentication method
+                          header:
+                            type: string
+                            example: "Authorization"
+                            description: Authentication header name
+                          format:
+                            type: string
+                            example: "Bearer <token>"
+                            description: Token format
+                          endpoints:
+                            type: object
+                            properties:
+                              login:
+                                type: string
+                                example: "/api/auth/login"
+                              register:
+                                type: string
+                                example: "/api/auth/register"
+                        description: Authentication information
+                      rateLimit:
+                        type: object
+                        properties:
+                          enabled:
+                            type: boolean
+                            example: true
+                            description: Whether rate limiting is enabled
+                          requests:
+                            type: integer
+                            example: 1000
+                            description: Maximum requests per window
+                          window:
+                            type: string
+                            example: "1 hour"
+                            description: Rate limit time window
+                          headers:
+                            type: array
+                            items:
+                              type: string
+                            example:
+                              - "X-RateLimit-Limit"
+                              - "X-RateLimit-Remaining"
+                              - "X-RateLimit-Reset"
+                            description: Rate limit headers included in responses
+                        description: Rate limiting information
+                      pagination:
+                        type: object
+                        properties:
+                          defaultLimit:
+                            type: integer
+                            example: 10
+                            description: Default number of items per page
+                          maxLimit:
+                            type: integer
+                            example: 100
+                            description: Maximum number of items per page
+                          parameters:
+                            type: array
+                            items:
+                              type: string
+                            example:
+                              - "page"
+                              - "limit"
+                              - "sortBy"
+                              - "sortOrder"
+                            description: Available pagination parameters
+                        description: Pagination configuration
+                      documentation:
+                        type: object
+                        properties:
+                          swagger:
+                            type: string
+                            example: "/api/docs"
+                            description: Swagger UI documentation URL
+                          openapi:
+                            type: string
+                            example: "/api/docs/openapi.yaml"
+                            description: OpenAPI specification URL
+                          postman:
+                            type: string
+                            example: "/api/docs/postman.json"
+                            description: Postman collection URL
+                          github:
+                            type: string
+                            example: "https://github.com/gHashTag/padle-world-club"
+                            description: GitHub repository URL
+                        description: Documentation links
+                      support:
+                        type: object
+                        properties:
+                          email:
+                            type: string
+                            example: "support@padleworldclub.com"
+                            description: Support email address
+                          documentation:
+                            type: string
+                            example: "https://docs.padleworldclub.com"
+                            description: Documentation website
+                          status:
+                            type: string
+                            example: "https://status.padleworldclub.com"
+                            description: Service status page
+                        description: Support and contact information
+                    required:
+                      - name
+                      - version
+                      - description
+                      - endpoints
+                      - features
+                      - authentication
+                      - documentation
+                  message:
+                    type: string
+                    example: "API information retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-26T10:00:00Z"
+                  path:
+                    type: string
+                    example: "/api"
+                  method:
+                    type: string
+                    example: "GET"
+                required:
+                  - success
+                  - data
+                  - message
+                  - timestamp
+                  - path
+                  - method
+              examples:
+                production:
+                  summary: Production API information
+                  value:
+                    success: true
+                    data:
+                      name: "Padle World Club API"
+                      version: "1.0.0"
+                      description: "REST API for Padle World Club management system"
+                      environment: "production"
+                      baseUrl: "https://api.padleworldclub.com"
+                      endpoints:
+                        authentication:
+                          register: "/api/auth/register"
+                          login: "/api/auth/login"
+                          logout: "/api/auth/logout"
+                          profile: "/api/auth/me"
+                          changePassword: "/api/auth/change-password"
+                        users: "/api/users"
+                        venues: "/api/venues"
+                        courts: "/api/courts"
+                        bookings: "/api/bookings"
+                        payments: "/api/payments"
+                      features:
+                        - "JWT Authentication"
+                        - "Role-based Access Control"
+                        - "Pagination Support"
+                        - "Advanced Filtering"
+                        - "Geographic Search"
+                        - "Real-time Booking"
+                        - "Payment Processing"
+                        - "Multi-language Support"
+                      authentication:
+                        type: "Bearer Token (JWT)"
+                        header: "Authorization"
+                        format: "Bearer <token>"
+                        endpoints:
+                          login: "/api/auth/login"
+                          register: "/api/auth/register"
+                      rateLimit:
+                        enabled: true
+                        requests: 1000
+                        window: "1 hour"
+                        headers:
+                          - "X-RateLimit-Limit"
+                          - "X-RateLimit-Remaining"
+                          - "X-RateLimit-Reset"
+                      pagination:
+                        defaultLimit: 10
+                        maxLimit: 100
+                        parameters:
+                          - "page"
+                          - "limit"
+                          - "sortBy"
+                          - "sortOrder"
+                      documentation:
+                        swagger: "/api/docs"
+                        openapi: "/api/docs/openapi.yaml"
+                        postman: "/api/docs/postman.json"
+                        github: "https://github.com/gHashTag/padle-world-club"
+                      support:
+                        email: "support@padleworldclub.com"
+                        documentation: "https://docs.padleworldclub.com"
+                        status: "https://status.padleworldclub.com"
+                    message: "API information retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api"
+                    method: "GET"
+                development:
+                  summary: Development API information
+                  value:
+                    success: true
+                    data:
+                      name: "Padle World Club API"
+                      version: "1.0.0-dev"
+                      description: "REST API for Padle World Club management system (Development)"
+                      environment: "development"
+                      baseUrl: "http://localhost:3000"
+                      endpoints:
+                        authentication:
+                          register: "/api/auth/register"
+                          login: "/api/auth/login"
+                          logout: "/api/auth/logout"
+                          profile: "/api/auth/me"
+                          changePassword: "/api/auth/change-password"
+                        users: "/api/users"
+                        venues: "/api/venues"
+                        courts: "/api/courts"
+                        bookings: "/api/bookings"
+                        payments: "/api/payments"
+                      features:
+                        - "JWT Authentication"
+                        - "Role-based Access Control"
+                        - "Pagination Support"
+                        - "Advanced Filtering"
+                        - "Geographic Search"
+                        - "Real-time Booking"
+                        - "Payment Processing"
+                        - "Development Mode"
+                      authentication:
+                        type: "Bearer Token (JWT)"
+                        header: "Authorization"
+                        format: "Bearer <token>"
+                        endpoints:
+                          login: "/api/auth/login"
+                          register: "/api/auth/register"
+                      rateLimit:
+                        enabled: false
+                        requests: null
+                        window: null
+                        headers: []
+                      pagination:
+                        defaultLimit: 10
+                        maxLimit: 100
+                        parameters:
+                          - "page"
+                          - "limit"
+                          - "sortBy"
+                          - "sortOrder"
+                      documentation:
+                        swagger: "/api/docs"
+                        openapi: "/api/docs/openapi.yaml"
+                        github: "https://github.com/gHashTag/padle-world-club"
+                      support:
+                        email: "dev@padleworldclub.com"
+                        github: "https://github.com/gHashTag/padle-world-club"
+                    message: "API information retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api"
+                    method: "GET"

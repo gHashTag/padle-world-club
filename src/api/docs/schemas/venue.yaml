@@ -1,0 +1,570 @@
+components:
+  schemas:
+    Venue:
+      type: object
+      properties:
+        id:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: Unique venue identifier
+        name:
+          type: string
+          maxLength: 200
+          example: "Central Padel Club"
+          description: Venue name
+        description:
+          type: string
+          maxLength: 1000
+          example: "Premium padel facility in downtown with world-class courts"
+          description: Venue description
+        address:
+          $ref: './common.yaml#/components/schemas/Address'
+          description: Venue address and location
+        contactInfo:
+          type: object
+          properties:
+            phone:
+              $ref: './common.yaml#/components/schemas/Phone'
+            email:
+              $ref: './common.yaml#/components/schemas/Email'
+            website:
+              type: string
+              format: uri
+              example: "https://centralpadel.com"
+            socialMedia:
+              type: object
+              properties:
+                instagram:
+                  type: string
+                  example: "@centralpadel"
+                facebook:
+                  type: string
+                  example: "CentralPadelClub"
+                twitter:
+                  type: string
+                  example: "@centralpadel"
+          required:
+            - phone
+            - email
+          description: Contact information
+        managerId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the venue manager
+        manager:
+          $ref: './user.yaml#/components/schemas/UserSummary'
+          description: Venue manager information
+          readOnly: true
+        status:
+          $ref: './common.yaml#/components/schemas/VenueStatus'
+          description: Current venue status
+        operatingHours:
+          type: object
+          properties:
+            monday:
+              $ref: '#/components/schemas/DayHours'
+            tuesday:
+              $ref: '#/components/schemas/DayHours'
+            wednesday:
+              $ref: '#/components/schemas/DayHours'
+            thursday:
+              $ref: '#/components/schemas/DayHours'
+            friday:
+              $ref: '#/components/schemas/DayHours'
+            saturday:
+              $ref: '#/components/schemas/DayHours'
+            sunday:
+              $ref: '#/components/schemas/DayHours'
+          description: Weekly operating hours
+        amenities:
+          type: array
+          items:
+            type: string
+            enum:
+              - parking
+              - locker_rooms
+              - showers
+              - pro_shop
+              - cafe
+              - restaurant
+              - bar
+              - fitness_center
+              - spa
+              - wifi
+              - air_conditioning
+              - heating
+              - lighting
+              - sound_system
+              - live_streaming
+              - equipment_rental
+              - coaching
+              - tournaments
+          example: ["parking", "locker_rooms", "pro_shop", "cafe"]
+          description: Available amenities
+        priceRange:
+          type: string
+          enum: ["$", "$$", "$$$", "$$$$"]
+          example: "$$"
+          description: Price range indicator
+        rating:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+          example: 4.5
+          description: Average venue rating
+        totalReviews:
+          type: integer
+          minimum: 0
+          example: 127
+          description: Total number of reviews
+          readOnly: true
+        totalCourts:
+          type: integer
+          minimum: 0
+          example: 8
+          description: Total number of courts
+          readOnly: true
+        activeCourts:
+          type: integer
+          minimum: 0
+          example: 6
+          description: Number of active courts
+          readOnly: true
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+          example: ["https://example.com/venue1.jpg", "https://example.com/venue2.jpg"]
+          description: Venue images
+        policies:
+          type: object
+          properties:
+            cancellationPolicy:
+              type: string
+              maxLength: 500
+              example: "24 hours advance notice required for cancellation"
+            dresscode:
+              type: string
+              maxLength: 200
+              example: "Proper athletic attire required"
+            ageRestrictions:
+              type: string
+              maxLength: 200
+              example: "All ages welcome, children under 12 must be supervised"
+            equipmentPolicy:
+              type: string
+              maxLength: 300
+              example: "Padel rackets available for rent, proper shoes required"
+          description: Venue policies and rules
+        features:
+          type: object
+          properties:
+            hasIndoorCourts:
+              type: boolean
+              example: true
+            hasOutdoorCourts:
+              type: boolean
+              example: false
+            hasClimate:
+              type: boolean
+              example: true
+            hasLighting:
+              type: boolean
+              example: true
+            hasParking:
+              type: boolean
+              example: true
+            parkingSpaces:
+              type: integer
+              minimum: 0
+              example: 50
+          description: Venue features and capabilities
+        businessHours:
+          type: object
+          properties:
+            timezone:
+              type: string
+              example: "America/New_York"
+              description: Venue timezone
+            specialHours:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                    example: "2024-12-25"
+                  hours:
+                    $ref: '#/components/schemas/DayHours'
+                  reason:
+                    type: string
+                    example: "Christmas Day"
+              description: Special operating hours for holidays
+          description: Business hours information
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T10:00:00Z"
+          description: Venue creation timestamp
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+          description: Last update timestamp
+          readOnly: true
+      required:
+        - id
+        - name
+        - description
+        - address
+        - contactInfo
+        - managerId
+        - status
+        - operatingHours
+        - amenities
+        - priceRange
+        - rating
+        - totalReviews
+        - totalCourts
+        - activeCourts
+        - createdAt
+        - updatedAt
+      example:
+        id: "123e4567-e89b-12d3-a456-426614174000"
+        name: "Central Padel Club"
+        description: "Premium padel facility in downtown with world-class courts"
+        address:
+          street: "123 Main Street"
+          city: "New York"
+          state: "NY"
+          country: "United States"
+          postalCode: "10001"
+          coordinates:
+            latitude: 40.7128
+            longitude: -74.0060
+        contactInfo:
+          phone: "+1234567890"
+          email: "info@centralpadel.com"
+          website: "https://centralpadel.com"
+          socialMedia:
+            instagram: "@centralpadel"
+            facebook: "CentralPadelClub"
+        managerId: "123e4567-e89b-12d3-a456-426614174001"
+        manager:
+          id: "123e4567-e89b-12d3-a456-426614174001"
+          username: "venue_manager"
+          email: "manager@centralpadel.com"
+          firstName: "Alice"
+          lastName: "Johnson"
+          fullName: "Alice Johnson"
+          role: "manager"
+          isActive: true
+        status: "active"
+        operatingHours:
+          monday: { open: "06:00", close: "22:00" }
+          tuesday: { open: "06:00", close: "22:00" }
+          wednesday: { open: "06:00", close: "22:00" }
+          thursday: { open: "06:00", close: "22:00" }
+          friday: { open: "06:00", close: "23:00" }
+          saturday: { open: "07:00", close: "23:00" }
+          sunday: { open: "07:00", close: "21:00" }
+        amenities: ["parking", "locker_rooms", "pro_shop", "cafe"]
+        priceRange: "$$"
+        rating: 4.5
+        totalReviews: 127
+        totalCourts: 8
+        activeCourts: 6
+        images: ["https://example.com/venue1.jpg", "https://example.com/venue2.jpg"]
+        policies:
+          cancellationPolicy: "24 hours advance notice required"
+          dresscode: "Proper athletic attire required"
+          ageRestrictions: "All ages welcome, children under 12 must be supervised"
+        features:
+          hasIndoorCourts: true
+          hasOutdoorCourts: false
+          hasClimate: true
+          hasLighting: true
+          hasParking: true
+          parkingSpaces: 50
+        businessHours:
+          timezone: "America/New_York"
+          specialHours: []
+        createdAt: "2024-01-01T10:00:00Z"
+        updatedAt: "2024-01-26T10:00:00Z"
+
+    VenueSummary:
+      type: object
+      description: Simplified venue information for lists and references
+      properties:
+        id:
+          $ref: './common.yaml#/components/schemas/UUID'
+        name:
+          type: string
+          example: "Central Padel Club"
+        description:
+          type: string
+          example: "Premium padel facility in downtown"
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+              example: "123 Main Street"
+            city:
+              type: string
+              example: "New York"
+            country:
+              type: string
+              example: "United States"
+            coordinates:
+              $ref: './common.yaml#/components/schemas/Coordinates'
+        status:
+          $ref: './common.yaml#/components/schemas/VenueStatus'
+        totalCourts:
+          type: integer
+          example: 8
+        rating:
+          type: number
+          format: double
+          example: 4.5
+        priceRange:
+          type: string
+          enum: ["$", "$$", "$$$", "$$$$"]
+          example: "$$"
+        amenities:
+          type: array
+          items:
+            type: string
+          example: ["parking", "locker_rooms", "pro_shop"]
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+          example: ["https://example.com/venue1.jpg"]
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T10:00:00Z"
+      required:
+        - id
+        - name
+        - address
+        - status
+        - totalCourts
+        - rating
+        - priceRange
+        - amenities
+        - createdAt
+
+    DayHours:
+      type: object
+      properties:
+        open:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          example: "09:00"
+          description: Opening time in HH:MM format
+        close:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          example: "22:00"
+          description: Closing time in HH:MM format
+        isClosed:
+          type: boolean
+          default: false
+          description: Whether the venue is closed on this day
+      required:
+        - open
+        - close
+      example:
+        open: "09:00"
+        close: "22:00"
+        isClosed: false
+
+    CreateVenueRequest:
+      type: object
+      required:
+        - name
+        - description
+        - address
+        - contactInfo
+        - operatingHours
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: "Downtown Padel Center"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          example: "Modern padel facility in the heart of the city"
+        address:
+          $ref: './common.yaml#/components/schemas/Address'
+        contactInfo:
+          type: object
+          required:
+            - phone
+            - email
+          properties:
+            phone:
+              $ref: './common.yaml#/components/schemas/Phone'
+            email:
+              $ref: './common.yaml#/components/schemas/Email'
+            website:
+              type: string
+              format: uri
+              example: "https://downtownpadel.com"
+            socialMedia:
+              type: object
+              properties:
+                instagram:
+                  type: string
+                  example: "@downtownpadel"
+                facebook:
+                  type: string
+                  example: "DowntownPadelCenter"
+                twitter:
+                  type: string
+                  example: "@downtownpadel"
+        operatingHours:
+          type: object
+          required:
+            - monday
+            - tuesday
+            - wednesday
+            - thursday
+            - friday
+            - saturday
+            - sunday
+          properties:
+            monday:
+              $ref: '#/components/schemas/DayHours'
+            tuesday:
+              $ref: '#/components/schemas/DayHours'
+            wednesday:
+              $ref: '#/components/schemas/DayHours'
+            thursday:
+              $ref: '#/components/schemas/DayHours'
+            friday:
+              $ref: '#/components/schemas/DayHours'
+            saturday:
+              $ref: '#/components/schemas/DayHours'
+            sunday:
+              $ref: '#/components/schemas/DayHours'
+        amenities:
+          type: array
+          items:
+            type: string
+          default: []
+          example: ["parking", "locker_rooms", "pro_shop"]
+        priceRange:
+          type: string
+          enum: ["$", "$$", "$$$", "$$$$"]
+          default: "$$"
+          example: "$$"
+        policies:
+          type: object
+          properties:
+            cancellationPolicy:
+              type: string
+              maxLength: 500
+            dresscode:
+              type: string
+              maxLength: 200
+            ageRestrictions:
+              type: string
+              maxLength: 200
+            equipmentPolicy:
+              type: string
+              maxLength: 300
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+          example: ["https://example.com/venue1.jpg"]
+
+    UpdateVenueRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: "Updated Venue Name"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          example: "Updated venue description"
+        contactInfo:
+          type: object
+          properties:
+            phone:
+              $ref: './common.yaml#/components/schemas/Phone'
+            email:
+              $ref: './common.yaml#/components/schemas/Email'
+            website:
+              type: string
+              format: uri
+            socialMedia:
+              type: object
+              properties:
+                instagram:
+                  type: string
+                facebook:
+                  type: string
+                twitter:
+                  type: string
+        operatingHours:
+          type: object
+          properties:
+            monday:
+              $ref: '#/components/schemas/DayHours'
+            tuesday:
+              $ref: '#/components/schemas/DayHours'
+            wednesday:
+              $ref: '#/components/schemas/DayHours'
+            thursday:
+              $ref: '#/components/schemas/DayHours'
+            friday:
+              $ref: '#/components/schemas/DayHours'
+            saturday:
+              $ref: '#/components/schemas/DayHours'
+            sunday:
+              $ref: '#/components/schemas/DayHours'
+        amenities:
+          type: array
+          items:
+            type: string
+          example: ["parking", "locker_rooms", "pro_shop", "cafe"]
+        priceRange:
+          type: string
+          enum: ["$", "$$", "$$$", "$$$$"]
+          example: "$$$"
+        policies:
+          type: object
+          properties:
+            cancellationPolicy:
+              type: string
+              maxLength: 500
+            dresscode:
+              type: string
+              maxLength: 200
+            ageRestrictions:
+              type: string
+              maxLength: 200
+            equipmentPolicy:
+              type: string
+              maxLength: 300
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+          example: ["https://example.com/updated-venue.jpg"]

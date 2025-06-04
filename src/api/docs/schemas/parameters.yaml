@@ -1,0 +1,367 @@
+components:
+  parameters:
+    # Path parameters
+    IdParam:
+      name: id
+      in: path
+      required: true
+      description: Resource unique identifier
+      schema:
+        $ref: './common.yaml#/components/schemas/UUID'
+      example: "123e4567-e89b-12d3-a456-426614174000"
+
+    UserIdParam:
+      name: userId
+      in: path
+      required: true
+      description: User unique identifier
+      schema:
+        $ref: './common.yaml#/components/schemas/UUID'
+      example: "123e4567-e89b-12d3-a456-426614174001"
+
+    VenueIdParam:
+      name: venueId
+      in: path
+      required: true
+      description: Venue unique identifier
+      schema:
+        $ref: './common.yaml#/components/schemas/UUID'
+      example: "123e4567-e89b-12d3-a456-426614174002"
+
+    CourtIdParam:
+      name: courtId
+      in: path
+      required: true
+      description: Court unique identifier
+      schema:
+        $ref: './common.yaml#/components/schemas/UUID'
+      example: "123e4567-e89b-12d3-a456-426614174003"
+
+    BookingIdParam:
+      name: bookingId
+      in: path
+      required: true
+      description: Booking unique identifier
+      schema:
+        $ref: './common.yaml#/components/schemas/UUID'
+      example: "123e4567-e89b-12d3-a456-426614174004"
+
+    PaymentIdParam:
+      name: paymentId
+      in: path
+      required: true
+      description: Payment unique identifier
+      schema:
+        $ref: './common.yaml#/components/schemas/UUID'
+      example: "123e4567-e89b-12d3-a456-426614174005"
+
+    ParticipantIdParam:
+      name: participantId
+      in: path
+      required: true
+      description: Participant unique identifier
+      schema:
+        $ref: './common.yaml#/components/schemas/UUID'
+      example: "123e4567-e89b-12d3-a456-426614174006"
+
+    # Pagination parameters
+    PageParam:
+      name: page
+      in: query
+      description: Page number for pagination (1-based)
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      description: Number of items per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      example: 10
+
+    # Sorting parameters
+    SortByParam:
+      name: sortBy
+      in: query
+      description: Field to sort by
+      required: false
+      schema:
+        type: string
+        default: "createdAt"
+      example: "createdAt"
+
+    SortOrderParam:
+      name: sortOrder
+      in: query
+      description: Sort order (ascending or descending)
+      required: false
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: "desc"
+      example: "desc"
+
+    # Search parameters
+    SearchParam:
+      name: search
+      in: query
+      description: Search term for text-based filtering
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 100
+      example: "john"
+
+    # Filter parameters
+    StatusParam:
+      name: status
+      in: query
+      description: Filter by status
+      required: false
+      schema:
+        type: string
+      example: "active"
+
+    RoleParam:
+      name: role
+      in: query
+      description: Filter by user role
+      required: false
+      schema:
+        $ref: './common.yaml#/components/schemas/UserRole'
+      example: "player"
+
+    # Date range parameters
+    StartDateParam:
+      name: startDate
+      in: query
+      description: Start date for date range filtering (ISO 8601)
+      required: false
+      schema:
+        type: string
+        format: date-time
+      example: "2024-01-26T00:00:00Z"
+
+    EndDateParam:
+      name: endDate
+      in: query
+      description: End date for date range filtering (ISO 8601)
+      required: false
+      schema:
+        type: string
+        format: date-time
+      example: "2024-01-26T23:59:59Z"
+
+    # Geographic parameters
+    LatitudeParam:
+      name: latitude
+      in: query
+      description: Latitude coordinate for location-based search
+      required: false
+      schema:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+      example: 40.7128
+
+    LongitudeParam:
+      name: longitude
+      in: query
+      description: Longitude coordinate for location-based search
+      required: false
+      schema:
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
+      example: -74.0060
+
+    RadiusParam:
+      name: radius
+      in: query
+      description: Search radius in kilometers
+      required: false
+      schema:
+        type: number
+        format: double
+        minimum: 0.1
+        maximum: 100
+        default: 10
+      example: 5.0
+
+    # Venue-specific parameters
+    CityParam:
+      name: city
+      in: query
+      description: Filter by city name
+      required: false
+      schema:
+        type: string
+        maxLength: 100
+      example: "New York"
+
+    CountryParam:
+      name: country
+      in: query
+      description: Filter by country name
+      required: false
+      schema:
+        type: string
+        maxLength: 100
+      example: "United States"
+
+    VenueStatusParam:
+      name: status
+      in: query
+      description: Filter venues by status
+      required: false
+      schema:
+        $ref: './common.yaml#/components/schemas/VenueStatus'
+      example: "active"
+
+    # Court-specific parameters
+    CourtTypeParam:
+      name: courtType
+      in: query
+      description: Filter courts by type
+      required: false
+      schema:
+        $ref: './common.yaml#/components/schemas/CourtType'
+      example: "paddle"
+
+    CourtSurfaceParam:
+      name: surface
+      in: query
+      description: Filter courts by surface type
+      required: false
+      schema:
+        $ref: './common.yaml#/components/schemas/CourtSurface'
+      example: "artificial_grass"
+
+    # Booking-specific parameters
+    BookingStatusParam:
+      name: status
+      in: query
+      description: Filter bookings by status
+      required: false
+      schema:
+        $ref: './common.yaml#/components/schemas/BookingStatus'
+      example: "confirmed"
+
+    BookingPurposeParam:
+      name: purpose
+      in: query
+      description: Filter bookings by purpose
+      required: false
+      schema:
+        $ref: './common.yaml#/components/schemas/BookingPurpose'
+      example: "free_play"
+
+    StartTimeAfterParam:
+      name: startTimeAfter
+      in: query
+      description: Filter bookings starting after this time
+      required: false
+      schema:
+        type: string
+        format: date-time
+      example: "2024-01-26T10:00:00Z"
+
+    StartTimeBeforeParam:
+      name: startTimeBefore
+      in: query
+      description: Filter bookings starting before this time
+      required: false
+      schema:
+        type: string
+        format: date-time
+      example: "2024-01-26T18:00:00Z"
+
+    # Payment-specific parameters
+    PaymentStatusParam:
+      name: status
+      in: query
+      description: Filter payments by status
+      required: false
+      schema:
+        $ref: './common.yaml#/components/schemas/PaymentStatus'
+      example: "success"
+
+    PaymentMethodParam:
+      name: method
+      in: query
+      description: Filter payments by method
+      required: false
+      schema:
+        $ref: './common.yaml#/components/schemas/PaymentMethod'
+      example: "credit_card"
+
+    CurrencyParam:
+      name: currency
+      in: query
+      description: Filter by currency
+      required: false
+      schema:
+        $ref: './common.yaml#/components/schemas/Currency'
+      example: "USD"
+
+    AmountMinParam:
+      name: amountMin
+      in: query
+      description: Minimum amount filter
+      required: false
+      schema:
+        type: number
+        format: decimal
+        minimum: 0
+      example: 10.00
+
+    AmountMaxParam:
+      name: amountMax
+      in: query
+      description: Maximum amount filter
+      required: false
+      schema:
+        type: number
+        format: decimal
+        minimum: 0
+      example: 1000.00
+
+    # Include/expand parameters
+    IncludeParam:
+      name: include
+      in: query
+      description: |
+        Comma-separated list of related resources to include in the response.
+        Available options vary by endpoint.
+      required: false
+      schema:
+        type: string
+      example: "venue,participants"
+      style: form
+      explode: false
+
+    # Fields selection parameter
+    FieldsParam:
+      name: fields
+      in: query
+      description: |
+        Comma-separated list of fields to include in the response.
+        If not specified, all fields are returned.
+      required: false
+      schema:
+        type: string
+      example: "id,name,email"
+      style: form
+      explode: false

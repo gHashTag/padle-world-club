@@ -1,0 +1,1248 @@
+paths:
+  /api/courts:
+    get:
+      summary: Get Courts List
+      description: |
+        Retrieve a paginated list of courts with optional filtering and sorting.
+
+        This endpoint supports:
+        - **Pagination** with page and limit parameters
+        - **Filtering** by venue, court type, surface, status, and availability
+        - **Sorting** by various fields (name, createdAt, hourlyRate, etc.)
+        - **Field selection** to include only specific fields
+        - **Search** across court name and description
+        - **Availability filtering** for specific time ranges
+
+        **Access Control:**
+        - Public endpoint for basic court information
+        - Authenticated users get additional details
+        - Venue managers see management information for their courts
+      tags:
+        - Courts
+      security: []  # Public endpoint
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/PageParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LimitParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortByParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortOrderParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SearchParam'
+        - name: venueId
+          in: query
+          description: Filter by venue ID
+          required: false
+          schema:
+            $ref: './schemas/common.yaml#/components/schemas/UUID'
+        - $ref: './schemas/parameters.yaml#/components/parameters/CourtTypeParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/CourtSurfaceParam'
+        - name: status
+          in: query
+          description: Filter by court status
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive, maintenance, out_of_order]
+        - name: isAvailable
+          in: query
+          description: Filter by availability status
+          required: false
+          schema:
+            type: boolean
+        - name: availableFrom
+          in: query
+          description: Check availability from this time
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: availableTo
+          in: query
+          description: Check availability until this time
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: minRate
+          in: query
+          description: Minimum hourly rate filter
+          required: false
+          schema:
+            type: number
+            format: decimal
+            minimum: 0
+        - name: maxRate
+          in: query
+          description: Maximum hourly rate filter
+          required: false
+          schema:
+            type: number
+            format: decimal
+            minimum: 0
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
+      responses:
+        '200':
+          description: Courts retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './schemas/common.yaml#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          data:
+                            type: array
+                            items:
+                              $ref: './schemas/court.yaml#/components/schemas/CourtSummary'
+                          meta:
+                            $ref: './schemas/common.yaml#/components/schemas/PaginationMeta'
+              examples:
+                basic_list:
+                  summary: Basic courts list
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          name: "Court 1"
+                          courtType: "paddle"
+                          surface: "artificial_grass"
+                          status: "active"
+                          hourlyRate: 45.00
+                          currency: "USD"
+                          isIndoor: true
+                          hasLighting: true
+                          venueId: "123e4567-e89b-12d3-a456-426614174001"
+                          venueName: "Central Padel Club"
+                          isAvailable: true
+                          nextAvailableSlot: "2024-01-26T14:00:00Z"
+                        - id: "123e4567-e89b-12d3-a456-426614174002"
+                          name: "Court 2"
+                          courtType: "paddle"
+                          surface: "artificial_grass"
+                          status: "active"
+                          hourlyRate: 45.00
+                          currency: "USD"
+                          isIndoor: true
+                          hasLighting: true
+                          venueId: "123e4567-e89b-12d3-a456-426614174001"
+                          venueName: "Central Padel Club"
+                          isAvailable: false
+                          nextAvailableSlot: "2024-01-26T16:00:00Z"
+                      meta:
+                        total: 24
+                        page: 1
+                        limit: 10
+                        totalPages: 3
+                        hasNext: true
+                        hasPrev: false
+                    message: "Courts retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts"
+                    method: "GET"
+                venue_courts:
+                  summary: Courts filtered by venue
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          name: "Court 1"
+                          courtType: "paddle"
+                          surface: "artificial_grass"
+                          status: "active"
+                          hourlyRate: 45.00
+                          currency: "USD"
+                          isIndoor: true
+                          hasLighting: true
+                          venueId: "123e4567-e89b-12d3-a456-426614174001"
+                          venueName: "Central Padel Club"
+                          isAvailable: true
+                      meta:
+                        total: 8
+                        page: 1
+                        limit: 10
+                        totalPages: 1
+                        hasNext: false
+                        hasPrev: false
+                    message: "Courts retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts?venueId=123e4567-e89b-12d3-a456-426614174001"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    post:
+      summary: Create New Court
+      description: |
+        Create a new court in a venue.
+
+        **Access Control:**
+        - Admin: Can create courts in any venue
+        - Manager: Can create courts in venues they manage
+        - Player: Cannot create courts
+
+        **Required Information:**
+        - Basic court details (name, type, surface)
+        - Venue association
+        - Pricing information
+        - Technical specifications
+      tags:
+        - Courts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/court.yaml#/components/schemas/CreateCourtRequest'
+            examples:
+              basic_court:
+                summary: Basic padel court creation
+                value:
+                  name: "Court 3"
+                  venueId: "123e4567-e89b-12d3-a456-426614174001"
+                  courtType: "paddle"
+                  surface: "artificial_grass"
+                  hourlyRate: 45.00
+                  currency: "USD"
+                  isIndoor: true
+                  hasLighting: true
+                  dimensions:
+                    length: 20
+                    width: 10
+                    height: 6
+                  features:
+                    hasAirConditioning: true
+                    hasHeating: true
+                    hasSoundSystem: false
+              premium_court:
+                summary: Premium court with all features
+                value:
+                  name: "Championship Court"
+                  description: "Professional tournament-grade court with live streaming"
+                  venueId: "123e4567-e89b-12d3-a456-426614174001"
+                  courtType: "paddle"
+                  surface: "artificial_grass"
+                  hourlyRate: 75.00
+                  currency: "USD"
+                  isIndoor: true
+                  hasLighting: true
+                  dimensions:
+                    length: 20
+                    width: 10
+                    height: 6
+                  features:
+                    hasAirConditioning: true
+                    hasHeating: true
+                    hasSoundSystem: true
+                    hasLiveStreaming: true
+                    hasScoreboard: true
+                  equipment:
+                    - "Professional LED lighting"
+                    - "Digital scoreboard"
+                    - "Sound system"
+                    - "Live streaming cameras"
+      responses:
+        '201':
+          description: Court created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/court.yaml#/components/schemas/Court'
+                  message:
+                    type: string
+                    example: "Court created successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/courts"
+                  method:
+                    type: string
+                    example: "POST"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                venue_not_found:
+                  summary: Venue not found
+                  value:
+                    success: false
+                    message: "Venue not found"
+                    error: "Venue with ID '123e4567-e89b-12d3-a456-426614174001' does not exist"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts"
+                    method: "POST"
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/courts/{id}/availability:
+    get:
+      summary: Get Court Availability
+      description: |
+        Check the availability of a specific court for a given time period.
+
+        This endpoint provides:
+        - **Real-time availability** for the specified time range
+        - **Available time slots** within the period
+        - **Existing bookings** that conflict with the time range
+        - **Recurring availability patterns** (e.g., weekly schedule)
+        - **Special availability rules** (holidays, maintenance windows)
+
+        **Use Cases:**
+        - Check if court is available for booking
+        - Find available time slots for a specific date
+        - Display court schedule and availability calendar
+        - Validate booking requests before submission
+      tags:
+        - Courts
+      security: []  # Public endpoint
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - name: startDate
+          in: query
+          description: Start date for availability check (ISO 8601)
+          required: true
+          schema:
+            type: string
+            format: date-time
+          example: "2024-01-26T09:00:00Z"
+        - name: endDate
+          in: query
+          description: End date for availability check (ISO 8601)
+          required: true
+          schema:
+            type: string
+            format: date-time
+          example: "2024-01-26T18:00:00Z"
+        - name: duration
+          in: query
+          description: Desired booking duration in minutes
+          required: false
+          schema:
+            type: integer
+            minimum: 30
+            maximum: 480
+            default: 90
+          example: 90
+        - name: includeBookings
+          in: query
+          description: Include existing booking details
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Court availability retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      courtId:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      courtName:
+                        type: string
+                        example: "Court 1"
+                      venueId:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      venueName:
+                        type: string
+                        example: "Central Padel Club"
+                      requestedPeriod:
+                        type: object
+                        properties:
+                          startDate:
+                            type: string
+                            format: date-time
+                            example: "2024-01-26T09:00:00Z"
+                          endDate:
+                            type: string
+                            format: date-time
+                            example: "2024-01-26T18:00:00Z"
+                          duration:
+                            type: integer
+                            example: 90
+                      isAvailable:
+                        type: boolean
+                        example: true
+                        description: Whether the court is available for the entire requested period
+                      availableSlots:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            startTime:
+                              type: string
+                              format: date-time
+                              example: "2024-01-26T09:00:00Z"
+                            endTime:
+                              type: string
+                              format: date-time
+                              example: "2024-01-26T10:30:00Z"
+                            duration:
+                              type: integer
+                              example: 90
+                            rate:
+                              type: number
+                              format: decimal
+                              example: 45.00
+                            currency:
+                              $ref: './schemas/common.yaml#/components/schemas/Currency'
+                        description: Available time slots within the requested period
+                      conflictingBookings:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            bookingId:
+                              $ref: './schemas/common.yaml#/components/schemas/UUID'
+                            startTime:
+                              type: string
+                              format: date-time
+                              example: "2024-01-26T14:00:00Z"
+                            endTime:
+                              type: string
+                              format: date-time
+                              example: "2024-01-26T15:30:00Z"
+                            status:
+                              $ref: './schemas/common.yaml#/components/schemas/BookingStatus'
+                        description: Existing bookings that conflict with the requested time
+                      operatingHours:
+                        type: object
+                        properties:
+                          open:
+                            type: string
+                            pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+                            example: "09:00"
+                          close:
+                            type: string
+                            pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+                            example: "22:00"
+                        description: Venue operating hours for the requested date
+                      specialRules:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                              enum: [holiday, maintenance, event, closure]
+                              example: "maintenance"
+                            startTime:
+                              type: string
+                              format: date-time
+                              example: "2024-01-26T12:00:00Z"
+                            endTime:
+                              type: string
+                              format: date-time
+                              example: "2024-01-26T13:00:00Z"
+                            reason:
+                              type: string
+                              example: "Scheduled maintenance"
+                        description: Special rules affecting availability
+                  message:
+                    type: string
+                    example: "Court availability retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/courts/123e4567-e89b-12d3-a456-426614174000/availability"
+                  method:
+                    type: string
+                    example: "GET"
+              examples:
+                available_court:
+                  summary: Court available for booking
+                  value:
+                    success: true
+                    data:
+                      courtId: "123e4567-e89b-12d3-a456-426614174000"
+                      courtName: "Court 1"
+                      venueId: "123e4567-e89b-12d3-a456-426614174001"
+                      venueName: "Central Padel Club"
+                      requestedPeriod:
+                        startDate: "2024-01-26T09:00:00Z"
+                        endDate: "2024-01-26T18:00:00Z"
+                        duration: 90
+                      isAvailable: true
+                      availableSlots:
+                        - startTime: "2024-01-26T09:00:00Z"
+                          endTime: "2024-01-26T10:30:00Z"
+                          duration: 90
+                          rate: 45.00
+                          currency: "USD"
+                        - startTime: "2024-01-26T10:30:00Z"
+                          endTime: "2024-01-26T12:00:00Z"
+                          duration: 90
+                          rate: 45.00
+                          currency: "USD"
+                        - startTime: "2024-01-26T15:30:00Z"
+                          endTime: "2024-01-26T17:00:00Z"
+                          duration: 90
+                          rate: 45.00
+                          currency: "USD"
+                      conflictingBookings:
+                        - bookingId: "123e4567-e89b-12d3-a456-426614174002"
+                          startTime: "2024-01-26T14:00:00Z"
+                          endTime: "2024-01-26T15:30:00Z"
+                          status: "confirmed"
+                      operatingHours:
+                        open: "09:00"
+                        close: "22:00"
+                      specialRules:
+                        - type: "maintenance"
+                          startTime: "2024-01-26T12:00:00Z"
+                          endTime: "2024-01-26T13:00:00Z"
+                          reason: "Daily court cleaning"
+                    message: "Court availability retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts/123e4567-e89b-12d3-a456-426614174000/availability"
+                    method: "GET"
+                unavailable_court:
+                  summary: Court not available for requested time
+                  value:
+                    success: true
+                    data:
+                      courtId: "123e4567-e89b-12d3-a456-426614174000"
+                      courtName: "Court 1"
+                      venueId: "123e4567-e89b-12d3-a456-426614174001"
+                      venueName: "Central Padel Club"
+                      requestedPeriod:
+                        startDate: "2024-01-26T14:00:00Z"
+                        endDate: "2024-01-26T15:30:00Z"
+                        duration: 90
+                      isAvailable: false
+                      availableSlots: []
+                      conflictingBookings:
+                        - bookingId: "123e4567-e89b-12d3-a456-426614174002"
+                          startTime: "2024-01-26T14:00:00Z"
+                          endTime: "2024-01-26T15:30:00Z"
+                          status: "confirmed"
+                      operatingHours:
+                        open: "09:00"
+                        close: "22:00"
+                      specialRules: []
+                    message: "Court availability retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts/123e4567-e89b-12d3-a456-426614174000/availability"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/courts/{id}/stats:
+    get:
+      summary: Get Court Statistics
+      description: |
+        Retrieve statistical information about a court's usage and performance.
+
+        **Access Control:**
+        - Admin: Can view statistics for any court
+        - Manager: Can view statistics for courts in their venues
+        - Player: Can view basic public statistics only
+
+        **Statistics Include:**
+        - **Usage metrics** (booking frequency, utilization rate)
+        - **Revenue information** (total revenue, average booking value)
+        - **Performance data** (popular time slots, peak usage periods)
+        - **Maintenance history** (downtime, maintenance costs)
+        - **User feedback** (ratings, reviews summary)
+
+        **Time Periods:**
+        - Daily, weekly, monthly, yearly statistics
+        - Custom date range filtering
+        - Comparative analysis with previous periods
+      tags:
+        - Courts
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - name: period
+          in: query
+          description: Statistics time period
+          required: false
+          schema:
+            type: string
+            enum: [day, week, month, quarter, year, custom]
+            default: month
+          example: "month"
+        - $ref: './schemas/parameters.yaml#/components/parameters/StartDateParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/EndDateParam'
+        - name: includeRevenue
+          in: query
+          description: Include revenue statistics (managers/admins only)
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: includeMaintenance
+          in: query
+          description: Include maintenance statistics (managers/admins only)
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: compareWithPrevious
+          in: query
+          description: Include comparison with previous period
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Court statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      courtId:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      courtName:
+                        type: string
+                        example: "Court 1"
+                      venueId:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      venueName:
+                        type: string
+                        example: "Central Padel Club"
+                      period:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                            example: "month"
+                          startDate:
+                            type: string
+                            format: date-time
+                            example: "2024-01-01T00:00:00Z"
+                          endDate:
+                            type: string
+                            format: date-time
+                            example: "2024-01-31T23:59:59Z"
+                      usage:
+                        type: object
+                        properties:
+                          totalBookings:
+                            type: integer
+                            example: 87
+                          totalHours:
+                            type: number
+                            format: double
+                            example: 130.5
+                          utilizationRate:
+                            type: number
+                            format: double
+                            example: 0.68
+                            description: Percentage of available time that was booked
+                          averageBookingDuration:
+                            type: number
+                            format: double
+                            example: 90
+                            description: Average booking duration in minutes
+                          peakHours:
+                            type: array
+                            items:
+                              type: string
+                            example: ["18:00-20:00", "19:00-21:00"]
+                          popularDays:
+                            type: array
+                            items:
+                              type: string
+                            example: ["Friday", "Saturday", "Sunday"]
+                      revenue:
+                        type: object
+                        nullable: true
+                        properties:
+                          totalRevenue:
+                            type: number
+                            format: decimal
+                            example: 5872.50
+                          averageBookingValue:
+                            type: number
+                            format: decimal
+                            example: 67.50
+                          currency:
+                            $ref: './schemas/common.yaml#/components/schemas/Currency'
+                          revenueByDay:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  format: date
+                                  example: "2024-01-15"
+                                revenue:
+                                  type: number
+                                  format: decimal
+                                  example: 225.00
+                        description: Revenue statistics (managers/admins only)
+                      maintenance:
+                        type: object
+                        nullable: true
+                        properties:
+                          totalDowntime:
+                            type: number
+                            example: 8.5
+                            description: Total downtime in hours
+                          maintenanceEvents:
+                            type: integer
+                            example: 3
+                          maintenanceCost:
+                            type: number
+                            format: decimal
+                            example: 450.00
+                          lastMaintenance:
+                            type: string
+                            format: date-time
+                            example: "2024-01-20T10:00:00Z"
+                          nextScheduledMaintenance:
+                            type: string
+                            format: date-time
+                            example: "2024-02-15T10:00:00Z"
+                        description: Maintenance statistics (managers/admins only)
+                      feedback:
+                        type: object
+                        properties:
+                          averageRating:
+                            type: number
+                            format: double
+                            example: 4.3
+                          totalReviews:
+                            type: integer
+                            example: 42
+                          ratingDistribution:
+                            type: object
+                            properties:
+                              "5":
+                                type: integer
+                                example: 18
+                              "4":
+                                type: integer
+                                example: 15
+                              "3":
+                                type: integer
+                                example: 7
+                              "2":
+                                type: integer
+                                example: 2
+                              "1":
+                                type: integer
+                                example: 0
+                      comparison:
+                        type: object
+                        nullable: true
+                        properties:
+                          previousPeriod:
+                            type: object
+                            properties:
+                              totalBookings:
+                                type: integer
+                                example: 72
+                              utilizationRate:
+                                type: number
+                                format: double
+                                example: 0.56
+                              totalRevenue:
+                                type: number
+                                format: decimal
+                                example: 4860.00
+                          changes:
+                            type: object
+                            properties:
+                              bookingsChange:
+                                type: number
+                                format: double
+                                example: 0.21
+                                description: Percentage change in bookings
+                              utilizationChange:
+                                type: number
+                                format: double
+                                example: 0.12
+                                description: Percentage change in utilization
+                              revenueChange:
+                                type: number
+                                format: double
+                                example: 0.21
+                                description: Percentage change in revenue
+                        description: Comparison with previous period
+                  message:
+                    type: string
+                    example: "Court statistics retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/courts/123e4567-e89b-12d3-a456-426614174000/stats"
+                  method:
+                    type: string
+                    example: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/courts/{id}:
+    get:
+      summary: Get Court by ID
+      description: |
+        Retrieve detailed information about a specific court.
+
+        **Access Control:**
+        - Public endpoint for basic court information
+        - Authenticated users get additional details
+        - Venue managers get management information
+
+        **Includes:**
+        - Complete court specifications
+        - Current availability status
+        - Recent booking statistics
+        - Maintenance history (for managers)
+        - Revenue information (for managers/admins)
+      tags:
+        - Courts
+      security: []  # Public endpoint
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
+      responses:
+        '200':
+          description: Court retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/court.yaml#/components/schemas/Court'
+                  message:
+                    type: string
+                    example: "Court retrieved successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/courts/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "GET"
+              examples:
+                public_view:
+                  summary: Public court information
+                  value:
+                    success: true
+                    data:
+                      id: "123e4567-e89b-12d3-a456-426614174000"
+                      name: "Court 1"
+                      description: "Premium indoor padel court with professional lighting"
+                      venueId: "123e4567-e89b-12d3-a456-426614174001"
+                      venue:
+                        id: "123e4567-e89b-12d3-a456-426614174001"
+                        name: "Central Padel Club"
+                        address:
+                          city: "New York"
+                          country: "United States"
+                      courtType: "paddle"
+                      surface: "artificial_grass"
+                      status: "active"
+                      hourlyRate: 45.00
+                      currency: "USD"
+                      isIndoor: true
+                      hasLighting: true
+                      dimensions:
+                        length: 20
+                        width: 10
+                        height: 6
+                      features:
+                        hasAirConditioning: true
+                        hasHeating: true
+                        hasSoundSystem: false
+                      images: ["https://example.com/court1.jpg"]
+                      isAvailable: true
+                      nextAvailableSlot: "2024-01-26T14:00:00Z"
+                      createdAt: "2024-01-01T10:00:00Z"
+                      updatedAt: "2024-01-26T10:00:00Z"
+                    message: "Court retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts/123e4567-e89b-12d3-a456-426614174000"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    put:
+      summary: Update Court
+      description: |
+        Update court information and specifications.
+
+        **Access Control:**
+        - Admin: Can update any court
+        - Manager: Can update courts in venues they manage
+        - Player: Cannot update courts
+
+        **Updatable Fields:**
+        - Basic information (name, description, pricing)
+        - Technical specifications and features
+        - Status and availability
+        - Equipment and amenities
+      tags:
+        - Courts
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/court.yaml#/components/schemas/UpdateCourtRequest'
+            examples:
+              basic_update:
+                summary: Update basic court information
+                value:
+                  name: "Court 1 - Premium"
+                  description: "Upgraded premium court with new features"
+                  hourlyRate: 50.00
+                  features:
+                    hasAirConditioning: true
+                    hasHeating: true
+                    hasSoundSystem: true
+              maintenance_update:
+                summary: Update court status for maintenance
+                value:
+                  status: "maintenance"
+                  maintenanceNotes: "Resurfacing scheduled for next week"
+      responses:
+        '200':
+          description: Court updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: './schemas/court.yaml#/components/schemas/Court'
+                  message:
+                    type: string
+                    example: "Court updated successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/courts/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "PUT"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete Court
+      description: |
+        Delete a court from the system.
+
+        **Access Control:**
+        - Admin: Can delete any court
+        - Manager: Can delete courts in venues they manage (with restrictions)
+        - Player: Cannot delete courts
+
+        **Restrictions:**
+        - Cannot delete courts with active bookings
+        - Cannot delete the last court in a venue
+
+        **Note:** This performs a soft delete by setting status to 'out_of_order'.
+        Court data is retained for historical bookings and audit purposes.
+      tags:
+        - Courts
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Court deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        $ref: './schemas/common.yaml#/components/schemas/UUID'
+                      status:
+                        type: string
+                        example: "out_of_order"
+                      deletedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-26T10:00:00Z"
+                  message:
+                    type: string
+                    example: "Court deleted successfully"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  path:
+                    type: string
+                    example: "/api/courts/123e4567-e89b-12d3-a456-426614174000"
+                  method:
+                    type: string
+                    example: "DELETE"
+        '400':
+          description: Cannot delete court
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                active_bookings:
+                  summary: Court has active bookings
+                  value:
+                    success: false
+                    message: "Cannot delete court with active bookings"
+                    error: "Court has 3 active bookings. Cancel all bookings before deletion."
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts/123e4567-e89b-12d3-a456-426614174000"
+                    method: "DELETE"
+                last_court:
+                  summary: Cannot delete last court in venue
+                  value:
+                    success: false
+                    message: "Cannot delete the last court in venue"
+                    error: "Venue must have at least one active court"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts/123e4567-e89b-12d3-a456-426614174000"
+                    method: "DELETE"
+        '401':
+          $ref: './schemas/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './schemas/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './schemas/responses.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'
+
+  /api/courts/venue/{venueId}:
+    get:
+      summary: Get Courts by Venue
+      description: |
+        Retrieve all courts belonging to a specific venue.
+
+        This is a convenience endpoint that provides the same functionality
+        as GET /api/courts?venueId={venueId} but with a more RESTful URL structure.
+
+        **Access Control:**
+        - Public endpoint for basic court information
+        - Venue managers get additional management details
+
+        **Features:**
+        - Automatic filtering by venue
+        - Availability status for each court
+        - Sorting by court number/name
+        - Optional time-based availability filtering
+      tags:
+        - Courts
+      security: []  # Public endpoint
+      parameters:
+        - $ref: './schemas/parameters.yaml#/components/parameters/VenueIdParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/PageParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/LimitParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortByParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/SortOrderParam'
+        - name: availableFrom
+          in: query
+          description: Check availability from this time
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: availableTo
+          in: query
+          description: Check availability until this time
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: includeUnavailable
+          in: query
+          description: Include unavailable courts in results
+          required: false
+          schema:
+            type: boolean
+            default: true
+        - $ref: './schemas/parameters.yaml#/components/parameters/FieldsParam'
+        - $ref: './schemas/parameters.yaml#/components/parameters/IncludeParam'
+      responses:
+        '200':
+          description: Venue courts retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './schemas/common.yaml#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          data:
+                            type: array
+                            items:
+                              $ref: './schemas/court.yaml#/components/schemas/CourtSummary'
+                          meta:
+                            allOf:
+                              - $ref: './schemas/common.yaml#/components/schemas/PaginationMeta'
+                              - type: object
+                                properties:
+                                  venueId:
+                                    $ref: './schemas/common.yaml#/components/schemas/UUID'
+                                  venueName:
+                                    type: string
+                                    example: "Central Padel Club"
+                                  totalActiveCourts:
+                                    type: integer
+                                    example: 6
+                                  availableCourts:
+                                    type: integer
+                                    example: 4
+              examples:
+                venue_courts:
+                  summary: All courts in venue
+                  value:
+                    success: true
+                    data:
+                      data:
+                        - id: "123e4567-e89b-12d3-a456-426614174000"
+                          name: "Court 1"
+                          courtType: "paddle"
+                          surface: "artificial_grass"
+                          status: "active"
+                          hourlyRate: 45.00
+                          currency: "USD"
+                          isIndoor: true
+                          hasLighting: true
+                          isAvailable: true
+                          nextAvailableSlot: "2024-01-26T14:00:00Z"
+                        - id: "123e4567-e89b-12d3-a456-426614174001"
+                          name: "Court 2"
+                          courtType: "paddle"
+                          surface: "artificial_grass"
+                          status: "active"
+                          hourlyRate: 45.00
+                          currency: "USD"
+                          isIndoor: true
+                          hasLighting: true
+                          isAvailable: false
+                          nextAvailableSlot: "2024-01-26T16:00:00Z"
+                      meta:
+                        total: 8
+                        page: 1
+                        limit: 10
+                        totalPages: 1
+                        hasNext: false
+                        hasPrev: false
+                        venueId: "123e4567-e89b-12d3-a456-426614174001"
+                        venueName: "Central Padel Club"
+                        totalActiveCourts: 6
+                        availableCourts: 4
+                    message: "Venue courts retrieved successfully"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts/venue/123e4567-e89b-12d3-a456-426614174001"
+                    method: "GET"
+        '400':
+          $ref: './schemas/responses.yaml#/components/responses/BadRequest'
+        '404':
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+              examples:
+                venue_not_found:
+                  summary: Venue not found
+                  value:
+                    success: false
+                    message: "Venue not found"
+                    error: "Venue with ID '123e4567-e89b-12d3-a456-426614174001' does not exist"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/api/courts/venue/123e4567-e89b-12d3-a456-426614174001"
+                    method: "GET"
+        '500':
+          $ref: './schemas/responses.yaml#/components/responses/InternalServerError'

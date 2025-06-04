@@ -1,0 +1,196 @@
+# Docker Compose for Development Environment
+# Simplified setup for local development with hot reload
+
+version: '3.8'
+
+services:
+  # ================================
+  # Development API with Hot Reload
+  # ================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: padel-api-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://padel_user:padel_password@postgres:5432/padel_db
+      - JWT_SECRET=dev-secret-key-change-in-production
+      - JWT_EXPIRES_IN=7d
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - padel-dev-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    command: ["bun", "run", "dev"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ================================
+  # PostgreSQL Database
+  # ================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: padel-postgres-dev
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=padel_db
+      - POSTGRES_USER=padel_user
+      - POSTGRES_PASSWORD=padel_password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - padel-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U padel_user -d padel_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================
+  # Redis Cache & Session Store
+  # ================================
+  redis:
+    image: redis:7-alpine
+    container_name: padel-redis-dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - padel-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================
+  # Database Migration Runner
+  # ================================
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: padel-migrator-dev
+    environment:
+      - DATABASE_URL=postgresql://padel_user:padel_password@postgres:5432/padel_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - padel-dev-network
+    command: ["bun", "run", "db:migrate"]
+    restart: "no"
+
+  # ================================
+  # Database Seeder (Optional)
+  # ================================
+  seeder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: padel-seeder-dev
+    environment:
+      - DATABASE_URL=postgresql://padel_user:padel_password@postgres:5432/padel_db
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    networks:
+      - padel-dev-network
+    command: ["bun", "run", "db:seed"]
+    restart: "no"
+    profiles:
+      - seed
+
+  # ================================
+  # Drizzle Studio (Database GUI)
+  # ================================
+  drizzle-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: padel-drizzle-studio
+    ports:
+      - "4983:4983"
+    environment:
+      - DATABASE_URL=postgresql://padel_user:padel_password@postgres:5432/padel_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - padel-dev-network
+    volumes:
+      - .:/app
+    command: ["bun", "run", "db:studio"]
+    profiles:
+      - studio
+
+  # ================================
+  # Test Runner (for CI/CD)
+  # ================================
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: padel-test
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://padel_user:padel_password@postgres:5432/padel_test_db
+      - JWT_SECRET=test-secret-key
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - padel-dev-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: ["bun", "run", "test"]
+    profiles:
+      - test
+
+# ================================
+# Networks
+# ================================
+networks:
+  padel-dev-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+# ================================
+# Volumes
+# ================================
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local

@@ -1,0 +1,426 @@
+components:
+  schemas:
+    Payment:
+      type: object
+      properties:
+        id:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: Unique payment identifier
+        userId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the user making the payment
+        user:
+          $ref: './user.yaml#/components/schemas/UserSummary'
+          description: User information
+          readOnly: true
+        bookingId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          nullable: true
+          description: ID of the associated booking (if applicable)
+        booking:
+          $ref: './booking.yaml#/components/schemas/BookingSummary'
+          nullable: true
+          description: Associated booking information
+          readOnly: true
+        amount:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 67.50
+          description: Payment amount
+        currency:
+          $ref: './common.yaml#/components/schemas/Currency'
+          description: Payment currency
+        status:
+          $ref: './common.yaml#/components/schemas/PaymentStatus'
+          description: Current payment status
+        paymentMethod:
+          $ref: './common.yaml#/components/schemas/PaymentMethod'
+          description: Payment method used
+        paymentType:
+          type: string
+          enum: [booking, refund, fee, deposit, membership]
+          example: "booking"
+          description: Type of payment
+        transactionId:
+          type: string
+          nullable: true
+          example: "txn_1234567890"
+          description: External transaction ID from payment gateway
+        gatewayPaymentId:
+          type: string
+          nullable: true
+          example: "pi_1234567890"
+          description: Payment gateway's internal payment ID
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: "Court booking payment for Central Padel Club"
+          description: Payment description
+        paymentMethodDetails:
+          type: object
+          nullable: true
+          properties:
+            last4:
+              type: string
+              example: "4242"
+              description: Last 4 digits of card (for card payments)
+            brand:
+              type: string
+              example: "visa"
+              description: Card brand (for card payments)
+            expiryMonth:
+              type: integer
+              example: 12
+              description: Card expiry month (for card payments)
+            expiryYear:
+              type: integer
+              example: 2025
+              description: Card expiry year (for card payments)
+            bankName:
+              type: string
+              example: "Chase Bank"
+              description: Bank name (for bank transfers)
+            accountType:
+              type: string
+              example: "checking"
+              description: Account type (for bank transfers)
+          description: Masked payment method details
+          readOnly: true
+        fees:
+          type: object
+          nullable: true
+          properties:
+            processingFee:
+              type: number
+              format: decimal
+              example: 2.25
+              description: Payment processing fee
+            platformFee:
+              type: number
+              format: decimal
+              example: 1.50
+              description: Platform fee
+            totalFees:
+              type: number
+              format: decimal
+              example: 3.75
+              description: Total fees charged
+            currency:
+              $ref: './common.yaml#/components/schemas/Currency'
+          description: Payment fees breakdown
+          readOnly: true
+        refunds:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                $ref: './common.yaml#/components/schemas/UUID'
+              amount:
+                type: number
+                format: decimal
+                example: 30.00
+              currency:
+                $ref: './common.yaml#/components/schemas/Currency'
+              reason:
+                type: string
+                example: "Partial cancellation"
+              status:
+                type: string
+                enum: [pending, processing, completed, failed]
+                example: "completed"
+              refundMethod:
+                type: string
+                enum: [original, bank_transfer, store_credit]
+                example: "original"
+              transactionId:
+                type: string
+                example: "rfnd_1234567890"
+              processedAt:
+                type: string
+                format: date-time
+                example: "2024-01-26T10:00:00Z"
+          description: List of refunds for this payment
+          readOnly: true
+        totalRefunded:
+          type: number
+          format: decimal
+          example: 30.00
+          description: Total amount refunded
+          readOnly: true
+        netAmount:
+          type: number
+          format: decimal
+          example: 37.50
+          description: Net amount after refunds
+          readOnly: true
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          example:
+            source: "mobile_app"
+            campaign: "summer_promotion"
+            venueId: "123e4567-e89b-12d3-a456-426614174001"
+          description: Additional payment metadata
+        gatewayResponse:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Raw response from payment gateway (admin only)
+          readOnly: true
+        processedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-26T10:00:00Z"
+          description: When the payment was processed
+          readOnly: true
+        failureReason:
+          type: string
+          nullable: true
+          example: "Insufficient funds"
+          description: Reason for payment failure (if applicable)
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T09:55:00Z"
+          description: Payment creation timestamp
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+          description: Last update timestamp
+          readOnly: true
+      required:
+        - id
+        - userId
+        - amount
+        - currency
+        - status
+        - paymentMethod
+        - paymentType
+        - totalRefunded
+        - netAmount
+        - createdAt
+        - updatedAt
+      example:
+        id: "123e4567-e89b-12d3-a456-426614174000"
+        userId: "123e4567-e89b-12d3-a456-426614174001"
+        user:
+          id: "123e4567-e89b-12d3-a456-426614174001"
+          username: "john_doe"
+          firstName: "John"
+          lastName: "Doe"
+          fullName: "John Doe"
+        bookingId: "123e4567-e89b-12d3-a456-426614174002"
+        booking:
+          id: "123e4567-e89b-12d3-a456-426614174002"
+          courtName: "Court 1"
+          venueName: "Central Padel Club"
+          startTime: "2024-01-26T14:00:00Z"
+          endTime: "2024-01-26T15:30:00Z"
+        amount: 67.50
+        currency: "USD"
+        status: "completed"
+        paymentMethod: "credit_card"
+        paymentType: "booking"
+        transactionId: "txn_1234567890"
+        gatewayPaymentId: "pi_1234567890"
+        description: "Court booking payment for Central Padel Club"
+        paymentMethodDetails:
+          last4: "4242"
+          brand: "visa"
+          expiryMonth: 12
+          expiryYear: 2025
+        fees:
+          processingFee: 2.25
+          platformFee: 1.50
+          totalFees: 3.75
+          currency: "USD"
+        refunds: []
+        totalRefunded: 0.00
+        netAmount: 67.50
+        metadata:
+          source: "mobile_app"
+          venueId: "123e4567-e89b-12d3-a456-426614174003"
+        processedAt: "2024-01-26T10:00:00Z"
+        failureReason: null
+        createdAt: "2024-01-26T09:55:00Z"
+        updatedAt: "2024-01-26T10:00:00Z"
+
+    PaymentSummary:
+      type: object
+      description: Simplified payment information for lists and references
+      properties:
+        id:
+          $ref: './common.yaml#/components/schemas/UUID'
+        userId:
+          $ref: './common.yaml#/components/schemas/UUID'
+        user:
+          type: object
+          properties:
+            username:
+              type: string
+              example: "john_doe"
+            firstName:
+              type: string
+              example: "John"
+            lastName:
+              type: string
+              example: "Doe"
+        bookingId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          nullable: true
+        amount:
+          type: number
+          format: decimal
+          example: 67.50
+        currency:
+          $ref: './common.yaml#/components/schemas/Currency'
+        status:
+          $ref: './common.yaml#/components/schemas/PaymentStatus'
+        paymentMethod:
+          $ref: './common.yaml#/components/schemas/PaymentMethod'
+        paymentType:
+          type: string
+          enum: [booking, refund, fee, deposit, membership]
+          example: "booking"
+        transactionId:
+          type: string
+          nullable: true
+          example: "txn_1234567890"
+        totalRefunded:
+          type: number
+          format: decimal
+          example: 0.00
+        netAmount:
+          type: number
+          format: decimal
+          example: 67.50
+        processedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-26T10:00:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T09:55:00Z"
+      required:
+        - id
+        - userId
+        - amount
+        - currency
+        - status
+        - paymentMethod
+        - paymentType
+        - totalRefunded
+        - netAmount
+        - createdAt
+
+    CreatePaymentRequest:
+      type: object
+      required:
+        - amount
+        - currency
+        - paymentMethod
+        - paymentType
+      properties:
+        userId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the user making the payment (admin/manager only)
+        bookingId:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: ID of the associated booking (for booking payments)
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          example: 67.50
+          description: Payment amount
+        currency:
+          $ref: './common.yaml#/components/schemas/Currency'
+          description: Payment currency
+        paymentMethod:
+          $ref: './common.yaml#/components/schemas/PaymentMethod'
+          description: Payment method to use
+        paymentType:
+          type: string
+          enum: [booking, fee, deposit, membership]
+          example: "booking"
+          description: Type of payment
+        paymentMethodDetails:
+          type: object
+          properties:
+            cardToken:
+              type: string
+              example: "tok_1234567890"
+              description: Tokenized card details (for card payments)
+            paymentMethodId:
+              type: string
+              example: "pm_1234567890"
+              description: Saved payment method ID
+            saveCard:
+              type: boolean
+              default: false
+              description: Whether to save the card for future use
+            billingAddress:
+              $ref: './common.yaml#/components/schemas/Address'
+              description: Billing address
+          description: Payment method specific details
+        description:
+          type: string
+          maxLength: 500
+          example: "Court booking payment"
+          description: Payment description
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            source: "mobile_app"
+            campaign: "summer_promotion"
+          description: Additional payment metadata
+        autoConfirm:
+          type: boolean
+          default: true
+          description: Whether to automatically confirm the payment
+
+    UpdatePaymentRequest:
+      type: object
+      properties:
+        status:
+          $ref: './common.yaml#/components/schemas/PaymentStatus'
+          description: New payment status (admin only)
+        description:
+          type: string
+          maxLength: 500
+          example: "Updated payment description"
+          description: Updated payment description
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            updatedBy: "admin"
+            reason: "Correction"
+          description: Updated payment metadata
+        notes:
+          type: string
+          maxLength: 1000
+          example: "Payment confirmed by bank"
+          description: Internal notes about the payment
+        refundAmount:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 30.00
+          description: Amount to refund (for refund processing)
+        refundReason:
+          type: string
+          maxLength: 500
+          example: "Booking cancelled"
+          description: Reason for refund (for refund processing)

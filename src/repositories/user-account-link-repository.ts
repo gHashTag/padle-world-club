@@ -4,15 +4,16 @@
  */
 
 import { and, eq } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
+
+
 import { UserAccountLink, NewUserAccountLink, userAccountLinks } from "../db/schema";
+import { DatabaseType } from "./types";
 import { NotificationChannel } from "../types";
 
 export class UserAccountLinkRepository {
-  private db: PostgresJsDatabase<typeof schema>;
+  private db: DatabaseType;
 
-  constructor(db: PostgresJsDatabase<typeof schema>) {
+  constructor(db: DatabaseType) {
     this.db = db;
   }
 

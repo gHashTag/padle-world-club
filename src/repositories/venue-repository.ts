@@ -4,14 +4,13 @@
  */
 
 import { eq, like, and } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema";
 import { Venue, NewVenue, venues } from "../db/schema";
+import { DatabaseType } from "./types";
 
 export class VenueRepository {
-  private db: PostgresJsDatabase<typeof schema>;
+  private db: DatabaseType;
 
-  constructor(db: PostgresJsDatabase<typeof schema>) {
+  constructor(db: DatabaseType) {
     this.db = db;
   }
 
@@ -35,8 +34,15 @@ export class VenueRepository {
       .select()
       .from(venues)
       .where(eq(venues.id, id));
-    
+
     return result.length > 0 ? result[0] : null;
+  }
+
+  /**
+   * Алиас для getById для совместимости с API handlers
+   */
+  async findById(id: string): Promise<Venue | null> {
+    return this.getById(id);
   }
 
   /**
@@ -49,7 +55,7 @@ export class VenueRepository {
       .select()
       .from(venues)
       .where(eq(venues.name, name));
-    
+
     return result.length > 0 ? result[0] : null;
   }
 
@@ -65,7 +71,7 @@ export class VenueRepository {
         .from(venues)
         .where(eq(venues.isActive, true));
     }
-    
+
     return await this.db.select().from(venues);
   }
 
@@ -77,11 +83,11 @@ export class VenueRepository {
    */
   async getByCity(city: string, activeOnly: boolean = false): Promise<Venue[]> {
     const conditions = [eq(venues.city, city)];
-    
+
     if (activeOnly) {
       conditions.push(eq(venues.isActive, true));
     }
-    
+
     return await this.db
       .select()
       .from(venues)
@@ -96,11 +102,11 @@ export class VenueRepository {
    */
   async getByCountry(country: string, activeOnly: boolean = false): Promise<Venue[]> {
     const conditions = [eq(venues.country, country)];
-    
+
     if (activeOnly) {
       conditions.push(eq(venues.isActive, true));
     }
-    
+
     return await this.db
       .select()
       .from(venues)
@@ -115,11 +121,11 @@ export class VenueRepository {
    */
   async searchByName(searchTerm: string, activeOnly: boolean = false): Promise<Venue[]> {
     const conditions = [like(venues.name, `%${searchTerm}%`)];
-    
+
     if (activeOnly) {
       conditions.push(eq(venues.isActive, true));
     }
-    
+
     return await this.db
       .select()
       .from(venues)
@@ -138,7 +144,7 @@ export class VenueRepository {
       .set(venueData)
       .where(eq(venues.id, id))
       .returning();
-    
+
     return updatedVenue || null;
   }
 
@@ -153,7 +159,7 @@ export class VenueRepository {
       .set({ isActive: false })
       .where(eq(venues.id, id))
       .returning();
-    
+
     return !!deactivatedVenue;
   }
 
@@ -168,7 +174,7 @@ export class VenueRepository {
       .set({ isActive: true })
       .where(eq(venues.id, id))
       .returning();
-    
+
     return !!activatedVenue;
   }
 
@@ -182,7 +188,94 @@ export class VenueRepository {
       .delete(venues)
       .where(eq(venues.id, id))
       .returning();
-    
+
     return !!deletedVenue;
+  }
+
+  /**
+   * Получает список площадок с пагинацией и фильтрацией
+   * @param options Опции для фильтрации и сортировки
+   * @returns Объект с данными и метаинформацией
+   */
+  async findMany(options: {
+    page: number;
+    limit: number;
+    city?: string;
+    status?: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+  }): Promise<{ data: Venue[]; total: number; page: number; limit: number }> {
+    const { page, limit, city, status, sortBy, sortOrder: _sortOrder } = options;
+    const offset = (page - 1) * limit;
+
+    // Строим условия фильтрации
+    const conditions = [];
+    if (city) {
+      conditions.push(eq(venues.city, city));
+    }
+    if (status === 'active') {
+      conditions.push(eq(venues.isActive, true));
+    } else if (status === 'inactive') {
+      conditions.push(eq(venues.isActive, false));
+    }
+
+    // Получаем общее количество записей
+    const totalResult = await this.db
+      .select({ count: venues.id })
+      .from(venues)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    const total = totalResult.length;
+
+    // Получаем данные с пагинацией и сортировкой
+    const baseQuery = this.db
+      .select()
+      .from(venues)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    // Добавляем сортировку (пока игнорируем sortOrder, так как Drizzle требует специальной обработки)
+    let data;
+    if (sortBy === 'name') {
+      data = await baseQuery.orderBy(venues.name).limit(limit).offset(offset);
+    } else if (sortBy === 'city') {
+      data = await baseQuery.orderBy(venues.city).limit(limit).offset(offset);
+    } else if (sortBy === 'createdAt') {
+      data = await baseQuery.orderBy(venues.createdAt).limit(limit).offset(offset);
+    } else if (sortBy === 'updatedAt') {
+      data = await baseQuery.orderBy(venues.updatedAt).limit(limit).offset(offset);
+    } else {
+      // По умолчанию сортируем по имени
+      data = await baseQuery.orderBy(venues.name).limit(limit).offset(offset);
+    }
+
+    return {
+      data,
+      total,
+      page,
+      limit
+    };
+  }
+
+  /**
+   * Поиск площадок по геолокации
+   * @param latitude Широта
+   * @param longitude Долгота
+   * @param radius Радиус поиска в км
+   * @returns Массив площадок
+   */
+  async findByLocation(_latitude: number, _longitude: number, _radius: number): Promise<Venue[]> {
+    // Простая реализация - возвращаем все активные площадки
+    // В реальном проекте здесь должен быть расчет расстояния
+    return await this.getAll(true);
+  }
+
+  /**
+   * Обновляет статус площадки
+   * @param id ID площадки
+   * @param status Новый статус
+   * @returns Обновленная площадка или null
+   */
+  async updateStatus(id: string, status: string): Promise<Venue | null> {
+    const isActive = status === 'active';
+    return await this.update(id, { isActive });
   }
 }

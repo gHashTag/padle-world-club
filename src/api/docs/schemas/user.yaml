@@ -1,0 +1,545 @@
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          $ref: './common.yaml#/components/schemas/UUID'
+          description: Unique user identifier
+        username:
+          $ref: './common.yaml#/components/schemas/Username'
+          description: Unique username
+        email:
+          $ref: './common.yaml#/components/schemas/Email'
+          description: User's email address
+        firstName:
+          type: string
+          maxLength: 50
+          example: "John"
+          description: User's first name
+        lastName:
+          type: string
+          maxLength: 50
+          example: "Doe"
+          description: User's last name
+        fullName:
+          type: string
+          example: "John Doe"
+          description: User's full name (computed field)
+          readOnly: true
+        phone:
+          $ref: './common.yaml#/components/schemas/Phone'
+          nullable: true
+          description: User's phone number
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+          example: "1990-01-15"
+          description: User's date of birth
+        age:
+          type: integer
+          minimum: 0
+          maximum: 150
+          nullable: true
+          example: 34
+          description: User's age (computed field)
+          readOnly: true
+        gender:
+          $ref: './common.yaml#/components/schemas/Gender'
+          nullable: true
+          description: User's gender
+        role:
+          $ref: './common.yaml#/components/schemas/UserRole'
+          description: User's role in the system
+        skillLevel:
+          $ref: './common.yaml#/components/schemas/UserSkillLevel'
+          nullable: true
+          description: User's skill level in padel
+        rating:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10
+          nullable: true
+          example: 7.5
+          description: User's current rating
+        totalGamesPlayed:
+          type: integer
+          minimum: 0
+          example: 42
+          description: Total number of games played
+          readOnly: true
+        totalWins:
+          type: integer
+          minimum: 0
+          example: 28
+          description: Total number of games won
+          readOnly: true
+        winRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          nullable: true
+          example: 0.67
+          description: Win rate percentage (computed field)
+          readOnly: true
+        preferredNotificationChannels:
+          type: array
+          items:
+            $ref: './common.yaml#/components/schemas/NotificationChannel'
+          example: ["email", "push"]
+          description: User's preferred notification channels
+        isActive:
+          type: boolean
+          example: true
+          description: Whether the user account is active
+        isEmailVerified:
+          type: boolean
+          example: true
+          description: Whether the user's email is verified
+        isPhoneVerified:
+          type: boolean
+          example: false
+          description: Whether the user's phone is verified
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-26T09:30:00Z"
+          description: Last login timestamp
+        profileImageUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://example.com/images/user123.jpg"
+          description: URL to user's profile image
+        bio:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: "Passionate padel player from New York"
+          description: User's biography
+        location:
+          type: object
+          nullable: true
+          properties:
+            city:
+              type: string
+              maxLength: 100
+              example: "New York"
+            country:
+              type: string
+              maxLength: 100
+              example: "United States"
+            coordinates:
+              $ref: './common.yaml#/components/schemas/Coordinates'
+          description: User's location information
+        preferences:
+          type: object
+          properties:
+            language:
+              type: string
+              pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+              example: "en-US"
+              description: Preferred language (ISO 639-1 with optional country code)
+            timezone:
+              type: string
+              example: "America/New_York"
+              description: User's timezone (IANA timezone identifier)
+            currency:
+              $ref: './common.yaml#/components/schemas/Currency'
+              description: Preferred currency
+            units:
+              type: string
+              enum: [metric, imperial]
+              example: "metric"
+              description: Preferred unit system
+            theme:
+              type: string
+              enum: [light, dark, auto]
+              example: "auto"
+              description: Preferred UI theme
+          description: User preferences and settings
+        socialLinks:
+          type: object
+          nullable: true
+          properties:
+            instagram:
+              type: string
+              format: uri
+              example: "https://instagram.com/johndoe"
+            facebook:
+              type: string
+              format: uri
+              example: "https://facebook.com/johndoe"
+            twitter:
+              type: string
+              format: uri
+              example: "https://twitter.com/johndoe"
+            linkedin:
+              type: string
+              format: uri
+              example: "https://linkedin.com/in/johndoe"
+          description: User's social media links
+        emergencyContact:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+              maxLength: 100
+              example: "Jane Doe"
+            phone:
+              $ref: './common.yaml#/components/schemas/Phone'
+            relationship:
+              type: string
+              maxLength: 50
+              example: "Spouse"
+          description: Emergency contact information
+        membershipInfo:
+          type: object
+          nullable: true
+          properties:
+            memberId:
+              type: string
+              maxLength: 50
+              example: "PWC-2024-001234"
+              description: Unique membership identifier
+            membershipType:
+              type: string
+              enum: [basic, premium, vip, corporate]
+              example: "premium"
+            memberSince:
+              type: string
+              format: date
+              example: "2024-01-01"
+            expiresAt:
+              type: string
+              format: date
+              nullable: true
+              example: "2024-12-31"
+            isLifetime:
+              type: boolean
+              example: false
+          description: Membership information
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T10:00:00Z"
+          description: Account creation timestamp
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-26T10:00:00Z"
+          description: Last update timestamp
+          readOnly: true
+      required:
+        - id
+        - username
+        - email
+        - firstName
+        - lastName
+        - role
+        - isActive
+        - isEmailVerified
+        - isPhoneVerified
+        - totalGamesPlayed
+        - totalWins
+        - createdAt
+        - updatedAt
+      example:
+        id: "123e4567-e89b-12d3-a456-426614174000"
+        username: "john_doe123"
+        email: "john.doe@example.com"
+        firstName: "John"
+        lastName: "Doe"
+        fullName: "John Doe"
+        phone: "+1234567890"
+        dateOfBirth: "1990-01-15"
+        age: 34
+        gender: "male"
+        role: "player"
+        skillLevel: "intermediate"
+        rating: 7.5
+        totalGamesPlayed: 42
+        totalWins: 28
+        winRate: 0.67
+        preferredNotificationChannels: ["email", "push"]
+        isActive: true
+        isEmailVerified: true
+        isPhoneVerified: true
+        lastLoginAt: "2024-01-26T09:30:00Z"
+        profileImageUrl: "https://example.com/images/user123.jpg"
+        bio: "Passionate padel player from New York"
+        location:
+          city: "New York"
+          country: "United States"
+          coordinates:
+            latitude: 40.7128
+            longitude: -74.0060
+        preferences:
+          language: "en-US"
+          timezone: "America/New_York"
+          currency: "USD"
+          units: "imperial"
+          theme: "auto"
+        socialLinks:
+          instagram: "https://instagram.com/johndoe"
+          twitter: "https://twitter.com/johndoe"
+        emergencyContact:
+          name: "Jane Doe"
+          phone: "+1234567891"
+          relationship: "Spouse"
+        membershipInfo:
+          memberId: "PWC-2024-001234"
+          membershipType: "premium"
+          memberSince: "2024-01-01"
+          expiresAt: "2024-12-31"
+          isLifetime: false
+        createdAt: "2024-01-01T10:00:00Z"
+        updatedAt: "2024-01-26T10:00:00Z"
+
+    UserSummary:
+      type: object
+      description: Simplified user information for lists and references
+      properties:
+        id:
+          $ref: './common.yaml#/components/schemas/UUID'
+        username:
+          $ref: './common.yaml#/components/schemas/Username'
+        email:
+          $ref: './common.yaml#/components/schemas/Email'
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        fullName:
+          type: string
+          example: "John Doe"
+          readOnly: true
+        role:
+          $ref: './common.yaml#/components/schemas/UserRole'
+        skillLevel:
+          $ref: './common.yaml#/components/schemas/UserSkillLevel'
+          nullable: true
+        rating:
+          type: number
+          format: double
+          nullable: true
+          example: 7.5
+        profileImageUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://example.com/images/user123.jpg"
+        isActive:
+          type: boolean
+          example: true
+      required:
+        - id
+        - username
+        - email
+        - firstName
+        - lastName
+        - role
+        - isActive
+      example:
+        id: "123e4567-e89b-12d3-a456-426614174000"
+        username: "john_doe123"
+        email: "john.doe@example.com"
+        firstName: "John"
+        lastName: "Doe"
+        fullName: "John Doe"
+        role: "player"
+        skillLevel: "intermediate"
+        rating: 7.5
+        profileImageUrl: "https://example.com/images/user123.jpg"
+        isActive: true
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - firstName
+        - lastName
+      properties:
+        username:
+          $ref: './common.yaml#/components/schemas/Username'
+        email:
+          $ref: './common.yaml#/components/schemas/Email'
+        password:
+          $ref: './common.yaml#/components/schemas/Password'
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: "John"
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: "Doe"
+        phone:
+          $ref: './common.yaml#/components/schemas/Phone'
+        dateOfBirth:
+          type: string
+          format: date
+          example: "1990-01-15"
+        gender:
+          $ref: './common.yaml#/components/schemas/Gender'
+        role:
+          $ref: './common.yaml#/components/schemas/UserRole'
+          default: "player"
+        skillLevel:
+          $ref: './common.yaml#/components/schemas/UserSkillLevel'
+        preferredNotificationChannels:
+          type: array
+          items:
+            $ref: './common.yaml#/components/schemas/NotificationChannel'
+          default: ["email"]
+        bio:
+          type: string
+          maxLength: 500
+          example: "Passionate padel player"
+      example:
+        username: "john_doe123"
+        email: "john.doe@example.com"
+        password: "SecurePass123!"
+        firstName: "John"
+        lastName: "Doe"
+        phone: "+1234567890"
+        dateOfBirth: "1990-01-15"
+        gender: "male"
+        role: "player"
+        skillLevel: "intermediate"
+        preferredNotificationChannels: ["email", "push"]
+        bio: "Passionate padel player from New York"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: "John"
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: "Doe"
+        phone:
+          $ref: './common.yaml#/components/schemas/Phone'
+        dateOfBirth:
+          type: string
+          format: date
+          example: "1990-01-15"
+        gender:
+          $ref: './common.yaml#/components/schemas/Gender'
+        skillLevel:
+          $ref: './common.yaml#/components/schemas/UserSkillLevel'
+        preferredNotificationChannels:
+          type: array
+          items:
+            $ref: './common.yaml#/components/schemas/NotificationChannel'
+        bio:
+          type: string
+          maxLength: 500
+          example: "Updated bio"
+        profileImageUrl:
+          type: string
+          format: uri
+          example: "https://example.com/images/user123.jpg"
+        location:
+          type: object
+          properties:
+            city:
+              type: string
+              maxLength: 100
+              example: "New York"
+            country:
+              type: string
+              maxLength: 100
+              example: "United States"
+            coordinates:
+              $ref: './common.yaml#/components/schemas/Coordinates'
+        preferences:
+          type: object
+          properties:
+            language:
+              type: string
+              pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+              example: "en-US"
+            timezone:
+              type: string
+              example: "America/New_York"
+            currency:
+              $ref: './common.yaml#/components/schemas/Currency'
+            units:
+              type: string
+              enum: [metric, imperial]
+              example: "metric"
+            theme:
+              type: string
+              enum: [light, dark, auto]
+              example: "auto"
+        socialLinks:
+          type: object
+          properties:
+            instagram:
+              type: string
+              format: uri
+              example: "https://instagram.com/johndoe"
+            facebook:
+              type: string
+              format: uri
+              example: "https://facebook.com/johndoe"
+            twitter:
+              type: string
+              format: uri
+              example: "https://twitter.com/johndoe"
+            linkedin:
+              type: string
+              format: uri
+              example: "https://linkedin.com/in/johndoe"
+        emergencyContact:
+          type: object
+          properties:
+            name:
+              type: string
+              maxLength: 100
+              example: "Jane Doe"
+            phone:
+              $ref: './common.yaml#/components/schemas/Phone'
+            relationship:
+              type: string
+              maxLength: 50
+              example: "Spouse"
+      example:
+        firstName: "John"
+        lastName: "Doe"
+        phone: "+1234567890"
+        dateOfBirth: "1990-01-15"
+        gender: "male"
+        skillLevel: "advanced"
+        preferredNotificationChannels: ["email", "push", "sms"]
+        bio: "Updated bio - Advanced padel player"
+        location:
+          city: "Los Angeles"
+          country: "United States"
+          coordinates:
+            latitude: 34.0522
+            longitude: -118.2437
+        preferences:
+          language: "en-US"
+          timezone: "America/Los_Angeles"
+          currency: "USD"
+          units: "imperial"
+          theme: "dark"

@@ -1,0 +1,255 @@
+name: 📦 Dependency Management
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  # ================================
+  # Update Dependencies
+  # ================================
+  update-dependencies:
+    name: 🔄 Update Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🟨 Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.0.0'
+
+      - name: 📦 Update dependencies
+        run: |
+          # Update all dependencies
+          bun update
+          
+          # Check for security vulnerabilities
+          bun audit --audit-level moderate
+
+      - name: 🧪 Run tests with updated dependencies
+        run: |
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun run test:unit
+
+      - name: 📝 Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update dependencies'
+          title: '📦 Automated dependency updates'
+          body: |
+            ## 📦 Dependency Updates
+            
+            This PR contains automated dependency updates.
+            
+            ### Changes
+            - Updated all dependencies to latest versions
+            - Ran security audit
+            - Verified tests pass with new dependencies
+            
+            ### Testing
+            - [x] TypeScript compilation
+            - [x] Unit tests
+            - [ ] Integration tests (will run on PR)
+            - [ ] E2E tests (will run on PR)
+            
+            ### Security
+            - [x] No high/critical vulnerabilities found
+            
+            Please review the changes and merge if everything looks good.
+          branch: automated/dependency-updates
+          delete-branch: true
+
+  # ================================
+  # Security Audit
+  # ================================
+  security-audit:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟨 Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.0.0'
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 🔍 Run security audit
+        run: |
+          # Run bun audit
+          bun audit --audit-level high
+          
+          # Save audit results
+          bun audit --json > audit-results.json
+
+      - name: 📊 Upload audit results
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-audit-results
+          path: audit-results.json
+
+      - name: 🚨 Create security issue
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const auditResults = JSON.parse(fs.readFileSync('audit-results.json', 'utf8'));
+            
+            const vulnerabilities = auditResults.vulnerabilities || {};
+            const highVulns = Object.values(vulnerabilities).filter(v => v.severity === 'high' || v.severity === 'critical');
+            
+            if (highVulns.length > 0) {
+              const issueBody = `
+              ## 🚨 Security Vulnerabilities Detected
+              
+              High/Critical vulnerabilities found in dependencies:
+              
+              ${highVulns.map(v => `- **${v.name}**: ${v.title} (${v.severity})`).join('\n')}
+              
+              Please review and update the affected dependencies.
+              
+              ### Audit Results
+              \`\`\`json
+              ${JSON.stringify(highVulns, null, 2)}
+              \`\`\`
+              `;
+              
+              github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 Security vulnerabilities detected',
+                body: issueBody,
+                labels: ['security', 'high-priority']
+              });
+            }
+
+  # ================================
+  # License Compliance Check
+  # ================================
+  license-check:
+    name: ⚖️ License Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟨 Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.0.0'
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 📄 Install license checker
+        run: bun add --dev license-checker
+
+      - name: ⚖️ Check licenses
+        run: |
+          # Generate license report
+          bunx license-checker --json > licenses.json
+          
+          # Check for forbidden licenses
+          bunx license-checker --failOn 'GPL-2.0;GPL-3.0;AGPL-1.0;AGPL-3.0'
+
+      - name: 📊 Upload license report
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-report
+          path: licenses.json
+
+      - name: 📝 Generate license summary
+        run: |
+          echo "## 📄 License Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | License | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|---------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Parse licenses.json and add to summary
+          bunx license-checker --csv | head -20 | tail -19 | while IFS=, read -r package license version; do
+            echo "| $package | $license | $version |" >> $GITHUB_STEP_SUMMARY
+          done
+
+  # ================================
+  # Dependency Graph Update
+  # ================================
+  dependency-graph:
+    name: 📊 Update Dependency Graph
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟨 Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.0.0'
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 📊 Submit dependency graph
+        uses: github/dependency-graph-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ================================
+  # Outdated Dependencies Report
+  # ================================
+  outdated-report:
+    name: 📋 Outdated Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟨 Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.0.0'
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 📋 Check for outdated packages
+        run: |
+          # Check for outdated packages
+          bun outdated > outdated.txt || true
+          
+          # Create summary
+          echo "## 📋 Outdated Dependencies Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -s outdated.txt ]; then
+            echo "The following packages have newer versions available:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat outdated.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ All dependencies are up to date!" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📊 Upload outdated report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: outdated-dependencies
+          path: outdated.txt

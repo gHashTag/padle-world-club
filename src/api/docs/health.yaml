@@ -1,0 +1,307 @@
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: |
+        Check the health and status of the API server.
+        
+        This endpoint provides information about:
+        - Server status
+        - Uptime
+        - Memory usage
+        - Application version
+        - Database connectivity (if applicable)
+        
+        This endpoint does not require authentication and can be used for:
+        - Load balancer health checks
+        - Monitoring systems
+        - Service discovery
+        - Debugging server issues
+      tags:
+        - Health
+      security: []  # No authentication required
+      responses:
+        '200':
+          description: Server is healthy and operational
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [OK, DEGRADED, DOWN]
+                        example: "OK"
+                        description: Overall health status
+                      timestamp:
+                        type: string
+                        format: date-time
+                        example: "2024-01-26T10:00:00Z"
+                        description: Current server timestamp
+                      uptime:
+                        type: number
+                        example: 3600.5
+                        description: Server uptime in seconds
+                      memory:
+                        type: object
+                        properties:
+                          rss:
+                            type: number
+                            example: 52428800
+                            description: Resident Set Size (bytes)
+                          heapTotal:
+                            type: number
+                            example: 20971520
+                            description: Total heap size (bytes)
+                          heapUsed:
+                            type: number
+                            example: 15728640
+                            description: Used heap size (bytes)
+                          external:
+                            type: number
+                            example: 1048576
+                            description: External memory usage (bytes)
+                          arrayBuffers:
+                            type: number
+                            example: 524288
+                            description: Array buffers memory usage (bytes)
+                        description: Node.js memory usage statistics
+                      version:
+                        type: string
+                        example: "1.0.0"
+                        description: Application version
+                      environment:
+                        type: string
+                        example: "development"
+                        description: Current environment
+                      database:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum: [connected, disconnected, error]
+                            example: "connected"
+                            description: Database connection status
+                          responseTime:
+                            type: number
+                            example: 15.5
+                            description: Database response time in milliseconds
+                        description: Database health information
+                        required:
+                          - status
+                      services:
+                        type: object
+                        properties:
+                          redis:
+                            type: object
+                            properties:
+                              status:
+                                type: string
+                                enum: [connected, disconnected, error]
+                                example: "connected"
+                              responseTime:
+                                type: number
+                                example: 2.1
+                        description: External services health status
+                    required:
+                      - status
+                      - timestamp
+                      - uptime
+                      - memory
+                      - version
+                  message:
+                    type: string
+                    example: "Server is healthy and operational"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-26T10:00:00Z"
+                  path:
+                    type: string
+                    example: "/health"
+                  method:
+                    type: string
+                    example: "GET"
+                required:
+                  - success
+                  - data
+                  - message
+                  - timestamp
+                  - path
+                  - method
+              examples:
+                healthy:
+                  summary: Healthy server response
+                  value:
+                    success: true
+                    data:
+                      status: "OK"
+                      timestamp: "2024-01-26T10:00:00Z"
+                      uptime: 3600.5
+                      memory:
+                        rss: 52428800
+                        heapTotal: 20971520
+                        heapUsed: 15728640
+                        external: 1048576
+                        arrayBuffers: 524288
+                      version: "1.0.0"
+                      environment: "production"
+                      database:
+                        status: "connected"
+                        responseTime: 15.5
+                      services:
+                        redis:
+                          status: "connected"
+                          responseTime: 2.1
+                    message: "Server is healthy and operational"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/health"
+                    method: "GET"
+                degraded:
+                  summary: Degraded server response
+                  value:
+                    success: true
+                    data:
+                      status: "DEGRADED"
+                      timestamp: "2024-01-26T10:00:00Z"
+                      uptime: 7200.0
+                      memory:
+                        rss: 104857600
+                        heapTotal: 41943040
+                        heapUsed: 35651584
+                        external: 2097152
+                        arrayBuffers: 1048576
+                      version: "1.0.0"
+                      environment: "production"
+                      database:
+                        status: "connected"
+                        responseTime: 150.5
+                      services:
+                        redis:
+                          status: "error"
+                          responseTime: null
+                    message: "Server is operational but some services are degraded"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/health"
+                    method: "GET"
+        '503':
+          description: Server is unhealthy or experiencing issues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "DOWN"
+                      timestamp:
+                        type: string
+                        format: date-time
+                        example: "2024-01-26T10:00:00Z"
+                      uptime:
+                        type: number
+                        example: 120.0
+                      memory:
+                        type: object
+                        properties:
+                          rss:
+                            type: number
+                            example: 209715200
+                          heapTotal:
+                            type: number
+                            example: 83886080
+                          heapUsed:
+                            type: number
+                            example: 78643200
+                          external:
+                            type: number
+                            example: 4194304
+                          arrayBuffers:
+                            type: number
+                            example: 2097152
+                      version:
+                        type: string
+                        example: "1.0.0"
+                      environment:
+                        type: string
+                        example: "production"
+                      database:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: "disconnected"
+                          responseTime:
+                            type: number
+                            nullable: true
+                            example: null
+                      services:
+                        type: object
+                        properties:
+                          redis:
+                            type: object
+                            properties:
+                              status:
+                                type: string
+                                example: "error"
+                              responseTime:
+                                type: number
+                                nullable: true
+                                example: null
+                  message:
+                    type: string
+                    example: "Server is experiencing issues"
+                  error:
+                    type: string
+                    example: "Database connection failed"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-26T10:00:00Z"
+                  path:
+                    type: string
+                    example: "/health"
+                  method:
+                    type: string
+                    example: "GET"
+              examples:
+                unhealthy:
+                  summary: Unhealthy server response
+                  value:
+                    success: false
+                    data:
+                      status: "DOWN"
+                      timestamp: "2024-01-26T10:00:00Z"
+                      uptime: 120.0
+                      memory:
+                        rss: 209715200
+                        heapTotal: 83886080
+                        heapUsed: 78643200
+                        external: 4194304
+                        arrayBuffers: 2097152
+                      version: "1.0.0"
+                      environment: "production"
+                      database:
+                        status: "disconnected"
+                        responseTime: null
+                      services:
+                        redis:
+                          status: "error"
+                          responseTime: null
+                    message: "Server is experiencing critical issues"
+                    error: "Database connection failed"
+                    timestamp: "2024-01-26T10:00:00Z"
+                    path: "/health"
+                    method: "GET"

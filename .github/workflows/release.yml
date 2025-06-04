@@ -1,0 +1,271 @@
+name: 🏷️ Release Management
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      prerelease:
+        description: 'Create prerelease'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # ================================
+  # Semantic Release
+  # ================================
+  semantic-release:
+    name: 🤖 Semantic Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🟨 Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.0.0'
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 🏷️ Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 19
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+            @semantic-release/github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ================================
+  # Manual Release
+  # ================================
+  manual-release:
+    name: 📦 Manual Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🟨 Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.0.0'
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 🧪 Run full test suite
+        run: |
+          bun run typecheck
+          bun run lint
+          bun run test
+
+      - name: 📝 Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: 🔢 Calculate new version
+        id: new_version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+          RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+          
+          # Parse version components
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # Increment based on release type
+          case $RELEASE_TYPE in
+            "major")
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            "minor")
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            "patch")
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          
+          # Add prerelease suffix if requested
+          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
+            NEW_VERSION="$NEW_VERSION-rc.$(date +%Y%m%d%H%M%S)"
+          fi
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: 📝 Update package.json
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          
+          # Update package.json version
+          bun run --bun -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$NEW_VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: 📝 Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges $LAST_TAG..HEAD)
+          fi
+          
+          # Categorize commits
+          FEATURES=$(echo "$COMMITS" | grep -E "^- (feat|feature)" || true)
+          FIXES=$(echo "$COMMITS" | grep -E "^- (fix|bugfix)" || true)
+          DOCS=$(echo "$COMMITS" | grep -E "^- docs" || true)
+          CHORES=$(echo "$COMMITS" | grep -E "^- (chore|refactor|style|test)" || true)
+          BREAKING=$(echo "$COMMITS" | grep -E "^- .*BREAKING CHANGE" || true)
+          
+          # Build changelog
+          CHANGELOG="## Changes in v${{ steps.new_version.outputs.version }}\n\n"
+          
+          if [ ! -z "$BREAKING" ]; then
+            CHANGELOG="${CHANGELOG}### 💥 Breaking Changes\n$BREAKING\n\n"
+          fi
+          
+          if [ ! -z "$FEATURES" ]; then
+            CHANGELOG="${CHANGELOG}### ✨ Features\n$FEATURES\n\n"
+          fi
+          
+          if [ ! -z "$FIXES" ]; then
+            CHANGELOG="${CHANGELOG}### 🐛 Bug Fixes\n$FIXES\n\n"
+          fi
+          
+          if [ ! -z "$DOCS" ]; then
+            CHANGELOG="${CHANGELOG}### 📚 Documentation\n$DOCS\n\n"
+          fi
+          
+          if [ ! -z "$CHORES" ]; then
+            CHANGELOG="${CHANGELOG}### 🔧 Maintenance\n$CHORES\n\n"
+          fi
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: 📝 Commit version bump
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json
+          git commit -m "chore: bump version to v${{ steps.new_version.outputs.version }}"
+
+      - name: 🏷️ Create tag
+        run: |
+          git tag -a "v${{ steps.new_version.outputs.version }}" -m "Release v${{ steps.new_version.outputs.version }}"
+
+      - name: 📤 Push changes
+        run: |
+          git push origin main
+          git push origin "v${{ steps.new_version.outputs.version }}"
+
+      - name: 📦 Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.new_version.outputs.version }}
+          release_name: Release v${{ steps.new_version.outputs.version }}
+          body: |
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ## 🐳 Docker Image
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}:v${{ steps.new_version.outputs.version }}
+            ```
+            
+            ## 📦 Installation
+            ```bash
+            git clone https://github.com/${{ github.repository }}.git
+            cd $(basename ${{ github.repository }})
+            git checkout v${{ steps.new_version.outputs.version }}
+            bun install
+            ```
+            
+            ## 🚀 Deployment
+            This release will be automatically deployed to staging and production environments.
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+
+  # ================================
+  # Release Notes
+  # ================================
+  release-notes:
+    name: 📝 Update Release Notes
+    runs-on: ubuntu-latest
+    needs: [semantic-release, manual-release]
+    if: always() && (needs.semantic-release.result == 'success' || needs.manual-release.result == 'success')
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📝 Generate comprehensive release notes
+        run: |
+          # Get latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          
+          # Generate detailed release notes
+          echo "# Release Notes - $LATEST_TAG" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "Generated on: $(date)" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          
+          # Add git log
+          echo "## Commits" >> RELEASE_NOTES.md
+          git log --pretty=format:"- %s (%h) by %an" --no-merges $(git describe --tags --abbrev=0 $LATEST_TAG^)..$LATEST_TAG >> RELEASE_NOTES.md
+          
+          # Add file changes
+          echo "" >> RELEASE_NOTES.md
+          echo "## Files Changed" >> RELEASE_NOTES.md
+          git diff --name-only $(git describe --tags --abbrev=0 $LATEST_TAG^)..$LATEST_TAG >> RELEASE_NOTES.md
+
+      - name: 📤 Upload release notes
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-notes
+          path: RELEASE_NOTES.md
