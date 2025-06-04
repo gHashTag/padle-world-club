@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "echo 'No build needed for serverless function'",
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api/index"
+      "destination": "/api"
     }
   ]
 }

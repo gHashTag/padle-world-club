@@ -22,6 +22,7 @@ import bonusTransactionsRouter from "./routes/bonus-transactions";
 import externalSystemMappingsRouter from "./routes/external-system-mappings";
 import externalSyncWebhooksRouter from "./routes/external-sync-webhooks";
 import notificationsRouter from "./routes/notifications";
+import { createAISuggestionLogsRouter } from "./routes/ai-suggestion-logs";
 import { db } from "../db";
 import { UserRepository } from "../repositories/user-repository";
 
@@ -210,6 +211,7 @@ const createApiRouter = () => {
           externalSystemMappings: "/api/external-system-mappings",
           sync: "/api/sync",
           notifications: "/api/notifications",
+          aiSuggestionLogs: "/api/ai-suggestion-logs",
           tournaments: "/api/tournaments",
           gameSessions: "/api/game-sessions",
         },
@@ -233,6 +235,7 @@ const createApiRouter = () => {
   router.use("/external-system-mappings", externalSystemMappingsRouter);
   router.use("/sync", externalSyncWebhooksRouter);
   router.use("/notifications", notificationsRouter);
+  router.use("/ai-suggestion-logs", createAISuggestionLogsRouter());
   // router.use('/courts', courtsRouter);
   // router.use('/bookings', bookingsRouter);
   // router.use('/payments', paymentsRouter);

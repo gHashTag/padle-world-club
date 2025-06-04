@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import type {
-  AISuggestionService,
   IAISuggestionInput,
   IAISuggestionResult,
   IAISuggestionFeedback,
@@ -100,7 +99,7 @@ describe("AISuggestionService Types", () => {
           input: IAISuggestionInput
         ): Promise<IAISuggestionResult> => {
           return {
-            suggestionData: { test: true },
+            suggestionData: { test: true, inputType: input.type },
             confidenceScore: 0.8,
             executionTimeMs: 100,
             modelVersion: "v1.0.0",
@@ -275,10 +274,10 @@ describe("AISuggestionService Types", () => {
         generateSuggestion: async (
           input: IAISuggestionInput
         ): Promise<IAISuggestionResult> => {
-          // Имитация async операции
+          // Имитация async операции с использованием input
           await new Promise((resolve) => setTimeout(resolve, 1));
           return {
-            suggestionData: { async: true },
+            suggestionData: { async: true, inputType: input.type },
             confidenceScore: 0.9,
             executionTimeMs: 50,
             modelVersion: "v1.0.0",
@@ -286,7 +285,7 @@ describe("AISuggestionService Types", () => {
         },
         validateInput: async (input: IAISuggestionInput): Promise<boolean> => {
           await new Promise((resolve) => setTimeout(resolve, 1));
-          return true;
+          return input.type !== undefined;
         },
         getCapabilities: (): string[] => {
           return ["game_matching", "court_fill_optimization"];
@@ -302,7 +301,10 @@ describe("AISuggestionService Types", () => {
       const isValid = await mockProvider.validateInput(input);
       const capabilities = mockProvider.getCapabilities();
 
-      expect(result.suggestionData).toEqual({ async: true });
+      expect(result.suggestionData).toEqual({
+        async: true,
+        inputType: "game_matching",
+      });
       expect(result.confidenceScore).toBe(0.9);
       expect(isValid).toBe(true);
       expect(capabilities).toHaveLength(2);
