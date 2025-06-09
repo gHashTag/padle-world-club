@@ -1,0 +1,374 @@
+/* Admin Portal Styles - Inspired by Exsportia */
+
+:root {
+  --admin-primary: #233247;
+  --admin-secondary: #32D882;
+  --admin-accent: #FBBB17;
+  --admin-danger: #ED3163;
+  --admin-warning: #FF5F89;
+  --admin-background: #F8F9FA;
+  --admin-surface: #FFFFFF;
+  --admin-text: #2C2D2E;
+  --admin-text-secondary: #919399;
+  --admin-border: #BFC1C7;
+  --admin-hover: #E1F5FE;
+}
+
+/* Main Admin Portal Layout */
+.admin-portal {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--admin-background);
+  min-height: 100vh;
+  color: var(--admin-text);
+}
+
+.modern-ui {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(35, 50, 71, 0.08);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+}
+
+/* Header Styles */
+.admin-portal h1 {
+  background: linear-gradient(135deg, var(--admin-primary) 0%, #4A5568 100%);
+  color: white;
+  padding: 24px;
+  margin: -20px -20px 20px -20px;
+  border-radius: 12px 12px 0 0;
+  font-size: 28px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-portal h2 {
+  color: var(--admin-primary);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 24px 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid var(--admin-secondary);
+  padding-bottom: 8px;
+}
+
+.admin-portal h3 {
+  color: var(--admin-text);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 20px 0 10px 0;
+}
+
+/* Navigation Menu Styles */
+.admin-portal table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(35, 50, 71, 0.06);
+}
+
+.admin-portal th {
+  background: var(--admin-primary);
+  color: white;
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.admin-portal td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #E0E4E7;
+  vertical-align: top;
+}
+
+.admin-portal tr:nth-child(even) {
+  background: #F8F9FA;
+}
+
+.admin-portal tr:hover {
+  background: var(--admin-hover);
+  transition: background-color 0.2s ease;
+}
+
+/* Navigation Icons */
+.admin-portal td:first-child {
+  font-size: 20px;
+  width: 60px;
+  text-align: center;
+}
+
+/* Module Names */
+.admin-portal strong {
+  color: var(--admin-primary);
+  font-weight: 600;
+}
+
+/* Status Indicators */
+.admin-portal td:last-child {
+  font-weight: 500;
+}
+
+.admin-portal td:contains("✅ Active") {
+  color: var(--admin-secondary);
+}
+
+/* Quick Actions Cards */
+.admin-portal .quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.admin-portal .action-card {
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-portal .action-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--admin-secondary);
+}
+
+.admin-portal .action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(35, 50, 71, 0.12);
+}
+
+/* Performance Metrics */
+.admin-portal .metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.admin-portal .metric:last-child {
+  border-bottom: none;
+}
+
+.admin-portal .metric-value {
+  font-weight: 600;
+  color: var(--admin-primary);
+}
+
+.admin-portal .trend-up {
+  color: var(--admin-secondary);
+  font-weight: 500;
+}
+
+.admin-portal .trend-down {
+  color: var(--admin-danger);
+  font-weight: 500;
+}
+
+/* Franchise Selector */
+.franchise-selector {
+  background: linear-gradient(135deg, var(--admin-surface) 0%, #F8F9FA 100%);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.franchise-selector .current-franchise {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--admin-primary);
+  margin-bottom: 12px;
+}
+
+.franchise-selector .franchise-switches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.franchise-switches button {
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--admin-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.franchise-switches button:hover {
+  background: var(--admin-secondary);
+  color: white;
+  border-color: var(--admin-secondary);
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.status-active {
+  background: rgba(50, 216, 130, 0.1);
+  color: var(--admin-secondary);
+}
+
+.status-warning {
+  background: rgba(251, 187, 23, 0.1);
+  color: var(--admin-accent);
+}
+
+.status-danger {
+  background: rgba(237, 49, 99, 0.1);
+  color: var(--admin-danger);
+}
+
+/* Alert Styles */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alert-high {
+  background: rgba(237, 49, 99, 0.1);
+  border-left: 4px solid var(--admin-danger);
+}
+
+.alert-medium {
+  background: rgba(251, 187, 23, 0.1);
+  border-left: 4px solid var(--admin-accent);
+}
+
+.alert-low {
+  background: rgba(50, 216, 130, 0.1);
+  border-left: 4px solid var(--admin-secondary);
+}
+
+/* Court Status Visualization */
+.court-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.court-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.court-occupied {
+  border-color: var(--admin-accent);
+  background: rgba(251, 187, 23, 0.05);
+}
+
+.court-free {
+  border-color: var(--admin-secondary);
+  background: rgba(50, 216, 130, 0.05);
+}
+
+.court-maintenance {
+  border-color: var(--admin-danger);
+  background: rgba(237, 49, 99, 0.05);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .admin-portal {
+    padding: 10px;
+  }
+  
+  .admin-portal h1 {
+    font-size: 24px;
+    padding: 16px;
+    margin: -10px -10px 16px -10px;
+  }
+  
+  .quick-actions {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .franchise-switches {
+    justify-content: center;
+  }
+  
+  .court-status {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --admin-background: #1a1a1a;
+    --admin-surface: #2d2d2d;
+    --admin-text: #ffffff;
+    --admin-text-secondary: #b0b0b0;
+    --admin-border: #404040;
+    --admin-hover: #383838;
+  }
+}
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Print Styles */
+@media print {
+  .admin-portal {
+    background: white;
+    color: black;
+  }
+  
+  .admin-portal h1 {
+    background: none;
+    color: black;
+    border-bottom: 2px solid black;
+  }
+} 

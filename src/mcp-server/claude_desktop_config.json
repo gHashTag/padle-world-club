@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "padle-world-club": {
+      "command": "node",
+      "args": ["/Users/playra/padle-world-club/src/mcp-server/dist/index.js"],
+      "env": {
+        "DATABASE_URL": "postgresql://user:password@host:port/database"
+      }
+    }
+  }
+}

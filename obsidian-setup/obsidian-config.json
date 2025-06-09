@@ -1,0 +1,212 @@
+{
+  "name": "Padle World Club - Database Integration",
+  "version": "1.0.0",
+  "description": "Интерактивная работа с базой данных через Obsidian",
+
+  "database": {
+    "api_base_url": "http://localhost:3000/api",
+    "endpoints": {
+      "ai_suggestion_logs": "/ai-suggestion-logs",
+      "users": "/users",
+      "game_sessions": "/game-sessions",
+      "bookings": "/bookings"
+    },
+    "auth": {
+      "type": "bearer_token",
+      "header": "Authorization"
+    }
+  },
+
+  "obsidian": {
+    "required_plugins": [
+      "dataview",
+      "obsidian-dataedit",
+      "templater",
+      "advanced-tables"
+    ],
+    "recommended_plugins": [
+      "obsidian-relay",
+      "metadata-menu",
+      "obsidian-charts",
+      "calendar"
+    ],
+    "vault_structure": {
+      "Database/": "Интерактивные таблицы базы данных",
+      "Templates/": "Шаблоны для создания новых таблиц",
+      "Dashboards/": "Дашборды и аналитика",
+      "Shared/": "Документы для совместной работы"
+    }
+  },
+
+  "sync_settings": {
+    "auto_sync_interval": 300000,
+    "conflict_resolution": "server_wins",
+    "batch_size": 50,
+    "retry_attempts": 3,
+    "timeout": 10000
+  },
+
+  "tables": {
+    "ai_suggestion_log": {
+      "display_name": "AI Suggestion Logs",
+      "description": "Логи предложений искусственного интеллекта",
+      "icon": "🤖",
+      "editable_fields": ["was_accepted", "user_feedback"],
+      "readonly_fields": [
+        "id",
+        "suggestion_type",
+        "input_data",
+        "suggestion_data",
+        "confidence_score",
+        "execution_time_ms",
+        "model_version",
+        "created_at",
+        "updated_at"
+      ],
+      "display_fields": [
+        {
+          "field": "suggestion_type",
+          "alias": "Тип",
+          "width": "150px"
+        },
+        {
+          "field": "confidence_score",
+          "alias": "Уверенность",
+          "format": "percentage",
+          "width": "100px"
+        },
+        {
+          "field": "was_accepted",
+          "alias": "Статус",
+          "format": "boolean_icons",
+          "width": "80px"
+        },
+        {
+          "field": "user_feedback",
+          "alias": "Отзыв",
+          "width": "200px"
+        },
+        {
+          "field": "model_version",
+          "alias": "Модель",
+          "width": "120px"
+        },
+        {
+          "field": "created_at",
+          "alias": "Создано",
+          "format": "datetime",
+          "width": "150px"
+        }
+      ]
+    },
+
+    "user": {
+      "display_name": "Пользователи",
+      "description": "Пользователи системы",
+      "icon": "👥",
+      "editable_fields": ["name", "email", "phone", "skill_level", "is_active"],
+      "readonly_fields": ["id", "telegram_id", "created_at", "updated_at"]
+    },
+
+    "game_session": {
+      "display_name": "Игровые Сессии",
+      "description": "Активные и завершенные игровые сессии",
+      "icon": "🎮",
+      "editable_fields": ["status", "notes"],
+      "readonly_fields": [
+        "id",
+        "court_id",
+        "start_time",
+        "end_time",
+        "created_at"
+      ]
+    }
+  },
+
+  "sharing": {
+    "enabled": true,
+    "methods": [
+      {
+        "name": "Obsidian Publish",
+        "description": "Публикация через Obsidian Publish",
+        "setup_url": "https://obsidian.md/publish",
+        "cost": "$8/month",
+        "features": ["Веб-доступ", "Поиск", "Навигация", "Темы"]
+      },
+      {
+        "name": "Relay Plugin",
+        "description": "Многопользовательское редактирование",
+        "setup_url": "https://github.com/No-Instructions/Relay",
+        "cost": "Бесплатно (self-hosted)",
+        "features": [
+          "Real-time редактирование",
+          "Живые курсоры",
+          "Self-hosting",
+          "CRDT синхронизация"
+        ]
+      },
+      {
+        "name": "Git + GitHub Pages",
+        "description": "Синхронизация через Git",
+        "setup_url": "https://github.com/ObsidianPublisher/obsidian-github-publisher",
+        "cost": "Бесплатно",
+        "features": [
+          "Версионирование",
+          "GitHub интеграция",
+          "Автопубликация",
+          "Бесплатный хостинг"
+        ]
+      }
+    ]
+  },
+
+  "templates": {
+    "ai_suggestion_dashboard": {
+      "name": "AI Suggestion Dashboard",
+      "description": "Дашборд для анализа AI предложений",
+      "file": "Templates/AI-Suggestion-Dashboard.md"
+    },
+    "database_table": {
+      "name": "Database Table",
+      "description": "Универсальный шаблон для таблиц БД",
+      "file": "Templates/Database-Table-Template.md"
+    },
+    "live_monitoring": {
+      "name": "Live Monitoring",
+      "description": "Мониторинг системы в реальном времени",
+      "file": "Templates/Live-Monitoring.md"
+    }
+  },
+
+  "formatting": {
+    "boolean_icons": {
+      "true": "✅",
+      "false": "❌",
+      "null": "❓"
+    },
+    "status_icons": {
+      "active": "🟢",
+      "inactive": "🔴",
+      "pending": "🟡",
+      "completed": "✅",
+      "cancelled": "❌"
+    },
+    "date_format": "YYYY-MM-DD HH:mm",
+    "number_format": {
+      "decimal_places": 2,
+      "thousands_separator": " ",
+      "decimal_separator": "."
+    }
+  },
+
+  "notifications": {
+    "enabled": true,
+    "types": [
+      "sync_success",
+      "sync_error",
+      "data_updated",
+      "conflict_detected"
+    ],
+    "display_duration": 5000
+  }
+}

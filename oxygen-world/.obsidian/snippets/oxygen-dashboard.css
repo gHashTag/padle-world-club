@@ -1,0 +1,281 @@
+/* Oxygen Padel Club Dashboard Styles */
+
+/* Основные цвета бренда Oxygen */
+:root {
+  --oxygen-blue: #0066CC;
+  --oxygen-orange: #FF6600;
+  --oxygen-white: #FFFFFF;
+  --oxygen-gray: #333333;
+  --oxygen-light-blue: #E1F5FE;
+  --oxygen-success: #4CAF50;
+  --oxygen-warning: #FF9800;
+  --oxygen-error: #F44336;
+}
+
+/* Dashboard общие стили */
+.dashboard {
+  background: linear-gradient(135deg, var(--oxygen-light-blue) 0%, var(--oxygen-white) 100%);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 10px 0;
+}
+
+.admin-dashboard {
+  border-left: 5px solid var(--oxygen-blue);
+  background: var(--oxygen-light-blue);
+}
+
+.analytics-dashboard {
+  border-left: 5px solid var(--oxygen-orange);
+  background: linear-gradient(135deg, #FFF3E0 0%, var(--oxygen-white) 100%);
+}
+
+/* Таблицы базы данных */
+.database-table table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 15px 0;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.database-table th {
+  background: var(--oxygen-blue);
+  color: var(--oxygen-white);
+  padding: 12px;
+  text-align: left;
+  font-weight: bold;
+}
+
+.database-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.database-table tr:nth-child(even) {
+  background: var(--oxygen-light-blue);
+}
+
+.database-table tr:hover {
+  background: #BBDEFB;
+  transition: background-color 0.3s ease;
+}
+
+/* Финансовые таблицы */
+.financial-table .currency {
+  color: var(--oxygen-success);
+  font-weight: bold;
+}
+
+.financial-table .positive {
+  color: var(--oxygen-success);
+}
+
+.financial-table .negative {
+  color: var(--oxygen-error);
+}
+
+/* Игровые сессии */
+.games-table .status-completed {
+  background: #E8F5E8;
+  color: var(--oxygen-success);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.games-table .status-active {
+  background: #FFF3E0;
+  color: var(--oxygen-warning);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.games-table .status-cancelled {
+  background: #FFEBEE;
+  color: var(--oxygen-error);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* Контент календарь */
+.content-calendar {
+  border: 2px solid var(--oxygen-orange);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #FFF8E1 0%, var(--oxygen-white) 100%);
+}
+
+.content-calendar h2 {
+  color: var(--oxygen-orange);
+  border-bottom: 2px solid var(--oxygen-orange);
+  padding-bottom: 5px;
+}
+
+/* Клиентский мануал */
+.client-manual {
+  border: 2px solid var(--oxygen-success);
+  background: #F1F8E9;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.client-manual h1 {
+  color: var(--oxygen-blue);
+  text-align: center;
+  background: var(--oxygen-white);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Карточки метрик */
+.metric-card {
+  background: var(--oxygen-white);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px 0;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.15);
+  border-left: 4px solid var(--oxygen-blue);
+}
+
+.metric-value {
+  font-size: 2em;
+  font-weight: bold;
+  color: var(--oxygen-blue);
+}
+
+.metric-trend.positive {
+  color: var(--oxygen-success);
+}
+
+.metric-trend.negative {
+  color: var(--oxygen-error);
+}
+
+/* Быстрые действия */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.action-button {
+  background: var(--oxygen-blue);
+  color: var(--oxygen-white);
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 102, 204, 0.3);
+}
+
+.action-button:hover {
+  background: var(--oxygen-orange);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 102, 0, 0.4);
+}
+
+/* Статусы */
+.status-online {
+  color: var(--oxygen-success);
+}
+
+.status-offline {
+  color: var(--oxygen-error);
+}
+
+.status-warning {
+  color: var(--oxygen-warning);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 15px;
+    margin: 5px 0;
+  }
+  
+  .database-table {
+    font-size: 0.9em;
+  }
+  
+  .metric-value {
+    font-size: 1.5em;
+  }
+  
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mermaid диаграммы */
+.mermaid {
+  text-align: center;
+  margin: 20px 0;
+}
+
+/* Dataview таблицы */
+.dataview.table-view-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.dataview.table-view-table th {
+  background: var(--oxygen-blue) !important;
+  color: var(--oxygen-white) !important;
+}
+
+/* Специальные эмодзи и значки */
+.venue-icon::before { content: "🏟️"; }
+.user-icon::before { content: "👤"; }
+.money-icon::before { content: "💰"; }
+.game-icon::before { content: "🎮"; }
+.analytics-icon::before { content: "📊"; }
+
+/* Анимации загрузки */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.loading {
+  animation: pulse 2s infinite;
+}
+
+/* Уведомления */
+.notification {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin: 10px 0;
+  border-left: 4px solid;
+}
+
+.notification.success {
+  background: #E8F5E8;
+  border-left-color: var(--oxygen-success);
+  color: #2E7D32;
+}
+
+.notification.warning {
+  background: #FFF8E1;
+  border-left-color: var(--oxygen-warning);
+  color: #F57C00;
+}
+
+.notification.error {
+  background: #FFEBEE;
+  border-left-color: var(--oxygen-error);
+  color: #C62828;
+}
+
+.notification.info {
+  background: var(--oxygen-light-blue);
+  border-left-color: var(--oxygen-blue);
+  color: var(--oxygen-blue);
+} 

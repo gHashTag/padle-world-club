@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "padle-voice-server": {
+      "command": "bun",
+      "args": ["run", "src/mcp-voice-server/src/index.ts"],
+      "cwd": "/Users/playra/padle-world-club",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}

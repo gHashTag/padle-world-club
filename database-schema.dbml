@@ -1,0 +1,446 @@
+// 🎨 Padle World Club - Database Schema Visualization
+// Generated from Drizzle ORM Schema
+// Total Models: 31
+
+Project PadleWorldClub {
+  database_type: 'PostgreSQL'
+  Note: '''
+    🏝️ Phangan Padel Tennis Club
+    🧠 "Второй Мозг" Architecture
+    📊 31 Connected Models
+    🔄 Real-time Sync with Obsidian
+  '''
+}
+
+//==============================================================================
+// 🎨 Business Layer (4 tables) - Core User Operations
+//==============================================================================
+
+Table user {
+  id uuid [pk, default: `gen_random_uuid()`]
+  username varchar(50) [unique, not null]
+  first_name varchar(100)
+  last_name varchar(100)
+  email varchar(255) [unique, not null]
+  phone varchar(20)
+  user_role user_role_enum [not null]
+  current_rating integer [default: 1000]
+  bonus_points integer [default: 0]
+  member_id varchar(50) [unique]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '👥 Пользователи системы - игроки, тренеры, администраторы'
+}
+
+Table user_account_link {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > user.id]
+  external_provider varchar(50) [not null]
+  external_id varchar(255) [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🔗 Связи с внешними аккаунтами (Google, Facebook, etc.)'
+}
+
+Table booking {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > user.id]
+  court_id uuid [ref: > court.id]
+  start_time timestamp [not null]
+  end_time timestamp [not null]
+  status booking_status_enum [not null]
+  total_price decimal(10,2)
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '📅 Бронирования кортов'
+}
+
+Table booking_participant {
+  id uuid [pk, default: `gen_random_uuid()`]
+  booking_id uuid [ref: > booking.id]
+  user_id uuid [ref: > user.id]
+  participant_type participant_type_enum [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '👥 Участники бронирований'
+}
+
+//==============================================================================
+// 🎨 Financial Layer (9 tables) - Money & Products
+//==============================================================================
+
+Table venue {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(255) [not null]
+  address text
+  city varchar(100)
+  country varchar(100)
+  phone varchar(20)
+  email varchar(255)
+  website varchar(255)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🏢 Площадки и клубы'
+}
+
+Table court {
+  id uuid [pk, default: `gen_random_uuid()`]
+  venue_id uuid [ref: > venue.id]
+  name varchar(255) [not null]
+  court_type court_type_enum [not null]
+  surface_type surface_type_enum
+  hourly_rate decimal(10,2)
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🎾 Корты для игры'
+}
+
+Table payment {
+  id uuid [pk, default: `gen_random_uuid()`]
+  booking_id uuid [ref: > booking.id]
+  user_id uuid [ref: > user.id]
+  amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'THB']
+  status payment_status_enum [not null]
+  payment_method payment_method_enum
+  transaction_id varchar(255)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '💰 Платежи и транзакции'
+}
+
+Table product_category {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(255) [not null]
+  description text
+  parent_category_id uuid [ref: > product_category.id]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '📂 Категории товаров'
+}
+
+Table product {
+  id uuid [pk, default: `gen_random_uuid()`]
+  category_id uuid [ref: > product_category.id]
+  name varchar(255) [not null]
+  description text
+  price decimal(10,2) [not null]
+  stock_quantity integer [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🛍️ Товары и услуги'
+}
+
+Table order {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > user.id]
+  total_amount decimal(10,2) [not null]
+  status order_status_enum [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🛒 Заказы пользователей'
+}
+
+Table order_item {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_id uuid [ref: > order.id]
+  product_id uuid [ref: > product.id]
+  quantity integer [not null]
+  unit_price decimal(10,2) [not null]
+  total_price decimal(10,2) [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '📦 Позиции в заказах'
+}
+
+Table stock_transaction {
+  id uuid [pk, default: `gen_random_uuid()`]
+  product_id uuid [ref: > product.id]
+  transaction_type stock_transaction_type_enum [not null]
+  quantity integer [not null]
+  reference_id uuid
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '📊 Движение товаров на складе'
+}
+
+Table bonus_transaction {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > user.id]
+  transaction_type bonus_transaction_type_enum [not null]
+  amount integer [not null]
+  description text
+  reference_id uuid
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🎁 Транзакции бонусных баллов'
+}
+
+//==============================================================================
+// 🎨 Education Layer (5 tables) - Training & Classes
+//==============================================================================
+
+Table class_definition {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(255) [not null]
+  description text
+  instructor_id uuid [ref: > user.id]
+  max_participants integer
+  duration_minutes integer
+  price decimal(10,2)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🎓 Определения классов и тренировок'
+}
+
+Table class_schedule {
+  id uuid [pk, default: `gen_random_uuid()`]
+  class_definition_id uuid [ref: > class_definition.id]
+  court_id uuid [ref: > court.id]
+  start_time timestamp [not null]
+  end_time timestamp [not null]
+  status class_status_enum [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '📅 Расписание классов'
+}
+
+Table class_participant {
+  id uuid [pk, default: `gen_random_uuid()`]
+  class_schedule_id uuid [ref: > class_schedule.id]
+  user_id uuid [ref: > user.id]
+  registration_date timestamp [default: `now()`]
+  attendance_status attendance_status_enum
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '👥 Участники классов'
+}
+
+Table training_package_definition {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(255) [not null]
+  description text
+  sessions_count integer [not null]
+  validity_days integer [not null]
+  price decimal(10,2) [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '📦 Пакеты тренировок'
+}
+
+Table user_training_package {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > user.id]
+  training_package_definition_id uuid [ref: > training_package_definition.id]
+  purchase_date timestamp [not null]
+  expiry_date timestamp [not null]
+  sessions_used integer [default: 0]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🎫 Купленные пакеты тренировок'
+}
+
+//==============================================================================
+// 🎨 Gaming Layer (6 tables) - Tournaments & Ratings
+//==============================================================================
+
+Table game_session {
+  id uuid [pk, default: `gen_random_uuid()`]
+  court_id uuid [ref: > court.id]
+  start_time timestamp [not null]
+  end_time timestamp
+  session_type session_type_enum [not null]
+  status session_status_enum [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🎮 Игровые сессии'
+}
+
+Table game_player {
+  id uuid [pk, default: `gen_random_uuid()`]
+  game_session_id uuid [ref: > game_session.id]
+  user_id uuid [ref: > user.id]
+  team_number integer
+  score integer
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🎾 Игроки в сессиях'
+}
+
+Table rating_change {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > user.id]
+  game_session_id uuid [ref: > game_session.id]
+  old_rating integer [not null]
+  new_rating integer [not null]
+  rating_change integer [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '📈 Изменения рейтинга'
+}
+
+Table tournament {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(255) [not null]
+  description text
+  start_date date [not null]
+  end_date date [not null]
+  tournament_type tournament_type_enum [not null]
+  status tournament_status_enum [not null]
+  max_participants integer
+  entry_fee decimal(10,2)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🏆 Турниры и соревнования'
+}
+
+Table tournament_participant {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tournament_id uuid [ref: > tournament.id]
+  user_id uuid [ref: > user.id]
+  registration_date timestamp [default: `now()`]
+  seed_number integer
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🎾 Участники турниров'
+}
+
+Table tournament_team {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tournament_id uuid [ref: > tournament.id]
+  team_name varchar(255) [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '👥 Команды в турнирах'
+}
+
+Table tournament_match {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tournament_id uuid [ref: > tournament.id]
+  round_number integer [not null]
+  match_number integer [not null]
+  player1_id uuid [ref: > user.id]
+  player2_id uuid [ref: > user.id]
+  winner_id uuid [ref: > user.id]
+  score varchar(50)
+  match_date timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '⚔️ Матчи в турнирах'
+}
+
+//==============================================================================
+// 🎨 AI/Analytics Layer (2 tables) - Intelligence & Feedback
+//==============================================================================
+
+Table ai_suggestion_log {
+  id uuid [pk, default: `gen_random_uuid()`]
+  suggestion_type varchar(100) [not null]
+  user_id uuid [ref: > user.id]
+  input_data text
+  suggestion_data text
+  confidence_score decimal(5,4)
+  was_accepted boolean
+  user_feedback text
+  execution_time_ms integer
+  model_version varchar(50)
+  context_data text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🤖 Логи AI рекомендаций и предложений'
+}
+
+Table feedback {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > user.id]
+  entity_type varchar(50) [not null]
+  entity_id uuid [not null]
+  rating integer
+  comment text
+  is_anonymous boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '💬 Отзывы и оценки пользователей'
+}
+
+//==============================================================================
+// 🎨 System Layer (3 tables) - Infrastructure & Integration
+//==============================================================================
+
+Table task {
+  id uuid [pk, default: `gen_random_uuid()`]
+  title varchar(255) [not null]
+  description text
+  assigned_to uuid [ref: > user.id]
+  status task_status_enum [not null]
+  priority task_priority_enum [not null]
+  due_date timestamp
+  completed_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '📋 Задачи и поручения'
+}
+
+Table notification {
+  id uuid [pk, default: `gen_random_uuid()`]
+  user_id uuid [ref: > user.id]
+  title varchar(255) [not null]
+  message text [not null]
+  notification_type notification_type_enum [not null]
+  is_read boolean [default: false]
+  read_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🔔 Уведомления пользователей'
+}
+
+Table external_system_mapping {
+  id uuid [pk, default: `gen_random_uuid()`]
+  external_system external_system_enum [not null]
+  external_id varchar(255) [not null]
+  internal_entity_type external_entity_mapping_type_enum [not null]
+  internal_entity_id uuid [not null]
+  is_active boolean [default: true]
+  last_sync_at timestamp
+  sync_data text
+  has_conflict boolean [default: false]
+  conflict_data text
+  last_error text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: '🔗 Маппинг внешних систем (Exporta, Google Calendar, etc.)'
+}
