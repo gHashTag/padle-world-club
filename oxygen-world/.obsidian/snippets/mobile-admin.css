@@ -1,0 +1,440 @@
+/* Mobile Admin Portal Styles */
+
+:root {
+  --mobile-primary: #233247;
+  --mobile-success: #32D882;
+  --mobile-warning: #FBBB17;
+  --mobile-danger: #ED3163;
+  --mobile-info: #4A90E2;
+  --mobile-background: #F8F9FA;
+  --mobile-surface: #FFFFFF;
+  --mobile-text: #2C2D2E;
+  --mobile-border: #E0E4E7;
+  --mobile-shadow: 0 2px 8px rgba(35, 50, 71, 0.08);
+}
+
+/* Mobile Admin Layout */
+.mobile-admin {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--mobile-background);
+  padding: 8px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.touch-friendly {
+  border-radius: 8px;
+  box-shadow: var(--mobile-shadow);
+  background: var(--mobile-surface);
+  border: 1px solid var(--mobile-border);
+  margin-bottom: 12px;
+}
+
+/* Mobile Headers */
+.mobile-admin h1 {
+  background: linear-gradient(135deg, var(--mobile-primary) 0%, #4A5568 100%);
+  color: white;
+  padding: 16px;
+  margin: -8px -8px 16px -8px;
+  border-radius: 8px 8px 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.mobile-admin h2 {
+  color: var(--mobile-primary);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 20px 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid var(--mobile-success);
+  padding-bottom: 6px;
+}
+
+.mobile-admin h3 {
+  color: var(--mobile-text);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0 8px 0;
+}
+
+/* Mobile Tables */
+.mobile-admin table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-size: 13px;
+}
+
+.mobile-admin th {
+  background: var(--mobile-primary);
+  color: white;
+  padding: 8px 6px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.mobile-admin td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--mobile-border);
+  vertical-align: middle;
+}
+
+.mobile-admin tr:nth-child(even) {
+  background: #F8F9FA;
+}
+
+.mobile-admin tr:hover {
+  background: #E3F2FD;
+  transition: background-color 0.2s ease;
+}
+
+/* Touch-Friendly Buttons */
+.mobile-admin td[title*="Call"],
+.mobile-admin td[title*="Chat"],
+.mobile-admin td[title*="Message"] {
+  text-align: center;
+}
+
+.mobile-admin [href] {
+  display: inline-block;
+  padding: 6px 12px;
+  background: var(--mobile-info);
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 12px;
+  margin: 2px;
+  min-width: 60px;
+  text-align: center;
+  transition: background-color 0.2s ease;
+}
+
+.mobile-admin [href]:hover {
+  background: #357ABD;
+}
+
+/* Status Indicators */
+.mobile-admin strong {
+  font-weight: 600;
+}
+
+.mobile-admin strong:contains("OCCUPIED") {
+  color: var(--mobile-warning);
+}
+
+.mobile-admin strong:contains("AVAILABLE") {
+  color: var(--mobile-success);
+}
+
+.mobile-admin strong:contains("MAINTENANCE") {
+  color: var(--mobile-danger);
+}
+
+/* Court Status Cards */
+.mobile-admin h3:contains("Tennis Court"),
+.mobile-admin h3:contains("Padel Court") {
+  background: var(--mobile-surface);
+  border: 1px solid var(--mobile-border);
+  padding: 12px;
+  border-radius: 8px;
+  margin: 12px 0 8px 0;
+  box-shadow: var(--mobile-shadow);
+}
+
+/* Progress Indicators */
+.mobile-admin td:contains("%") {
+  position: relative;
+}
+
+.mobile-admin td:contains("85%")::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 6px;
+  width: 85%;
+  height: 3px;
+  background: var(--mobile-warning);
+  border-radius: 2px;
+}
+
+.mobile-admin td:contains("90%")::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 6px;
+  width: 90%;
+  height: 3px;
+  background: var(--mobile-success);
+  border-radius: 2px;
+}
+
+.mobile-admin td:contains("102%")::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 6px;
+  width: 100%;
+  height: 3px;
+  background: var(--mobile-success);
+  border-radius: 2px;
+}
+
+/* Priority Task Styling */
+.mobile-admin li:contains("High Priority") {
+  background: rgba(237, 49, 99, 0.1);
+  border-left: 4px solid var(--mobile-danger);
+  padding: 8px;
+  margin: 4px 0;
+  border-radius: 4px;
+}
+
+.mobile-admin li:contains("Medium Priority") {
+  background: rgba(251, 187, 23, 0.1);
+  border-left: 4px solid var(--mobile-warning);
+  padding: 8px;
+  margin: 4px 0;
+  border-radius: 4px;
+}
+
+.mobile-admin li:contains("Low Priority") {
+  background: rgba(50, 216, 130, 0.1);
+  border-left: 4px solid var(--mobile-success);
+  padding: 8px;
+  margin: 4px 0;
+  border-radius: 4px;
+}
+
+/* Alert Styling */
+.mobile-admin p:contains("🟢"),
+.mobile-admin p:contains("🟡"),
+.mobile-admin p:contains("🔴") {
+  background: var(--mobile-surface);
+  border: 1px solid var(--mobile-border);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.mobile-admin p:contains("🔴") {
+  border-left: 4px solid var(--mobile-danger);
+  background: rgba(237, 49, 99, 0.05);
+}
+
+.mobile-admin p:contains("🟡") {
+  border-left: 4px solid var(--mobile-warning);
+  background: rgba(251, 187, 23, 0.05);
+}
+
+.mobile-admin p:contains("🟢") {
+  border-left: 4px solid var(--mobile-success);
+  background: rgba(50, 216, 130, 0.05);
+}
+
+/* Mobile Navigation */
+.mobile-admin hr {
+  border: none;
+  height: 2px;
+  background: linear-gradient(90deg, var(--mobile-success) 0%, transparent 100%);
+  margin: 20px 0;
+}
+
+/* Responsive Text */
+.mobile-admin em {
+  font-style: italic;
+  color: var(--mobile-text);
+  font-size: 12px;
+  text-align: center;
+  display: block;
+  margin: 16px 0 8px 0;
+}
+
+/* Critical Action Buttons */
+.mobile-admin td:contains("🚨"),
+.mobile-admin td:contains("🌧️"),
+.mobile-admin td:contains("📢"),
+.mobile-admin td:contains("🚔") {
+  text-align: center;
+  font-weight: 600;
+}
+
+.mobile-admin tr:contains("Emergency Stop") {
+  background: rgba(237, 49, 99, 0.1);
+}
+
+.mobile-admin tr:contains("Rain Protocol") {
+  background: rgba(74, 144, 226, 0.1);
+}
+
+.mobile-admin tr:contains("Staff Alert") {
+  background: rgba(251, 187, 23, 0.1);
+}
+
+.mobile-admin tr:contains("Security Call") {
+  background: rgba(156, 39, 176, 0.1);
+}
+
+/* Performance Metrics */
+.mobile-admin table:has(th:contains("Metric")) {
+  border: 2px solid var(--mobile-success);
+}
+
+.mobile-admin table:has(th:contains("Category")) {
+  border: 2px solid var(--mobile-warning);
+}
+
+.mobile-admin table:has(th:contains("Player")) {
+  border: 2px solid var(--mobile-info);
+}
+
+/* Financial Highlighting */
+.mobile-admin td:contains("₿") {
+  font-weight: 600;
+  color: var(--mobile-warning);
+}
+
+/* Contact Actions */
+.mobile-admin td:contains("[📞 Call]") {
+  background: rgba(50, 216, 130, 0.1);
+}
+
+.mobile-admin td:contains("[💬 Chat]") {
+  background: rgba(74, 144, 226, 0.1);
+}
+
+.mobile-admin td:contains("[📧 Message]") {
+  background: rgba(251, 187, 23, 0.1);
+}
+
+/* Time Indicators */
+.mobile-admin td:contains("min"),
+.mobile-admin td:contains("Today"),
+.mobile-admin td:contains("EOD") {
+  font-style: italic;
+  color: var(--mobile-info);
+}
+
+/* Landscape Phone Optimization */
+@media (max-width: 667px) and (orientation: landscape) {
+  .mobile-admin {
+    padding: 4px;
+    font-size: 12px;
+  }
+  
+  .mobile-admin h1 {
+    padding: 12px;
+    font-size: 18px;
+  }
+  
+  .mobile-admin h2 {
+    font-size: 16px;
+  }
+  
+  .mobile-admin th,
+  .mobile-admin td {
+    padding: 6px 4px;
+  }
+}
+
+/* Portrait Phone Optimization */
+@media (max-width: 414px) {
+  .mobile-admin table {
+    font-size: 11px;
+  }
+  
+  .mobile-admin th,
+  .mobile-admin td {
+    padding: 6px 3px;
+  }
+  
+  .mobile-admin [href] {
+    padding: 4px 8px;
+    font-size: 10px;
+    min-width: 40px;
+  }
+  
+  .mobile-admin h2 {
+    font-size: 14px;
+  }
+  
+  .mobile-admin h3 {
+    font-size: 13px;
+  }
+}
+
+/* Tablet Optimization */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .mobile-admin {
+    padding: 16px;
+    font-size: 15px;
+  }
+  
+  .mobile-admin h1 {
+    font-size: 24px;
+    padding: 20px;
+  }
+  
+  .mobile-admin h2 {
+    font-size: 20px;
+  }
+  
+  .mobile-admin table {
+    font-size: 14px;
+  }
+  
+  .mobile-admin th,
+  .mobile-admin td {
+    padding: 10px 8px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mobile-background: #1a1a1a;
+    --mobile-surface: #2d2d2d;
+    --mobile-text: #ffffff;
+    --mobile-border: #404040;
+  }
+  
+  .mobile-admin tr:nth-child(even) {
+    background: #3a3a3a;
+  }
+  
+  .mobile-admin tr:hover {
+    background: #404040;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-admin tr,
+  .mobile-admin [href] {
+    transition: none;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .mobile-admin {
+    border: 2px solid #000000;
+  }
+  
+  .mobile-admin table {
+    border: 2px solid #000000;
+  }
+  
+  .mobile-admin th {
+    background: #000000;
+    color: #ffffff;
+  }
+} 

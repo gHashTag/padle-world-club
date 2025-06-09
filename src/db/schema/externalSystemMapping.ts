@@ -12,13 +12,11 @@ export const externalSystemMapping = pgTable("external_system_mapping", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   // Внешняя система
-  externalSystem: externalSystemEnum("external_system").notNull(),
+  externalSystem: varchar("external_system").notNull().$type<typeof externalSystemEnum.enumValues[number]>(),
   externalId: varchar("external_id", { length: 255 }).notNull(),
 
   // Внутренняя сущность
-  internalEntityType: externalEntityMappingTypeEnum(
-    "internal_entity_type"
-  ).notNull(),
+  internalEntityType: varchar("internal_entity_type").notNull().$type<typeof externalEntityMappingTypeEnum.enumValues[number]>(),
   internalEntityId: uuid("internal_entity_id").notNull(),
 
   // Метаданные синхронизации

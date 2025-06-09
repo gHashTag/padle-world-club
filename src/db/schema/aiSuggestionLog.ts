@@ -6,6 +6,7 @@ import {
   jsonb,
   boolean,
   numeric,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { users } from "./user";
@@ -13,7 +14,7 @@ import { aiSuggestionTypeEnum } from "./enums";
 
 export const aiSuggestionLogs = pgTable("ai_suggestion_log", {
   id: uuid("id").primaryKey().defaultRandom(),
-  suggestionType: aiSuggestionTypeEnum("suggestion_type").notNull(),
+  suggestionType: varchar("suggestion_type").notNull().$type<typeof aiSuggestionTypeEnum.enumValues[number]>(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }), // Пользователь, для которого сделано предложение
   inputData: jsonb("input_data").notNull(), // Входные данные для AI
   suggestionData: jsonb("suggestion_data").notNull(), // Результат работы AI

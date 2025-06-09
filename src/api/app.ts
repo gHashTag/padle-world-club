@@ -23,6 +23,7 @@ import externalSystemMappingsRouter from "./routes/external-system-mappings";
 import externalSyncWebhooksRouter from "./routes/external-sync-webhooks";
 import notificationsRouter from "./routes/notifications";
 import { createAISuggestionLogsRouter } from "./routes/ai-suggestion-logs";
+import obsidianRealtimeRouter from "./routes/obsidian-realtime";
 import { db } from "../db";
 import { UserRepository } from "../repositories/user-repository";
 
@@ -76,7 +77,7 @@ const setupParsing = (app: Application): Application => {
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
   if (config.server.compression) {
-    app.use(compression());
+    app.use(compression() as any);
   }
 
   return app;
@@ -212,6 +213,7 @@ const createApiRouter = () => {
           sync: "/api/sync",
           notifications: "/api/notifications",
           aiSuggestionLogs: "/api/ai-suggestion-logs",
+          obsidianRealtime: "/api/obsidian-realtime",
           tournaments: "/api/tournaments",
           gameSessions: "/api/game-sessions",
         },
@@ -236,6 +238,7 @@ const createApiRouter = () => {
   router.use("/sync", externalSyncWebhooksRouter);
   router.use("/notifications", notificationsRouter);
   router.use("/ai-suggestion-logs", createAISuggestionLogsRouter());
+  router.use("/obsidian-realtime", obsidianRealtimeRouter);
   // router.use('/courts', courtsRouter);
   // router.use('/bookings', bookingsRouter);
   // router.use('/payments', paymentsRouter);

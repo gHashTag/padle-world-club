@@ -1,0 +1,260 @@
+{
+  "main": {
+    "id": "e60cfc3d5422d336",
+    "type": "split",
+    "children": [
+      {
+        "id": "82679db546e82b64",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a4d4a014f196f522",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "Новая вкладка"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "672197c8cf2e9b95",
+    "type": "split",
+    "children": [
+      {
+        "id": "a18b1802dd67e9a8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2c0fe3bded740218",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Файловый менеджер"
+            }
+          },
+          {
+            "id": "e74a639c551e22a4",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Поиск"
+            }
+          },
+          {
+            "id": "4db6a8261c393fbc",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Закладки"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "44e55d7d66f89d3a",
+    "type": "split",
+    "children": [
+      {
+        "id": "df6f2d9658083d38",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d77a37e2db708421",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Обратные ссылки"
+            }
+          },
+          {
+            "id": "aba617e9298e5c8c",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Исходящие ссылки"
+            }
+          },
+          {
+            "id": "8ee3b888b445c0d3",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Теги"
+            }
+          },
+          {
+            "id": "985a8843b8039a61",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Структура"
+            }
+          },
+          {
+            "id": "576fbd67c2bb03ed",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Все свойства"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Меню быстрого перехода": false,
+      "graph:Граф": false,
+      "canvas:Создать новый холст": false,
+      "daily-notes:Сегодняшняя заметка": false,
+      "templates:Вставить шаблон": false,
+      "command-palette:Открыть палитру команд": false,
+      "markdown-importer:Импорт Markdown-файлов": false,
+      "publish:Публикация изменений": false,
+      "workspaces:Пространства": false,
+      "zk-prefixer:Создать заметку с уникальным идентификатором": false
+    }
+  },
+  "floating": {
+    "id": "0bb6dade79193665",
+    "type": "floating",
+    "children": [
+      {
+        "id": "b8b53cc9c4d68052",
+        "type": "window",
+        "children": [
+          {
+            "id": "e027c97be587087b",
+            "type": "tabs",
+            "children": [
+              {
+                "id": "de3fb320ff780c04",
+                "type": "leaf",
+                "state": {
+                  "type": "webviewer",
+                  "state": {
+                    "url": "https://publish.obsidian.md/oxygen-world-club/README",
+                    "title": "README - oxygen-world-club - Obsidian Publish",
+                    "mode": "webview"
+                  },
+                  "icon": "globe-2",
+                  "title": "README - oxygen-world-club - Obsidian Publish"
+                }
+              }
+            ]
+          }
+        ],
+        "direction": "vertical",
+        "x": 0,
+        "y": 37,
+        "width": 1512,
+        "height": 945,
+        "maximize": false,
+        "zoom": 0
+      }
+    ]
+  },
+  "active": "a4d4a014f196f522",
+  "lastOpenFiles": [
+    "📊 Analytics Dashboard.md",
+    "📅 Calendar Dashboard.md",
+    "💰 Finance Dashboard.md",
+    "📅 DYNAMIC CALENDAR - Live Bookings & Events.md",
+    "Database/🧠 NEURAL NETWORK NAVIGATOR - Complete Model Connections.md",
+    "ПОЛНАЯ СВЯЗАННОСТЬ ВСЕХ 31 МОДЕЛИ.md",
+    "Database/👥 Users Demo - Real-time Sync.md",
+    "Database/User-Demo-Player-Test.md",
+    "Database/🧪 DEMO REPORT - Real-time Sync Test.md",
+    "Database/User-Test-User001-Test.md",
+    "Database/User-Anna-Johnson-Demo.md",
+    "Database/User-David-Smith-Demo.md",
+    "Technical/🔍 РЕАЛЬНАЯ АРХИТЕКТУРА - КАК ЭТО РАБОТАЕТ.md",
+    "Technical/📊 ВИЗУАЛИЗАЦИЯ CRUD И REAL-TIME СИНХРОНИЗАЦИИ.md",
+    "Technical/🚀 OBSIDIAN КАК FRONTEND - ЛУЧШИЕ ПРАКТИКИ.md",
+    "Technical/🔍 АНАЛИЗ OBSIDIAN ДЛЯ CRM - ПЛЮСЫ И МИНУСЫ.md",
+    "Technical/✅ СВЯЗИ ВОССТАНОВЛЕНЫ - ГРАФ ИСПРАВЛЕН.md",
+    "Technical/🔧 МАССОВОЕ ОБНОВЛЕНИЕ СВЯЗЕЙ ПОЛЬЗОВАТЕЛЕЙ.md",
+    "🧠 NEURAL NETWORK VISUALIZATION - Complete Connections Map.md",
+    "Database/Venue-Main-Club.md",
+    "Database/Class-Schedule-001.md",
+    "Database/Training-Package-Definition-001.md",
+    "Database/User-Account-Link-001.md",
+    "Database/Booking-Participant-001.md",
+    "Database/External-System-Mapping-001.md",
+    "Database/Product-Category-001.md",
+    "Technical/Models",
+    "Technical",
+    "Archive",
+    "content-factory/🏭-Content-Factory/📅-Content-Calendar",
+    "content-factory/🏭-Content-Factory",
+    "content-factory",
+    "Database",
+    "content-factory/🏭-Content-Factory/🎨-Visual-Concepts",
+    "content-factory/🏭-Content-Factory/🔥-Viral-Analysis",
+    "content-factory/🏭-Content-Factory/🎬-Content-Ideas"
+  ]
+}

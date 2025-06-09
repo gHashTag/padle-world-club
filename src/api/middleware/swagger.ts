@@ -1,8 +1,8 @@
-import { Application } from 'express';
-import swaggerUi from 'swagger-ui-express';
-import YAML from 'yamljs';
-import path from 'path';
-import fs from 'fs';
+import { Application } from "express";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
+import path from "path";
+import fs from "fs";
 
 /**
  * Swagger UI configuration and setup
@@ -30,8 +30,8 @@ export class SwaggerConfig {
     }
 
     try {
-      const docsPath = path.join(__dirname, '../docs');
-      const openApiPath = path.join(docsPath, 'openapi.yaml');
+      const docsPath = path.join(__dirname, "../docs");
+      const openApiPath = path.join(docsPath, "openapi.yaml");
 
       if (!fs.existsSync(openApiPath)) {
         throw new Error(`OpenAPI specification not found at: ${openApiPath}`);
@@ -43,11 +43,11 @@ export class SwaggerConfig {
       // Note: $ref references will be resolved by swagger-ui-express automatically
 
       this.isLoaded = true;
-      console.log('✅ OpenAPI specification loaded successfully');
+      console.log("✅ OpenAPI specification loaded successfully");
 
       return this.swaggerDocument;
     } catch (error) {
-      console.error('❌ Failed to load OpenAPI specification:', error);
+      console.error("❌ Failed to load OpenAPI specification:", error);
 
       // Return a minimal fallback document
       return this.getFallbackDocument();
@@ -61,57 +61,62 @@ export class SwaggerConfig {
    */
   private getFallbackDocument(): any {
     return {
-      openapi: '3.0.3',
+      openapi: "3.0.3",
       info: {
-        title: 'Padel World Club API',
-        description: 'API documentation is temporarily unavailable. Please check back later.',
-        version: '1.0.0',
+        title: "Padel World Club API",
+        description:
+          "API documentation is temporarily unavailable. Please check back later.",
+        version: "1.0.0",
         contact: {
-          name: 'API Support',
-          email: 'api-support@padelworldclub.com'
-        }
+          name: "API Support",
+          email: "api-support@padelworldclub.com",
+        },
       },
       servers: [
         {
-          url: process.env.NODE_ENV === 'production'
-            ? 'https://api.padelworldclub.com/v1'
-            : 'http://localhost:3000/api',
-          description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server'
-        }
+          url:
+            process.env.NODE_ENV === "production"
+              ? "https://api.padelworldclub.com/v1"
+              : "http://localhost:3000/api",
+          description:
+            process.env.NODE_ENV === "production"
+              ? "Production server"
+              : "Development server",
+        },
       ],
       paths: {
-        '/health': {
+        "/health": {
           get: {
-            summary: 'Health check',
-            description: 'Check API health status',
+            summary: "Health check",
+            description: "Check API health status",
             responses: {
-              '200': {
-                description: 'API is healthy',
+              "200": {
+                description: "API is healthy",
                 content: {
-                  'application/json': {
+                  "application/json": {
                     schema: {
-                      type: 'object',
+                      type: "object",
                       properties: {
-                        status: { type: 'string', example: 'ok' },
-                        timestamp: { type: 'string', format: 'date-time' }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                        status: { type: "string", example: "ok" },
+                        timestamp: { type: "string", format: "date-time" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       components: {
         securitySchemes: {
           bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT'
-          }
-        }
-      }
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+        },
+      },
     };
   }
 
@@ -122,22 +127,22 @@ export class SwaggerConfig {
     return {
       explorer: true,
       swaggerOptions: {
-        docExpansion: 'list',
+        docExpansion: "list",
         filter: true,
         showRequestDuration: true,
         tryItOutEnabled: true,
         requestInterceptor: (req: any) => {
           // Add custom headers or modify requests
-          req.headers['X-API-Client'] = 'swagger-ui';
+          req.headers["X-API-Client"] = "swagger-ui";
           return req;
         },
         responseInterceptor: (res: any) => {
           // Log responses for debugging
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Swagger UI Response:', {
+          if (process.env.NODE_ENV === "development") {
+            console.log("Swagger UI Response:", {
               status: res.status,
               url: res.url,
-              headers: res.headers
+              headers: res.headers,
             });
           }
           return res;
@@ -155,10 +160,10 @@ export class SwaggerConfig {
           .swagger-ui .opblock.opblock-patch { border-color: #50e3c2; }
         `,
         // Custom site title
-        customSiteTitle: 'Padel World Club API Documentation',
+        customSiteTitle: "Padel World Club API Documentation",
         // Custom favicon
-        customfavIcon: '/favicon.ico'
-      }
+        customfavIcon: "/favicon.ico",
+      },
     };
   }
 
@@ -171,35 +176,37 @@ export class SwaggerConfig {
       const swaggerUiOptions = this.getSwaggerUiOptions();
 
       // Serve Swagger UI at /api/docs
-      app.use('/api/docs', swaggerUi.serve);
-      app.get('/api/docs', swaggerUi.setup(swaggerDocument, swaggerUiOptions));
+      app.use("/api/docs", swaggerUi.serve as any);
+      app.get(
+        "/api/docs",
+        swaggerUi.setup(swaggerDocument, swaggerUiOptions) as any
+      );
 
       // Serve raw OpenAPI JSON at /api/docs/openapi.json
-      app.get('/api/docs/openapi.json', (_req, res) => {
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Access-Control-Allow-Origin', '*');
+      app.get("/api/docs/openapi.json", (_req, res) => {
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", "*");
         res.json(swaggerDocument);
       });
 
       // Serve raw OpenAPI YAML at /api/docs/openapi.yaml
-      app.get('/api/docs/openapi.yaml', (_req, res) => {
-        res.setHeader('Content-Type', 'text/yaml');
-        res.setHeader('Access-Control-Allow-Origin', '*');
+      app.get("/api/docs/openapi.yaml", (_req, res) => {
+        res.setHeader("Content-Type", "text/yaml");
+        res.setHeader("Access-Control-Allow-Origin", "*");
         res.send(YAML.stringify(swaggerDocument, 4));
       });
 
       // Redirect /docs to /api/docs for convenience
-      app.get('/docs', (_req, res) => {
-        res.redirect('/api/docs');
+      app.get("/docs", (_req, res) => {
+        res.redirect("/api/docs");
       });
 
-      console.log('✅ Swagger UI configured successfully');
+      console.log("✅ Swagger UI configured successfully");
       console.log(`📚 API Documentation available at: /api/docs`);
       console.log(`📄 OpenAPI JSON available at: /api/docs/openapi.json`);
       console.log(`📄 OpenAPI YAML available at: /api/docs/openapi.yaml`);
-
     } catch (error) {
-      console.error('❌ Failed to setup Swagger UI:', error);
+      console.error("❌ Failed to setup Swagger UI:", error);
     }
   }
 
@@ -221,46 +228,51 @@ export class SwaggerConfig {
 
       // Basic validation
       if (!doc.openapi) {
-        errors.push('Missing openapi version');
+        errors.push("Missing openapi version");
       }
 
       if (!doc.info || !doc.info.title || !doc.info.version) {
-        errors.push('Missing required info fields (title, version)');
+        errors.push("Missing required info fields (title, version)");
       }
 
       if (!doc.paths || Object.keys(doc.paths).length === 0) {
-        errors.push('No paths defined');
+        errors.push("No paths defined");
       }
 
       // Validate paths (skip $ref entries as they will be resolved by swagger-ui)
       for (const [path, methods] of Object.entries(doc.paths)) {
-        if (typeof methods !== 'object') {
+        if (typeof methods !== "object") {
           errors.push(`Invalid path definition: ${path}`);
           continue;
         }
 
         for (const [method, operation] of Object.entries(methods as any)) {
           // Skip $ref entries
-          if (method === '$ref') {
+          if (method === "$ref") {
             continue;
           }
 
-          if (typeof operation !== 'object' || operation === null || !(operation as any).responses) {
-            errors.push(`Missing responses for ${method.toUpperCase()} ${path}`);
+          if (
+            typeof operation !== "object" ||
+            operation === null ||
+            !(operation as any).responses
+          ) {
+            errors.push(
+              `Missing responses for ${method.toUpperCase()} ${path}`
+            );
           }
         }
       }
 
       return {
         isValid: errors.length === 0,
-        errors
+        errors,
       };
-
     } catch (error) {
       errors.push(`Document parsing error: ${error}`);
       return {
         isValid: false,
-        errors
+        errors,
       };
     }
   }
@@ -285,7 +297,10 @@ export const getOpenApiDocument = (): any => {
 /**
  * Validate OpenAPI document
  */
-export const validateOpenApiDocument = (): { isValid: boolean; errors: string[] } => {
+export const validateOpenApiDocument = (): {
+  isValid: boolean;
+  errors: string[];
+} => {
   const swaggerConfig = SwaggerConfig.getInstance();
   return swaggerConfig.validateDocument();
 };
